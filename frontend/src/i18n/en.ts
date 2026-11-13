@@ -3,6 +3,7 @@ import type { TextKey } from "./pl";
 
 export const en: Record<TextKey, string> = {
   "app.name": "UplinkView",
+  "source.link": "{license} · Source code",
   "app.loading": "Loading…",
 
   "common.retry": "Try again",

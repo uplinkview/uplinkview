@@ -5,11 +5,11 @@
 
 - **Odbiorcy:** na początek hobbyści homelab, docelowo hobbyści i małe firmy.
 - **Nazwa:** ✅ **UplinkView** (13.11.2026; domena uplinkview.com i konto `uplinkview` na GitHubie zarejestrowane).
-- **Licencja:** decyzja jeszcze nie zapadła (`docs/09-licencje-propozycja.md`).
+- **Licencja:** ✅ AGPL-3.0, instalacja w całości darmowa, płatna tylko chmura (13.11.2026, 0.79.0; `docs/09`).
 - **Wdrożenie:** samodzielne hostowanie, w przyszłości instalacja na serwerach albo chmura producenta
   z panelem do odczytu parametrów (`docs/39-chmura-propozycja.md`).
 
-Etapy 1–5 nie zależą od nazwy. Publikacja (etap 6) czeka już tylko na licencję.
+Etapy 1–5 nie zależą od nazwy. Nazwa i licencja wybrane – etap 6 (publikacja) może ruszyć.
 Numery wersji są orientacyjne.
 
 ## Wnioski z analizy, z których wynika plan
@@ -126,12 +126,14 @@ Bez nich etap 6 nie ruszy: nazwa z listy użytkownika, licencja kodu i model z `
   PyPI i npm; w TMview (EUIPO, USPTO, UKIPO, WIPO) brak znaku „UplinkView”. Słowo UPLINK jest jednak zarejestrowane
   wiele razy w klasach oprogramowania 9/42 – przed rejestracją własnego znaku albo płatną chmurą (etap 9) opinia
   rzecznika patentowego. Domena uplinkview.com zarejestrowana (ważna do 13.11.2027 – odnowić), konto GitHub `uplinkview`.
-- **Licencja:** czeka na decyzję.
+- **Licencja ✅ (13.11.2026):** GNU AGPL-3.0-only; wszystko, co instaluje się u siebie, darmowe i bez limitów, płatna tylko
+  chmura (etap 9). Uzasadnienie, zależności i podwójne licencjonowanie: `docs/09-licencje-propozycja.md`.
 
 ## Etap 6 – publikacja (1.0.0)
 
 - ✅ (0.78.0) Zmiana nazwy na UplinkView w panelu, dokumentacji, instalatorze, repozytorium (`uplinkview/uplinkview`) i aplikacji Android; istniejące instalacje aktualizują się dalej (stary katalog i polecenie `netpulse` działają). Nazwy wewnętrzne (pakiet, zmienne, wolumeny) bez zmiany – lista w `CLAUDE.md`.
-- Plik LICENSE, angielskie README ze zrzutami, dokumentacja instalacji po angielsku.
+- ✅ (0.79.0) Plik LICENSE (AGPL-3.0), link do kodu źródłowego w panelu, `CONTRIBUTING.md`.
+- Angielskie README ze zrzutami, dokumentacja instalacji po angielsku.
 - Publiczne demo tylko do odczytu, oparte na atrapie `frontend/dev/mock-api.mjs`.
 - Gotowe obrazy w GHCR – instalacja bez budowania na serwerze użytkownika.
 - Ogłoszenie na r/selfhosted i r/homelab, szablony zgłoszeń na GitHubie.
@@ -162,6 +164,6 @@ etapy C0–C6). C0 warto zrobić przy okazji etapów 4 i 7; C1–C3 można zbudo
 ## Czego potrzeba od użytkownika
 
 - **Teraz:** zgoda na start etapu 1.
-- **Do końca etapu 5:** nazwa i licencja.
+- **Do końca etapu 5:** nazwa i licencja ✅ (13.11.2026).
 - **Po każdym etapie:** `uplinkview update` na serwerze i informacja, czy działa.
 - **Przed etapem 9:** odpowiedzi na pytania otwarte z `docs/39`.

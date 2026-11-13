@@ -1,7 +1,34 @@
 # Licencje pobierane z zewnętrznego serwisu – propozycja
 
-**Status: tylko propozycja. Nic z tego nie jest wdrożone ani zaplanowane na konkretny etap.**
-Dokument ma pomóc podjąć decyzje, zanim powstanie jakikolwiek kod.
+## Decyzja (13.11.2026, wersja 0.79.0)
+
+- **Model biznesowy: wszystko, co użytkownik instaluje u siebie, jest darmowe i bez limitów; płatna jest tylko chmura**
+  (`docs/39-chmura-propozycja.md`: dostęp z zewnątrz, push na telefon, wiele sieci na jednym koncie). To odmiana modelu A
+  z tego dokumentu – w instalacji **nie ma mechanizmu licencji** (klucze, tokeny, `licensing.py`, etapy L1–L4 poniżej
+  odpadają). Limity i płatności chmury egzekwuje sama chmura po swojej stronie.
+- **Licencja kodu: GNU AGPL-3.0-only** (plik `LICENSE` w katalogu głównym; `license` w `backend/pyproject.toml`
+  i `frontend/package.json`, tekst licencji w obrazie `/app/LICENSE`). Każdy może używać, zmieniać i rozpowszechniać kod;
+  kto udostępnia zmienioną wersję innym – także jako usługę przez sieć – musi udostępnić jej kod. Dlatego panel ma
+  link „AGPL-3.0 · Kod źródłowy” (`components/SourceLink.tsx`, menu i strona logowania) – **fork z własnym repozytorium
+  zmienia `SOURCE_URL`**.
+- **„-only”, nie „-or-later”:** o przejściu na przyszłą wersję AGPL decyduje autor, nie FSF.
+- **Podwójne licencjonowanie zostaje możliwe:** autor jest jedynym właścicielem praw do kodu, więc może dodatkowo
+  udzielić licencji komercyjnej (np. firmie, która nie chce udostępniać zmian) i zamknąć kod usługi chmury
+  (osobny program, nie część repozytorium). Żeby tak zostało, wkład z zewnątrz jest przyjmowany tylko na zasadach
+  z `CONTRIBUTING.md` (autor wkładu zgadza się na licencjonowanie go także na innych warunkach).
+- **Zależności:** sprawdzone 13.11.2026 – backend MIT/BSD/Apache-2.0 (fpdf2 LGPL-3.0, certifi MPL-2.0), panel MIT/Apache-2.0,
+  czcionki Geist OFL-1.1, Android Apache-2.0 – wszystkie zgodne z AGPL. TimescaleDB: kompresja i ciągłe agregaty są
+  na licencji Timescale (TSL), która pozwala używać ich we własnym produkcie (u siebie i w chmurze), zabrania tylko
+  sprzedaży samej bazy TimescaleDB jako usługi. Nowa zależność = sprawdzić licencję.
+- To nie jest porada prawna; przed sprzedażą licencji komercyjnej albo startem płatnej chmury warto, żeby umowę
+  współtwórcy (`CONTRIBUTING.md`) i regulamin chmury przejrzał prawnik.
+
+Reszta dokumentu to pierwotna propozycja mechanizmu licencji – zostaje dla historii i na wypadek, gdyby kiedyś
+jakaś funkcja instalacji miała być płatna.
+
+---
+
+**Status (do 13.11.2026): tylko propozycja.**
 
 ## Po co to jest
 

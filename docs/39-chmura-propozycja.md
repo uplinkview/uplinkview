@@ -205,6 +205,10 @@ godziny telefonu.
 
 ## Część D – licencje i płatności
 
+**Decyzja 13.11.2026 (`docs/09`):** instalacja jest w całości darmowa (AGPL-3.0), płatna jest tylko chmura –
+token licencji w instalacji nie jest potrzebny, plan i limity sprawdza chmura u siebie. Poniższy opis tokenu zostaje
+na wypadek zmiany decyzji.
+
 Mechanizm z `docs/09` zostaje (podpisany token, weryfikacja offline, karencja, zasada „licencja nigdy nie wyłącza
 zbierania danych”), ale chmura upraszcza go dla większości użytkowników:
 

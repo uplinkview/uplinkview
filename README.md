@@ -102,7 +102,17 @@ UplinkView/
 ├── frontend/       # React + Vite
 ├── updater/        # kontener aktualizacji i kopii zapasowych
 ├── deploy/         # docker-compose.yml, .env.example
-├── scripts/        # polecenie `netpulse` na serwerze (update, status, logs, backup...)
+├── scripts/        # polecenie `uplinkview` na serwerze (update, status, logs, backup...)
 ├── install.sh      # instalator jednym linkiem
 └── docs/           # dokumentacja
 ```
+
+## Licencja
+
+UplinkView jest wolnym oprogramowaniem na licencji [GNU AGPL-3.0](LICENSE). Możesz go używać (także w firmie),
+zmieniać i rozpowszechniać bez opłat. Jeśli udostępniasz zmienioną wersję innym – również jako usługę przez sieć –
+musisz udostępnić jej kod źródłowy na tej samej licencji. Wszystko, co instalujesz u siebie, jest darmowe i bez limitów;
+płatna będzie tylko opcjonalna chmura (dostęp z zewnątrz, powiadomienia push).
+
+Chcesz pomóc? Zobacz [`CONTRIBUTING.md`](CONTRIBUTING.md). Licencja komercyjna (bez obowiązków AGPL) – napisz w zgłoszeniu
+na GitHubie.

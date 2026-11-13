@@ -17,6 +17,14 @@ pakiet Pythona `netpulse`, `netpulse_updater`, zmienne `NETPULSE_*`, nazwa proje
 `netpulse-*`, ciasteczka `netpulse_session*`, klucze `netpulse.*` w przeglądarce, plik `scripts/netpulse`, agent `/opt/netpulse-agent`,
 `applicationId` `pl.netpulse.app` (inaczej telefon uznałby aplikację za nową), nazwy plików kopii zapasowych.
 
+## Licencja (0.79.0)
+
+**GNU AGPL-3.0-only** (`LICENSE`, decyzja 13.11.2026, `docs/09-licencje-propozycja.md`). Wszystko, co instaluje się u siebie,
+jest darmowe i bez limitów – w instalacji nie ma kluczy ani tokenów licencji; płatna będzie tylko chmura (`docs/39`),
+która sama egzekwuje swój plan. Panel linkuje do kodu (`components/SourceLink.tsx`, wymóg AGPL § 13). Autor zachowuje
+możliwość podwójnego licencjonowania, więc wkład z zewnątrz tylko według `CONTRIBUTING.md`. **Nowa zależność =
+sprawdzić, czy jej licencja jest zgodna z AGPL** (MIT/BSD/Apache/LGPL/MPL tak; licencje „bez użytku komercyjnego”, SSPL – nie).
+
 ## Zasady współpracy
 
 - Komunikacja z użytkownikiem **po polsku**. Kod, nazwy w kodzie i komentarze techniczne mogą być po angielsku, dokumentacja w `docs/` po polsku.
@@ -394,8 +402,6 @@ Od 0.58.1 menu w grupach Monitoring / Zdarzenia / Integracje / System – pole `
 - **Chmura producenta** – propozycja architektury w `docs/39-chmura-propozycja.md` (12.11.2026, tylko dokument):
   łącznik wychodzący (kontener `cloud`, WSS, parowanie kodem, logowanie podpisem), tunel panelu + skrót stanu
   (historia zostaje u użytkownika), push przez chmurę, licencja przez łącznik; etapy C0–C6. Nie wdrażać bez decyzji.
-- **Licencje** – propozycja w `docs/09-licencje-propozycja.md` (tylko dokument, bez kodu). Użytkownik wróci do niej
-  później i rozstrzygnie pytania otwarte (model biznesowy A/B/C, licencja kodu, dostawca). Do tego czasu nic nie wdrażać.
 - **MikroTik**: ✅ (0.28.2) sprawdzony na prawdziwym RouterOS 7.18.2 (CHR w VirtualBox, 192.168.1.62) – fixture
   `mikrotik-chr.snmprec`, rozpoznawanie WAN po nazwie portu. Od 0.50.0 czujniki, PoE i SFP według **oficjalnego
   MIKROTIK-MIB 7.25.1** (tabela `metrics`, `GET /api/devices/{id}/sensors`, źródła wykresów `snmp_sensor|snmp_poe|snmp_sfp`,
