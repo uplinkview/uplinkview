@@ -32,7 +32,7 @@ export interface ScanResult {
 export type ScanPayload = Omit<SnmpTargetPayload, "host" | "driver"> & { network: string };
 
 /** Producenci z własnym driverem – sprzęt sieciowy, który kreator zaznacza od razu (drukarki, NAS-y itp. – na życzenie). */
-const NETWORK_DRIVERS = new Set(["unifi", "mikrotik", "omada"]);
+const NETWORK_DRIVERS = new Set(["unifi", "mikrotik", "omada", "opnsense"]);
 
 /** Czy wynik zaznaczyć od razu: jeszcze nie dodany i rozpoznany jako sprzęt sieciowy. */
 export function preselected(f: FoundDevice): boolean {

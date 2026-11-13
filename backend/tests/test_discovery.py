@@ -55,6 +55,7 @@ async def _describe(fixture: str) -> discovery.Found:
         ("mikrotik-chr.snmprec", "mikrotik", None, None),
         ("linux-server.snmprec", "linux", None, None),
         ("tplink-jetstream.snmprec", "omada", None, None),
+        ("opnsense.snmprec", "opnsense", "gateway", "OPNsense"),
     ],
 )
 def test_describe_picks_same_driver_as_collector(fixture, driver, kind, model):

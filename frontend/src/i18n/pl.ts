@@ -1077,6 +1077,7 @@ export const pl = {
   "devform.driver.linux": "Serwer Linux (snmpd)",
   "devform.driver.mikrotik": "MikroTik RouterOS",
   "devform.driver.omada": "TP-Link Omada / JetStream",
+  "devform.driver.opnsense": "OPNsense",
   "devform.linuxHint": "Na serwerze musi działać snmpd (apt install snmpd) z włączonym odczytem dla adresu UplinkView. Gotowa konfiguracja: docs/10-serwer-linux-snmp.md. Sterownik „Automatyczny” rozpozna serwer sam.",
   "server.processes": "procesów: {n}",
 

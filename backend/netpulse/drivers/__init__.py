@@ -18,6 +18,7 @@ from .generic import GenericDriver, read_system
 from .linux import LinuxDriver
 from .mikrotik import MikrotikDriver
 from .omada import OmadaDriver
+from .opnsense import OpnsenseDriver
 from .unifi import UnifiDriver
 
 DRIVERS: dict[str, type[GenericDriver]] = {
@@ -26,6 +27,7 @@ DRIVERS: dict[str, type[GenericDriver]] = {
     LinuxDriver.name: LinuxDriver,
     MikrotikDriver.name: MikrotikDriver,
     OmadaDriver.name: OmadaDriver,
+    OpnsenseDriver.name: OpnsenseDriver,
 }
 
 
@@ -58,6 +60,7 @@ __all__ = [
     "MetricSample",
     "MikrotikDriver",
     "OmadaDriver",
+    "OpnsenseDriver",
     "PollResult",
     "ServerSample",
     "SystemInfo",

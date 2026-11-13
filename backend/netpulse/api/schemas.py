@@ -12,7 +12,7 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 SnmpVersion = Literal["1", "2c", "3"]
 AuthProto = Literal["MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512"]
 PrivProto = Literal["DES", "AES", "AES192", "AES256"]
-DriverName = Literal["auto", "generic", "unifi", "linux", "mikrotik", "omada"]
+DriverName = Literal["auto", "generic", "unifi", "linux", "mikrotik", "omada", "opnsense"]
 
 _HOSTNAME_RE = re.compile(r"^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$")
 

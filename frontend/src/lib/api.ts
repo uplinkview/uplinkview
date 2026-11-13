@@ -156,7 +156,7 @@ export interface Series {
 }
 
 export type SnmpVersion = "1" | "2c" | "3";
-export type DriverName = "auto" | "generic" | "unifi" | "linux" | "mikrotik" | "omada";
+export type DriverName = "auto" | "generic" | "unifi" | "linux" | "mikrotik" | "omada" | "opnsense";
 export type AuthProtocol = "MD5" | "SHA" | "SHA224" | "SHA256" | "SHA384" | "SHA512";
 export type PrivProtocol = "DES" | "AES" | "AES192" | "AES256";
 

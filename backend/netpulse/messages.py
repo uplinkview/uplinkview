@@ -410,6 +410,11 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("TP-Link Omada / JetStream przez SNMP: CPU, RAM, PoE, SFP, WAN bramy", "TP-Link Omada / JetStream over SNMP: CPU, RAM, PoE, SFP, gateway WAN"),
     ("zrzuty syntetyczne według oficjalnych MIB TP-Link – czeka na prawdziwy sprzęt", "synthetic dumps based on the official TP-Link MIBs – waiting for real hardware"),
     ("Serwer Linux przez SNMP (snmpd): dyski, obciążenie", "Linux server over SNMP (snmpd): disks, load"),
+    (
+        "OPNsense przez SNMP: rozpoznanie routera, WAN z trasy domyślnej, CPU, RAM, dysk",
+        "OPNsense over SNMP: router detection, WAN from the default route, CPU, RAM, disk",
+    ),
+    ("OPNsense 26.7 (FreeBSD 15.1) w VirtualBox, wtyczka os-net-snmp", "OPNsense 26.7 (FreeBSD 15.1) in VirtualBox, os-net-snmp plugin"),
     ("zrzut syntetyczny odwzorowujący snmpd – czeka na zrzut z prawdziwego serwera", "synthetic dump modelled on snmpd – waiting for a dump from a real server"),
     ("Agent UplinkView (Linux): CPU, RAM, dyski, Docker, usługi, SMART", "UplinkView agent (Linux): CPU, RAM, disks, Docker, services, SMART"),
     ("instalowany i sprawdzany na Ubuntu w teście CI każdej wersji", "installed and checked on Ubuntu in the CI test of every version"),

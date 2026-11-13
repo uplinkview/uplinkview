@@ -115,6 +115,9 @@ UNIFI_RADIO_TABLE = "1.3.6.1.4.1.41112.1.6.1.1.1"
 UNIFI_RADIO_RADIO = UNIFI_RADIO_TABLE + ".3"
 UNIFI_RADIO_CU_TOTAL = UNIFI_RADIO_TABLE + ".6"
 
+# RFC 1213 ipRouteIfIndex trasy domyślnej (0.0.0.0): przez który interfejs router wychodzi do internetu (OPNsense)
+IP_ROUTE_DEFAULT_IF_INDEX = "1.3.6.1.2.1.4.21.1.2.0.0.0.0"
+
 # ifType
 IF_TYPE_ETHERNET = 6
 IF_TYPE_LOOPBACK = 24

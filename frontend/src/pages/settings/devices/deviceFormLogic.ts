@@ -15,7 +15,7 @@ import type {
   SnmpVersion,
 } from "../../../lib/api";
 
-export const DRIVERS: DriverName[] = ["auto", "generic", "unifi", "linux", "mikrotik", "omada"];
+export const DRIVERS: DriverName[] = ["auto", "generic", "unifi", "linux", "mikrotik", "omada", "opnsense"];
 export const SNMP_VERSIONS: SnmpVersion[] = ["1", "2c", "3"];
 export const AUTH_PROTOCOLS: AuthProtocol[] = ["MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512"];
 export const PRIV_PROTOCOLS: PrivProtocol[] = ["DES", "AES", "AES192", "AES256"];

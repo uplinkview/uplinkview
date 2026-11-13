@@ -22,7 +22,7 @@ ręcznie”) i Ustawienia → Urządzenia → **Wykryj w sieci** (bez urządzeń
    i `enrich_system` drivera bez odczytu portów – model, firmware, rodzaj (router / switch / AP / serwer / inne).
    Na driverze ogólnym producent z numeru w `sysObjectID` (`ENTERPRISES`: Synology, HP, Cisco, QNAP…), net-snmp (8072)
    nic nie mówi. Oznaczenia: „już w UplinkView” (adres jest w bazie), „podstawowa obsługa” (driver `generic`).
-6. Panel zaznacza od razu nowy sprzęt sieciowy (driver UniFi / MikroTik / Omada albo rodzaj router/switch/AP), resztę
+6. Panel zaznacza od razu nowy sprzęt sieciowy (driver UniFi / MikroTik / Omada / OPNsense albo rodzaj router/switch/AP), resztę
    (drukarki, NAS-y, telewizory) – tylko na życzenie. Nazwa = `sysName` (do zmiany w wierszu). „Dodaj zaznaczone” wysyła
    kolejno `POST /api/devices` z danymi SNMP skanu i `driver = "auto"` (jak formularz – z testem SNMP).
 

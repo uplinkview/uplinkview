@@ -30,6 +30,7 @@ KEEP_PREFIXES = (
     "1.3.6.1.4.1.14988.1.1.3.",  # MIKROTIK-MIB: czujniki (temperatura, napięcie)
     "1.3.6.1.4.1.14988.1.1.4.",  # MIKROTIK-MIB: licencja i wersja RouterOS
     "1.3.6.1.4.1.14988.1.1.7.",  # MIKROTIK-MIB: płyta (model, numer seryjny)
+    "1.3.6.1.2.1.4.21.1.2.0.0.0.0",  # ifIndex trasy domyślnej (OPNsense: który port jest WAN-em); reszty tras nie bierzemy
 )
 # Numer seryjny płyty MikroTik nie trafia do repozytorium
 MIKROTIK_SERIAL = "1.3.6.1.4.1.14988.1.1.7.3.0"

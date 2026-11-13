@@ -72,7 +72,7 @@ def _add_snmp_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--port", type=int, default=161)
     p.add_argument("--snmp-version", choices=["1", "2c", "3"], default="2c")
     p.add_argument("--community", default="public")
-    p.add_argument("--driver", default="auto", help="auto | generic | unifi | linux | mikrotik | omada")
+    p.add_argument("--driver", default="auto", help="auto | generic | unifi | linux | mikrotik | omada | opnsense")
     p.add_argument("--v3-user")
     p.add_argument("--v3-auth-proto", choices=["MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512"])
     p.add_argument("--v3-auth-key")

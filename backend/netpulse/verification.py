@@ -37,7 +37,7 @@ SOURCES: tuple[Source, ...] = (
         "SNMP: porty, ruch, błędy (IF-MIB), CPU i RAM (UCD-SNMP-MIB)",
         "verified",
         "UniFi UCG Ultra, USW Lite 8 PoE, U6+ i MikroTik RouterOS 7.18 (CHR)",
-        ("generic", "unifi", "mikrotik", "omada", "linux"),
+        ("generic", "unifi", "mikrotik", "omada", "linux", "opnsense"),
     ),
     Source(
         "unifi_snmp",
@@ -87,6 +87,13 @@ SOURCES: tuple[Source, ...] = (
         "test",
         "zrzut syntetyczny odwzorowujący snmpd – czeka na zrzut z prawdziwego serwera",
         ("linux",),
+    ),
+    Source(
+        "opnsense_snmp",
+        "OPNsense przez SNMP: rozpoznanie routera, WAN z trasy domyślnej, CPU, RAM, dysk",
+        "verified",
+        "OPNsense 26.7 (FreeBSD 15.1) w VirtualBox, wtyczka os-net-snmp",
+        ("opnsense",),
     ),
     Source(
         "agent",

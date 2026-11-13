@@ -12,13 +12,15 @@ from netpulse.drivers import (
     LinuxDriver,
     MikrotikDriver,
     OmadaDriver,
+    OpnsenseDriver,
     UnifiDriver,
     detect_driver,
     poll_device,
 )
 from netpulse.drivers.base import SystemInfo
 from netpulse.drivers.linux import is_real_mount, parse_kernel
-from netpulse.snmp.snmprec import SnmprecClient
+from netpulse.drivers.opnsense import parse_series
+from netpulse.snmp.snmprec import SnmprecClient, parse_snmprec
 
 
 def poll(name: str, driver: str = "auto"):
@@ -384,3 +386,43 @@ def test_forced_driver_on_generic_data_does_not_crash():
     for driver in ("mikrotik", "omada"):
         r = poll("ucg-ultra", driver=driver)  # wymuszony sterownik na obcym urządzeniu: bez wyjątku, tylko ubogie dane
         assert r.driver == driver and r.interfaces
+
+
+def test_opnsense_router():
+    """OPNsense 26.7 w VirtualBox (prawdziwy zrzut 13.11.2026): zwykły FreeBSD z net-snmp, bez własnego MIB-u."""
+    r = poll("opnsense")
+    assert r.driver == OpnsenseDriver.name
+    s = r.system
+    assert (s.kind, s.vendor, s.model, s.firmware) == ("gateway", "OPNsense", "OPNsense", "26.7")
+    ifs = by_name(r)
+    # WAN = interfejs trasy domyślnej (em1), nie pierwszy port; reszta kart to LAN
+    assert (ifs["em1"].role, ifs["em1"].label) == ("wan", "WAN")
+    assert [(ifs[n].role, ifs[n].label) for n in ("em0", "em2", "em3")] == [("lan", "em0"), ("lan", "em2"), ("lan", "em3")]
+    assert {i.name for i in r.visible_interfaces()} == {"em0", "em1", "em2", "em3"}
+    for hidden in ("lo0", "enc0", "pfsync0", "pflog0"):
+        assert ifs[hidden].hidden and ifs[hidden].role == "system"
+    assert ifs["em1"].counter_bits == 64 and ifs["em1"].speed_mbps == 1000 and ifs["em1"].oper_status == "up"
+    assert r.health.cpu_percent == 2.0 and r.health.mem_total_kb == 2045492 and r.health.load1 == 0.56
+    assert [d.mount for d in r.disks] == ["/"]  # zbiory ZFS (/tmp, /var/log, /home…) dzielą jedną pulę
+    assert r.server is not None and r.server.processes == 80
+
+
+def test_opnsense_detection():
+    descr = "FreeBSD fw.lan 15.1-RELEASE-p6 FreeBSD 15.1-RELEASE-p6 stable/26.7-n284285-1633399de9dd SMP amd64"
+    agent = "1.3.6.1.4.1.8072.3.2.8"
+    assert detect_driver(SystemInfo(descr=descr, object_id=agent)) is OpnsenseDriver  # po gałęzi jądra, nie nazwie hosta
+    assert parse_series(descr) == "26.7"
+    # Czysty FreeBSD (releng/…, stable/15) to nie OPNsense
+    plain = "FreeBSD nas 15.1-RELEASE FreeBSD 15.1-RELEASE releng/15.1-n280000-0123456789ab GENERIC amd64"
+    assert detect_driver(SystemInfo(descr=plain, object_id=agent)) is GenericDriver
+    assert parse_series("FreeBSD b 15.1-STABLE FreeBSD 15.1-STABLE stable/15-n281000-abcdef012345 GENERIC amd64") is None
+    assert parse_series(None) is None
+
+
+def test_opnsense_without_default_route_has_no_wan():
+    data = parse_snmprec((FIXTURES / "opnsense.snmprec").read_text())
+    del data["1.3.6.1.2.1.4.21.1.2.0.0.0.0"]
+    client = SnmprecClient(data)
+    r = asyncio.run(poll_device(client))
+    assert not [i for i in r.interfaces if i.role == "wan"]
+    assert by_name(r)["em1"].role == "lan"

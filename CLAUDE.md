@@ -201,6 +201,15 @@ anonimizacja `Anonymizer`; tablic MAC/ARP/tras/klientów nie czyta; `PySnmpClien
 `.github/ISSUE_TEMPLATE/nowe-urzadzenie.yml`). **Nowa gałąź z danymi osobowymi = reguła w `devreport.anonymize` i test
 w `test_discovery.py::test_report_has_no_private_values`.** Sprawdzone 13.11.2026 na UCG, USW i U6+. Opis: `docs/43-wykrywanie-urzadzen.md`.
 
+## OPNsense (0.80.0)
+
+Driver `opnsense` (`drivers/opnsense.py`, na bazie `LinuxDriver`): OPNsense to zwykły FreeBSD z net-snmp (`8072.3.2.8`), bez własnego MIB-u
+i bez `ifAlias`. Rozpoznanie po gałęzi jądra w `sysDescr` (`stable/26.7` = seria OPNsense), `kind = gateway`, WAN = interfejs trasy domyślnej
+(`O.IP_ROUTE_DEFAULT_IF_INDEX`, jeden odczyt), ukryte `lo0`/`enc0`/`pflog0`/`pfsync0`, dysk tylko `/` (ZFS). Sprawdzone 13.11.2026 na OPNsense 26.7
+w VirtualBox (192.168.1.135; `em1` = WAN, `em0` = LAN 192.168.10.1), fixture `opnsense.snmprec`. VLAN, VPN, kilka WAN i pfSense bez zrzutu.
+**Nowy driver = wpisy w:** `drivers/__init__.py`, `DriverName` (`api/schemas.py`, `lib/api.ts`), `deviceFormLogic.ts`, `devform.driver.*` w `pl.ts`/`en.ts`,
+`verification.SOURCES` + `messages.py`, `NETWORK_DRIVERS` (`lib/discovery.ts`, jeśli sprzęt sieciowy). Opis: `docs/45-opnsense.md`.
+
 ## Język angielski (0.74.0–0.76.0)
 
 Etap 4 planu, część 4a (opis i dalsze części: `docs/44-jezyk-angielski.md`). Panel w dwóch językach: `i18n/pl.ts` (źródło kluczy)
