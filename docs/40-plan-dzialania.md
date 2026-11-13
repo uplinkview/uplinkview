@@ -133,7 +133,8 @@ Bez nich etap 6 nie ruszy: nazwa z listy użytkownika, licencja kodu i model z `
 
 - ✅ (0.78.0) Zmiana nazwy na UplinkView w panelu, dokumentacji, instalatorze, repozytorium (`uplinkview/uplinkview`) i aplikacji Android; istniejące instalacje aktualizują się dalej (stary katalog i polecenie `netpulse` działają). Nazwy wewnętrzne (pakiet, zmienne, wolumeny) bez zmiany – lista w `CLAUDE.md`.
 - ✅ (0.79.0) Plik LICENSE (AGPL-3.0), link do kodu źródłowego w panelu, `CONTRIBUTING.md`.
-- Angielskie README ze zrzutami, dokumentacja instalacji po angielsku.
+- ✅ (0.79.1) README po angielsku (`README.md`) i po polsku (`README.pl.md`) ze zrzutami (`docs/img/`, skrypt `frontend/dev/screenshots.mjs`).
+- Dokumentacja instalacji po angielsku.
 - Publiczne demo tylko do odczytu, oparte na atrapie `frontend/dev/mock-api.mjs`.
 - Gotowe obrazy w GHCR – instalacja bez budowania na serwerze użytkownika.
 - Ogłoszenie na r/selfhosted i r/homelab, szablony zgłoszeń na GitHubie.

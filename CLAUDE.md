@@ -351,7 +351,9 @@ pełny ekran (`WidgetExpandContext`), menu „⋯” z eksportem CSV/PNG (`Widge
 (`api/events.py` + `timeline.py`: restarty z `uptime_s`, przełączenia WAN). **Od 0.49.0 wykresy nie rysują zdarzeń** – kafelek `events`
 („Zdarzenia”) i alerty `wan_switch` / `device_restart` (trwają 10 min, bez powiadomienia o końcu). Od 0.36.0 jeden silnik
 wykresów: `ChartCard` też rysuje `PanelChart` (stary `TimeSeriesChart` usunięty). Mapa cieplna ✅ (0.37.0): widget `heatmap`
-(godzina × dzień tygodnia albo data, `lib/heatmap.ts`, dane tydzień po tygodniu z API metryk). Wykres kołowy ✅ (0.39.0): widget `pie` – urządzenie, potem co monitorować (zajętość, udział, stan; `lib/pie.ts`); od 0.40.0 jeden wybrany port (obciążenie albo odbierane / wysyłane) z danymi na żywo. Podgląd panelu bez serwera: atrapa `frontend/dev/mock-api.mjs` + `.claude/launch.json`.
+(godzina × dzień tygodnia albo data, `lib/heatmap.ts`, dane tydzień po tygodniu z API metryk). Wykres kołowy ✅ (0.39.0): widget `pie` – urządzenie, potem co monitorować (zajętość, udział, stan; `lib/pie.ts`); od 0.40.0 jeden wybrany port (obciążenie albo odbierane / wysyłane) z danymi na żywo. Podgląd panelu bez serwera: atrapa `frontend/dev/mock-api.mjs` + `.claude/launch.json` (dla `Accept-Language: en` dane po angielsku – tablica `EN`).
+README: `README.md` po angielsku i `README.pl.md` po polsku (0.79.1) – **zmiana w obu**; zrzuty w `docs/img/` odświeża
+`frontend/dev/screenshots.mjs` (Chrome headless kontra atrapa, w Git Bash `MSYS_NO_PATHCONV=1`).
 
 ## Nowy wygląd panelu (0.42.0)
 

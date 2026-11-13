@@ -72,9 +72,25 @@ function startSimulation() {
 }
 
 const publicUser = () => user && { id: 1, username: user.username, is_admin: true, created_at: user.created, last_login_at: user.lastLogin };
+// Dane po angielsku dla Accept-Language: en – jak prawdziwy backend (netpulse/i18n.py); zrzuty do README są po angielsku
+const EN = [
+  ["Garaż (testowy)", "Garage (test)"],
+  ["Garaż (test) nie odpowiada", "Garage (test) is not responding"],
+  ["Dysk /mnt/data zajęty w 91 %", "Disk /mnt/data 91% full"],
+  ["Ping 8.8.8.8 – utrata 20 %", "Ping 8.8.8.8 – 20% packet loss"],
+  ["Kopia vzdump LXC 101 gotowa", "vzdump backup of LXC 101 finished"],
+  ["Port 7 przeszedł w stan down", "Port 7 went down"],
+  ["Urządzenie nie odpowiada", "Device is not responding"],
+  ["Internet – Google DNS", "Internet – Google DNS"],
+  ["Proxmox – panel", "Proxmox – web UI"],
+  ["Światłowód", "Fiber"],
+  ["Aktualizacja zakończona", "Update finished"],
+];
+const english = (text) => EN.reduce((t, [pl, en]) => t.split(JSON.stringify(pl).slice(1, -1)).join(JSON.stringify(en).slice(1, -1)), text);
 const send = (res, code, body, headers = {}) => {
   res.writeHead(code, { "Content-Type": "application/json", ...headers });
-  res.end(body === undefined ? undefined : JSON.stringify(body));
+  const text = body === undefined ? undefined : JSON.stringify(body);
+  res.end(text !== undefined && res.lang === "en" ? english(text) : text);
 };
 const readBody = (req) => new Promise((resolve) => {
   let data = "";
@@ -91,6 +107,7 @@ const startSession = (res) => {
 };
 
 createServer(async (req, res) => {
+  res.lang = (req.headers["accept-language"] ?? "").toLowerCase().startsWith("en") ? "en" : "pl";
   const url = new URL(req.url, "http://x");
   const route = `${req.method} ${url.pathname}`;
   const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : {};

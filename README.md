@@ -1,118 +1,116 @@
 # UplinkView
 
-Self-hosted aplikacja webowa do monitorowania sieci w homelabie. W jednym panelu zbiera ruch i stan portów
-routera, switchy i access pointów, klientów WiFi, topologię, serwery Linux i Proxmox oraz alerty.
+**Self-hosted network monitoring for your homelab.** One dashboard for the traffic and port status of your router,
+switches and access points – plus WiFi clients, a network map, dual WAN, Linux servers, Proxmox VE and alerts.
 
-## Instalacja
+[Polski](README.pl.md) · [License: AGPL-3.0](LICENSE) · [Contributing](CONTRIBUTING.md)
 
-Jedna komenda na czystym Ubuntu Server (instaluje Dockera, jeśli go brak, tworzy `.env` z losowymi hasłami
-i uruchamia usługi):
+![UplinkView dashboard](docs/img/dashboard-light.png)
+
+## Install
+
+One command on a clean Ubuntu Server. It installs Docker if needed, creates a `.env` file with random passwords and
+starts all services:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/uplinkview/uplinkview/main/install.sh | sudo bash
 ```
 
-Potem otwórz panel w przeglądarce (`http://ADRES-SERWERA:8000`): załóż konto, a kreator pierwszej konfiguracji
-pomoże dodać urządzenia. Aktualizacja jednym kliknięciem w panelu (Ustawienia → Aktualizacje) albo poleceniem:
+Then open `http://SERVER-ADDRESS:8000` (or `https://SERVER-ADDRESS:8443`), create the administrator account and let
+the setup wizard scan your network for devices.
+
+Updates take one click in the panel (Settings → Update) or one command:
 
 ```bash
-uplinkview update
+sudo uplinkview update
 ```
 
-Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`](docs/04-instalacja-i-aktualizacja.md).
+Every update is signed: the server only installs commits signed with a key it already trusts, and takes a database
+backup first.
 
-## Co potrafi
+## Features
 
-- **Pulpit:** karty urządzeń, wykresy ruchu, błędów i dropów, tryb „Na żywo” (ruch WAN co 1–2 s), wiele pulpitów,
-  pulpity publiczne tylko do odczytu (`/p/<token>`, np. na wyświetlacz ścienny). Motyw ciemny i jasny.
-- **Urządzenia i porty:** status portów, prędkość, PoE, strony szczegółów urządzenia, portu i klienta,
-  dostępność w procentach, historia do roku (agregaty godzinowe).
-- **WiFi:** sieci, klienci z historią sygnału, obecności i przejść między AP (UniFi Network API).
-- **Topologia:** mapa sieci z LLDP.
-- **Dual WAN:** stan łączy, przełączenia i SLA.
-- **Serwery:** Linux przez SNMP albo własny agent (kontenery Docker, usługi systemd, SMART, temperatury),
-  Proxmox VE (maszyny VM/LXC, magazyny, kopie vzdump).
-- **Alerty:** urządzenie offline, port down, przeciążenie, CPU/RAM, dysk, błędy portów, dane z agenta;
-  powiadomienia przez webhook i Telegram.
-- **Administracja:** kopie zapasowe z panelu i `uplinkview backup`, sekrety zaszyfrowane w bazie, moduły
-  do włączania i wyłączania, migracje bazy (Alembic).
+- **Dashboard** – device cards, WAN traffic with peaks, errors and drops, a live mode (WAN traffic every 1–2 s),
+  several dashboards per account, Grafana-style charts (multiple sources, thresholds, comparisons, zoom), and read-only
+  public dashboards for a wall display. Light and dark theme, English and Polish.
+- **Devices and ports** – port state, speed, PoE, device / port / client detail pages, availability in percent,
+  history for up to a year (hourly aggregates), automatic network discovery.
+- **WiFi** – networks and clients with signal, presence and roaming history (UniFi Network API).
+- **Network map** – topology from LLDP with cable load and speed.
+- **Dual WAN** – link state, failover, SLA, latency to each link, gateway speed tests.
+- **Servers** – Linux over SNMP or with the lightweight UplinkView agent (Docker containers, systemd services, SMART,
+  temperatures) and Proxmox VE (VMs, LXC containers, storage, vzdump backups).
+- **Availability checks** – ping (latency, loss, jitter), HTTP(S) with certificate expiry, TCP port, DNS.
+- **Alerts** – device offline, port down, overload, CPU / RAM, disk, port errors, agent data; notifications by
+  webhook (e.g. Telegram), ntfy and e-mail, quiet hours with a summary, maintenance windows, grouping by topology.
+- **Administration** – user roles (admin / operator / viewer), two-factor login (TOTP), audit log, HTTPS with a local CA,
+  encrypted secrets, backups from the panel, monthly PDF / CSV report, modules you can turn off.
+- **Android app** – WAN traffic and a home-screen widget ([releases](https://github.com/uplinkview/uplinkview/releases)).
 
-## Obsługiwane urządzenia
+![Dark theme](docs/img/dashboard-dark.png)
 
-| Producent        | Status | Źródła danych |
-|------------------|--------|---------------|
-| Ubiquiti UniFi   | ✅ sprawdzone na sprzęcie (UCG Ultra, USW Lite 8 PoE, U6+) | SNMP (IF-MIB, UBNT-UniFi-MIB) + UniFi Network API |
-| Serwery Linux    | ✅ | SNMP (`snmpd`) albo agent UplinkView |
-| Proxmox VE       | sprawdzone na atrapie API, czeka na prawdziwy serwer | API Proxmox (token, rola PVEAuditor) |
-| MikroTik         | driver SNMP na zrzutach syntetycznych | SNMP (IF-MIB, MIKROTIK-MIB, HOST-RESOURCES); RouterOS API planowane |
-| TP-Link Omada    | driver SNMP na zrzutach syntetycznych | SNMP (IF-MIB); Omada Controller API planowane |
-| Inne             | ✅ podstawowo | generyczny driver SNMP (IF-MIB) |
+![Network map](docs/img/network-map.png)
 
-SNMP v1, v2c i v3 (authPriv).
+## Supported devices
 
-## Stack technologiczny
+| Vendor            | Status | Data sources |
+|-------------------|--------|--------------|
+| Ubiquiti UniFi    | ✅ tested on hardware (UCG Ultra, USW Lite 8 PoE, U6+) | SNMP (IF-MIB, UBNT-UniFi-MIB) + UniFi Network API |
+| Linux servers     | ✅ | SNMP (`snmpd`) or the UplinkView agent |
+| Proxmox VE        | ✅ tested on PVE 9.1 / 9.2 (single node) | Proxmox API (token, PVEAuditor role) |
+| MikroTik          | ✅ tested on RouterOS 7.18 (CHR); sensors, PoE and SFP from the official MIB | SNMP (IF-MIB, MIKROTIK-MIB, HOST-RESOURCES-MIB) |
+| TP-Link Omada     | SNMP driver from the official MIBs, waiting for real hardware | SNMP |
+| Anything else     | ✅ basics | generic SNMP driver (IF-MIB) |
 
-| Warstwa       | Technologia |
-|---------------|-------------|
-| Kolektor      | Python 3.13, asyncio, `pysnmp` 7 |
-| Backend API   | FastAPI, Pydantic v2, SQLAlchemy 2 (async), asyncpg, Alembic |
-| Baza danych   | PostgreSQL 17 + TimescaleDB (hypertables, retencja, agregaty ciągłe) |
-| Frontend      | React 19 + TypeScript, Vite, Tailwind CSS, TanStack Query, Apache ECharts |
-| Live update   | WebSocket |
-| Wdrożenie     | Docker Compose na Ubuntu Server, obrazy z GHCR, osobny kontener `updater` |
+SNMP v1, v2c and v3 (authPriv). Got a device that doesn't look right? The **device report** on its detail page creates
+an anonymized SNMP dump you can attach to a [new device request](https://github.com/uplinkview/uplinkview/issues/new?template=nowe-urzadzenie.yml).
 
-## Architektura
+## How it works
 
 ```
- [Router] [Switch] [AP] ──SNMP/API──►  Kolektor (async, co 30 s)  ◄── raporty agenta (push)
- [Proxmox] [kontroler UniFi]                 │
-                                             ▼
-                               PostgreSQL + TimescaleDB  ◄──  Backend API (FastAPI)
+ [Router] [Switch] [AP] ──SNMP/API──►  Collector (async, every 30 s)  ◄── agent reports (push)
+ [Proxmox] [UniFi controller]                 │
+                                              ▼
+                               PostgreSQL + TimescaleDB  ◄──  API (FastAPI)
                                                                  │  REST + WebSocket
                                                                  ▼
-                                                    Frontend (React) – panel
+                                                      Web panel (React)
 ```
 
-Każdy producent to driver ze wspólnym interfejsem (`discover`, `poll_interfaces`, `poll_extra`, `neighbors`).
-Driver generyczny (IF-MIB) działa dla każdego urządzenia ze SNMP, a drivery producentów dokładają resztę.
-Wybór drivera jest automatyczny (`sysObjectID` / `sysDescr`).
+Each vendor is a driver with a common interface. The generic IF-MIB driver works with any SNMP device; vendor drivers
+add the rest. The driver is picked automatically from `sysObjectID` / `sysDescr`.
 
-## Plan prac
+| Layer       | Technology |
+|-------------|------------|
+| Collector   | Python 3.13, asyncio, `pysnmp` 7 |
+| API         | FastAPI, Pydantic v2, SQLAlchemy 2 (async), asyncpg, Alembic |
+| Database    | PostgreSQL 17 + TimescaleDB (hypertables, compression, continuous aggregates) |
+| Panel       | React 19 + TypeScript, Vite, Tailwind CSS, TanStack Query, Apache ECharts |
+| Deployment  | Docker Compose on Ubuntu Server, nginx proxy with HTTPS, separate `updater` container |
 
-1. ✅ Inwentaryzacja i test SNMP
-2. ✅ Szkielet projektu: Docker Compose, baza, `install.sh`, `uplinkview update`
-3. ✅ Kolektor SNMP: driver generyczny + UniFi
-4. ✅ Backend API: urządzenia, porty, metryki, logowanie
-5. ✅ Panel: pulpit, ustawienia, aktualizacja jednym kliknięciem, personalizacja, tryb „Na żywo”
-6. ✅ UniFi Network API: PoE, klienci WiFi
-7. ✅ Topologia LLDP
-8. Alerty: ✅ silnik, panel, webhook, Telegram · do zrobienia: e-mail, ntfy, ciche godziny, grupowanie
-9. ✅ SNMP v3 · MikroTik i Omada: drivery SNMP gotowe, czekają na prawdziwy sprzęt; API RouterOS i Omada do zrobienia
-10. ✅ Serwery Linux (SNMP i agent), Proxmox VE, Dual WAN, kopie zapasowe, szyfrowanie sekretów, moduły,
-    strony szczegółów, wiele pulpitów i pulpity publiczne
-
-Dalsze pomysły (ping i test prędkości, raport tygodniowy, role użytkowników, PWA, wersja angielska, eksport
-do Prometheus i Home Assistant): [`docs/06-projekt-panelu.md`](docs/06-projekt-panelu.md), sekcja backlog.
-
-## Struktura katalogów
+## Repository layout
 
 ```
-UplinkView/
-├── backend/        # FastAPI + kolektor + agent Linux (wspólne modele i drivery)
-├── frontend/       # React + Vite
-├── updater/        # kontener aktualizacji i kopii zapasowych
-├── deploy/         # docker-compose.yml, .env.example
-├── scripts/        # polecenie `uplinkview` na serwerze (update, status, logs, backup...)
-├── install.sh      # instalator jednym linkiem
-└── docs/           # dokumentacja
+backend/        # API, collector and Linux agent (shared models and drivers)
+frontend/       # web panel (React + Vite)
+updater/        # update and backup service
+deploy/         # docker-compose.yml, proxy, .env.example
+scripts/        # the `uplinkview` server command (update, status, logs, backup…)
+mobile/android/ # Android app
+install.sh      # one-line installer
+docs/           # documentation (in Polish for now)
 ```
 
-## Licencja
+## Roadmap
 
-UplinkView jest wolnym oprogramowaniem na licencji [GNU AGPL-3.0](LICENSE). Możesz go używać (także w firmie),
-zmieniać i rozpowszechniać bez opłat. Jeśli udostępniasz zmienioną wersję innym – również jako usługę przez sieć –
-musisz udostępnić jej kod źródłowy na tej samej licencji. Wszystko, co instalujesz u siebie, jest darmowe i bez limitów;
-płatna będzie tylko opcjonalna chmura (dostęp z zewnątrz, powiadomienia push).
+- Optional paid cloud: access from outside your network and push notifications, with your history staying on your server.
+- RouterOS and Omada controller APIs, Synology NAS – once there is real hardware to test on.
 
-Chcesz pomóc? Zobacz [`CONTRIBUTING.md`](CONTRIBUTING.md). Licencja komercyjna (bez obowiązków AGPL) – napisz w zgłoszeniu
-na GitHubie.
+## License
+
+UplinkView is free software under the [GNU AGPL-3.0](LICENSE). You can use it (also at work), change it and share it
+at no cost. If you offer a modified version to others – including as a network service – you have to publish its source
+code under the same license. Everything you install yourself is free with no limits; only the optional cloud will be paid.
+
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md). For a commercial license without the AGPL obligations, open an
+issue on GitHub.
