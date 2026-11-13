@@ -7,7 +7,6 @@ name = "netpulse"
 dynamic = ["version"]
 description = "UplinkView – self-hosted monitoring ruchu sieciowego (router, switch, access point)"
 requires-python = ">=3.12"
-license = "AGPL-3.0-only"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",

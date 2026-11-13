@@ -6,7 +6,6 @@ import { formatBps } from "../lib/format";
 import { useDashboardSummary } from "../lib/queries";
 import { networkStatus, type Tone } from "../lib/status";
 import { NAV_GROUPS, useVisibleModules, type NavModule } from "../modules";
-import { SourceLink } from "./SourceLink";
 import { Logo } from "./ui";
 
 // Wygląd „Błękit” (0.58.0): aktywna pozycja to kafelek w kolorze karty z niebieską ikoną
@@ -164,7 +163,6 @@ export function Sidebar({ version, collapsed, onToggleCollapsed, onNavigate }: S
             <span className="text-[13px] font-semibold text-accent-text">
               {t("app.name")} {version}
             </span>
-            <SourceLink />
           </div>
         )}
         <button

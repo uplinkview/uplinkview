@@ -1,7 +1,7 @@
 # Wykrywanie urządzeń i zgłaszanie specyfikacji – propozycja
 
 Status: części A i B **zrobione w 0.73.0** (13.11.2026, decyzja użytkownika) – opis wdrożenia: `docs/43-wykrywanie-urzadzen.md`.
-Sposób wysyłki: A (plik + link do zgłoszenia). Sposób B (wysyłka do serwera projektu) dalej czeka na chmurę i licencję.
+Sposób wysyłki: A (plik + link do zgłoszenia). Sposób B (wysyłka do serwera projektu) dalej czeka na chmurę.
 
 ## Problem
 
@@ -63,8 +63,8 @@ Raport zawiera też: wersję UplinkView, wybrany driver, `sysObjectID`, `sysDesc
 | **B. Przycisk „Wyślij do UplinkView”** – mały serwis pośredniczący (funkcja serverless z aplikacją GitHub) zakłada zgłoszenie w prywatnym repo | jedno kliknięcie, bez konta, raporty prywatne | serwis do utrzymania, polityka prywatności, zgoda, ochrona przed spamem i limit zgłoszeń |
 | C. E-mail | prosty | trudny do obsługi, łatwo coś zgubić |
 
-**Rekomendacja:** najpierw **A**. **B** razem z chmurą i po decyzji o licencji i modelu biznesowym
-(`docs/09-licencje-propozycja.md`) – automatyczna wysyłka danych z cudzej sieci wymaga zgody i ustalenia
+**Rekomendacja:** najpierw **A**. **B** razem z chmurą i po decyzji o modelu biznesowym
+– automatyczna wysyłka danych z cudzej sieci wymaga zgody i ustalenia
 administratora danych. UplinkView zapamiętuje, że raport dla urządzenia został przygotowany / wysłany.
 
 ### Co dzieje się u właściciela
@@ -104,4 +104,4 @@ OPNsense, VyOS. Sprzęt fizyczny potrzebny głównie do PoE, czujników i WiFi.
 1. Część A (wykrywanie) – od razu przydatne dla każdej instalacji.
 2. Część B (raport) – korzysta z tego samego odczytu SNMP.
 3. Szablon zgłoszenia na GitHubie i strona właściciela (fixture, profil/driver, wydanie).
-4. Wysyłka do serwera projektu (sposób B) – razem z chmurą i po decyzji o licencji.
+4. Wysyłka do serwera projektu (sposób B) – razem z chmurą.

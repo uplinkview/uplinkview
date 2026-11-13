@@ -7,7 +7,6 @@ import { AUTH_KEY } from "./AuthProvider";
 import { PasswordRequirements } from "../components/PasswordRequirements";
 import { MIN_PASSWORD } from "../lib/password";
 import { LanguageSelect } from "../components/LanguageSelect";
-import { SourceLink } from "../components/SourceLink";
 
 
 /** Ekran logowania albo kreatora pierwszego konta (gdy w bazie nie ma jeszcze użytkowników). */
@@ -137,8 +136,7 @@ export function AuthPage({ mode }: { mode: "login" | "setup" }) {
                 : t("auth.login.submit")}
           </Button>
         </form>
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <SourceLink />
+        <div className="mt-5 flex items-center justify-end gap-3">
           <LanguageSelect compact />
         </div>
       </Card>

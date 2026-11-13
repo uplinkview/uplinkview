@@ -5,11 +5,10 @@
 
 - **Odbiorcy:** na początek hobbyści homelab, docelowo hobbyści i małe firmy.
 - **Nazwa:** ✅ **UplinkView** (13.11.2026; domena uplinkview.com i konto `uplinkview` na GitHubie zarejestrowane).
-- **Licencja:** ✅ AGPL-3.0, instalacja w całości darmowa, płatna tylko chmura (13.11.2026, 0.79.0; `docs/09`).
 - **Wdrożenie:** samodzielne hostowanie, w przyszłości instalacja na serwerach albo chmura producenta
   z panelem do odczytu parametrów (`docs/39-chmura-propozycja.md`).
 
-Etapy 1–5 nie zależą od nazwy. Nazwa i licencja wybrane – etap 6 (publikacja) może ruszyć.
+Etapy 1–5 nie zależą od nazwy. Nazwa wybrana – etap 6 (publikacja) może ruszyć.
 Numery wersji są orientacyjne.
 
 ## Wnioski z analizy, z których wynika plan
@@ -41,7 +40,6 @@ Do poprawy, od najważniejszego:
 4. Limit logowań tylko po IP i w pamięci; słownik prób nie jest czyszczony.
 5. Kontenery bez `cap_drop`, `no-new-privileges`, `read_only`.
 6. Nieprzypięte wersje: `timescale/timescaledb:latest-pg17`, zależności Pythona z `>=` bez pliku blokady.
-7. Brak pliku LICENSE.
 
 ### Wygląd
 
@@ -118,21 +116,19 @@ Zrobione 13.11.2026, opis: `docs/43-wykrywanie-urzadzen.md` (skan /24 w ok. 5 s,
 
 **Gotowe, gdy:** czysta instalacja w sieci użytkownika sama znajduje UCG, switch i AP, a dodanie ich to trzy kliknięcia.
 
-## Punkt decyzyjny – nazwa i licencja
+## Punkt decyzyjny – nazwa
 
-Bez nich etap 6 nie ruszy: nazwa z listy użytkownika, licencja kodu i model z `docs/09-licencje-propozycja.md`.
+Bez niej etap 6 nie ruszy: nazwa z listy użytkownika.
 
 - **Nazwa ✅ (13.11.2026): UplinkView.** Wolne: domeny .com/.net/.org/.io/.app/.dev, nazwy na GitHubie, Docker Hubie,
   PyPI i npm; w TMview (EUIPO, USPTO, UKIPO, WIPO) brak znaku „UplinkView”. Słowo UPLINK jest jednak zarejestrowane
   wiele razy w klasach oprogramowania 9/42 – przed rejestracją własnego znaku albo płatną chmurą (etap 9) opinia
   rzecznika patentowego. Domena uplinkview.com zarejestrowana (ważna do 13.11.2027 – odnowić), konto GitHub `uplinkview`.
-- **Licencja ✅ (13.11.2026):** GNU AGPL-3.0-only; wszystko, co instaluje się u siebie, darmowe i bez limitów, płatna tylko
-  chmura (etap 9). Uzasadnienie, zależności i podwójne licencjonowanie: `docs/09-licencje-propozycja.md`.
 
 ## Etap 6 – publikacja (1.0.0)
 
 - ✅ (0.78.0) Zmiana nazwy na UplinkView w panelu, dokumentacji, instalatorze, repozytorium (`uplinkview/uplinkview`) i aplikacji Android; istniejące instalacje aktualizują się dalej (stary katalog i polecenie `netpulse` działają). Nazwy wewnętrzne (pakiet, zmienne, wolumeny) bez zmiany – lista w `CLAUDE.md`.
-- ✅ (0.79.0) Plik LICENSE (AGPL-3.0), link do kodu źródłowego w panelu, `CONTRIBUTING.md`.
+- ✅ (0.79.0) `CONTRIBUTING.md`.
 - ✅ (0.79.1) README po angielsku (`README.md`) i po polsku (`README.pl.md`) ze zrzutami (`docs/img/`, skrypt `frontend/dev/screenshots.mjs`).
 - Dokumentacja instalacji po angielsku.
 - Publiczne demo tylko do odczytu, oparte na atrapie `frontend/dev/mock-api.mjs`.
@@ -159,12 +155,12 @@ Kolejność do korekty według próśb użytkowników:
 
 ## Etap 9 – chmura producenta (2.0)
 
-Pełny projekt: `docs/39-chmura-propozycja.md` (łącznik wychodzący, panel w chmurze, push, licencje i płatności,
+Pełny projekt: `docs/39-chmura-propozycja.md` (łącznik wychodzący, panel w chmurze, push, płatności,
 etapy C0–C6). C0 warto zrobić przy okazji etapów 4 i 7; C1–C3 można zbudować wcześniej na własny użytek.
 
 ## Czego potrzeba od użytkownika
 
 - **Teraz:** zgoda na start etapu 1.
-- **Do końca etapu 5:** nazwa i licencja ✅ (13.11.2026).
+- **Do końca etapu 5:** nazwa ✅ (13.11.2026).
 - **Po każdym etapie:** `uplinkview update` na serwerze i informacja, czy działa.
 - **Przed etapem 9:** odpowiedzi na pytania otwarte z `docs/39`.

@@ -1,8 +1,8 @@
 # Chmura producenta – propozycja architektury (etap 9)
 
 **Status: tylko propozycja (12.11.2026). Nic z tego nie jest wdrożone. Nie wdrażać bez decyzji użytkownika.**
-Dokument daje pełny obraz etapu 9 z planu działania: łącznik wychodzący, panel w chmurze, powiadomienia push,
-licencje i płatności. Łączy się z `docs/09-licencje-propozycja.md` (licencje) i `docs/38-aplikacja-android.md`.
+Dokument daje pełny obraz etapu 9 z planu działania: łącznik wychodzący, panel w chmurze, powiadomienia push
+i płatności. Łączy się z `docs/38-aplikacja-android.md`.
 Nazwa „UplinkView” jest tu robocza – domeny i nazwy usług powstaną po wyborze nazwy produktu.
 
 ## Cel w jednym zdaniu
@@ -62,7 +62,7 @@ Kod: `backend/netpulse/cloud/` (ten sam obraz co API i kolektor, polecenie `netp
 ### Parowanie (bez przepisywania długich kluczy)
 
 1. Ustawienia → Chmura → „Połącz z kontem”. Instalacja tworzy parę kluczy Ed25519 (prywatny zostaje w wolumenie
-   `netpulse_keys`) i identyfikator instalacji (ten sam `install_id`, którego chce `docs/09`).
+   `netpulse_keys`) i identyfikator instalacji.
 2. Panel pokazuje krótki kod (np. `KRZT-4821`, ważny 10 min) i kod QR.
 3. Użytkownik wpisuje kod w panelu chmury (albo skanuje QR telefonem), wybiera nazwę sieci i organizację.
 4. Chmura zapisuje klucz publiczny instalacji. Od tej chwili łącznik loguje się podpisem (wyzwanie–odpowiedź);
@@ -81,7 +81,6 @@ Jedno połączenie WSS, w nim ramki z numerem strumienia:
 | `req` / `res` / `body` | chmura → instalacja → chmura | żądanie HTTP panelu przekazane do lokalnego API, odpowiedź strumieniem |
 | `ws_open` / `ws_msg` / `ws_close` | obie | „Na żywo” (`/api/live/device`) przez tunel |
 | `ping` / `pong` | obie | podtrzymanie; brak odpowiedzi 90 s = rozłączone |
-| `license` | chmura → instalacja | podpisany token licencji (część D) |
 
 Ponowne łączenie z rosnącym odstępem i losowym rozrzutem (5 s → 5 min), żeby po awarii chmury wszystkie
 instalacje nie wróciły w tej samej sekundzie.
@@ -153,7 +152,7 @@ Ten sam stack co UplinkView, żeby nie utrzymywać dwóch technologii:
 | Usługa | Rola | Uwagi |
 |--------|------|-------|
 | `gateway` | trzyma połączenia łączników, przekazuje żądania | asyncio; stan połączeń w Redis, żeby dało się uruchomić kilka kopii |
-| `cloud-api` | konta, organizacje, instalacje, push, licencje, płatności | FastAPI + PostgreSQL |
+| `cloud-api` | konta, organizacje, instalacje, push, płatności | FastAPI + PostgreSQL |
 | `cloud-web` | panel chmury i paczki panelu UplinkView | React, wspólne komponenty z `frontend/` |
 | `postgres`, `redis` | dane kont i kolejki | bez TimescaleDB – chmura nie trzyma metryk |
 
@@ -171,7 +170,7 @@ przez tunel (wykresy, „Na żywo”). Ile instalacji udźwignie jeden serwer �
 | `snapshots` | ostatni skrót stanu każdej instalacji (jeden wiersz, nadpisywany) |
 | `cloud_alerts` | alerty z ramek `event`, 90 dni – do listy w aplikacji i historii push |
 | `push_devices` | telefon, platforma, token FCM/APNs, ustawienia powiadomień |
-| `subscriptions`, `license_tokens` | plan, stan płatności u dostawcy, wystawione tokeny |
+| `subscriptions` | plan, stan płatności u dostawcy |
 | `audit` | logowania, parowania, zmiany ról, otwarcia panelu przez tunel |
 
 ## Część C – powiadomienia push
@@ -203,26 +202,11 @@ Alert otwarty, alert zakończony (opcjonalnie), instalacja nie łączy się z ch
 zapasowe, dostępna aktualizacja UplinkView (opcjonalnie). Ustawienia na telefon i na sieć: wagi alertów, ciche
 godziny telefonu.
 
-## Część D – licencje i płatności
-
-**Decyzja 13.11.2026 (`docs/09`):** instalacja jest w całości darmowa (AGPL-3.0), płatna jest tylko chmura –
-token licencji w instalacji nie jest potrzebny, plan i limity sprawdza chmura u siebie. Poniższy opis tokenu zostaje
-na wypadek zmiany decyzji.
-
-Mechanizm z `docs/09` zostaje (podpisany token, weryfikacja offline, karencja, zasada „licencja nigdy nie wyłącza
-zbierania danych”), ale chmura upraszcza go dla większości użytkowników:
-
-- **Konto chmury jest posiadaczem licencji.** Sparowana instalacja dostaje token ramką `license` – bez
-  wpisywania klucza. Token odświeża się tym samym połączeniem.
-- **Klucz wpisywany ręcznie i plik licencji offline** zostają dla instalacji bez chmury (firmy z siecią
-  odciętą od internetu).
-- Limity planu chmury (liczba sieci, członków, telefonów) egzekwuje chmura u siebie. W instalacji `licensing.py`
-  sprawdza tylko funkcje lokalne, jeśli jakiekolwiek będą płatne.
+## Część D – płatności
 
 ### Naturalna granica płatności
 
-Chmura kosztuje producenta co miesiąc (serwery, push, ruch), instalacja lokalna – nic. Stąd propozycja spójna
-z modelem B z `docs/09`:
+Chmura kosztuje producenta co miesiąc (serwery, push, ruch), instalacja lokalna – nic. Stąd propozycja:
 
 | Poziom | Dla kogo | Co zawiera |
 |--------|----------|-----------|
@@ -234,7 +218,7 @@ Ceny, okres próbny i to, czy cokolwiek lokalnego ma być płatne – to decyzje
 
 ### Płatności
 
-Rekomendacja jak w `docs/09`: dostawca działający jako sprzedawca (Paddle, Lemon Squeezy) – bierze na siebie VAT
+Rekomendacja: dostawca działający jako sprzedawca (Paddle, Lemon Squeezy) – bierze na siebie VAT
 w UE, faktury i zwroty. Chmura dostaje od niego zdarzenia (webhook: opłacono, anulowano, nieudana płatność)
 i zmienia plan organizacji. Dane kart nigdy nie przechodzą przez serwery producenta. Nieudana płatność →
 karencja → powrót do planu darmowego; zdalny dostęp i push przestają działać, instalacja lokalna działa dalej.
@@ -270,7 +254,7 @@ Przed startem płatnej usługi: zewnętrzny test bezpieczeństwa bramy i łączn
 | **C2 – skrót stanu i „Moje sieci”** | konta, organizacje, lista sieci, alarm „instalacja zamilkła”, pomiar obciążenia | dwie instalacje (dom + maszyna testowa) na jednym koncie |
 | **C3 – pełny panel przez tunel** | subdomeny, paczki panelu wg wersji, „Na żywo” przez tunel, role i blokady | przejście całego panelu poza siecią domową |
 | **C4 – push i aplikacja** | kanał „Aplikacja mobilna”, FCM, logowanie kontem chmury w aplikacji Android | alert testowy na telefonie na danych komórkowych |
-| **C5 – licencje i płatności** | L1–L3 z `docs/09`, token przez łącznik, plany, dostawca płatności | zakup w trybie testowym dostawcy |
+| **C5 – płatności** | plany, dostawca płatności | zakup w trybie testowym dostawcy |
 | **C6 – start usługi** | regulamin, polityka prywatności, test bezpieczeństwa, strona stanu, zamknięte testy z kilkoma użytkownikami | – |
 
 C0 jest tanie i warto je zrobić przy okazji wcześniejszych etapów planu. C1–C3 można zbudować i używać

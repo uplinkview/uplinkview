@@ -11,13 +11,6 @@ describe("kreator pierwszego konta", () => {
     expect(screen.getByLabelText("Powtórz hasło")).toBeInTheDocument();
   });
 
-  it("linkuje do kodu źródłowego (AGPL-3.0)", async () => {
-    mockApi({ setupRequired: true, authenticated: false });
-    renderApp();
-    const link = await screen.findByRole("link", { name: "AGPL-3.0 · Kod źródłowy" });
-    expect(link).toHaveAttribute("href", "https://github.com/uplinkview/uplinkview");
-  });
-
   it("nie wysyła formularza, gdy hasła się różnią albo są za krótkie", async () => {
     const user = userEvent.setup();
     const { calls } = mockApi({ setupRequired: true, authenticated: false });

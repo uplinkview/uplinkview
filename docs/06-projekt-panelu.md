@@ -299,7 +299,7 @@ Ostatni punkt etapu 3:
 | 5f   | Tryb „Na żywo”: WebSocket, ruch WAN co 1–2 s, wykres w czasie rzeczywistym (kolejność względem 5d/5e do ustalenia) |
 
 Przed pierwszym wydaniem publicznym dodatkowo: migracje bazy (Alembic), prefiks `/api/v1`,
-obrazy w GHCR, licencja i README dla obcych użytkowników.
+obrazy w GHCR i README dla obcych użytkowników.
 
 ## Pomysły na później (backlog)
 
@@ -315,7 +315,6 @@ gdy ktoś zapyta „co jeszcze chcieliśmy zrobić”.
 | Stan serwera UplinkView | Parametry maszyny, na której działa aplikacja: CPU, RAM i swap, obciążenie, dyski (zajętość, miejsce pod bazę), czas pracy, temperatura, rozmiar bazy, stan usług UplinkView. Z historią na wykresach. | Dashboard (karta „Serwer”), Ustawienia → System | 2026-10-25 |
 | Kreator dashboardów: prywatny i publiczny ✅ wdrożone (0.23.0, opis: `docs/20-szczegoly-i-pulpity.md`) | Kreator tworzenia własnych dashboardów (nazwa lub szablon, wybór i układ widgetów, widoczność). **Prywatny** widzi tylko administrator po zalogowaniu, **publiczny** otwiera się pod osobnym adresem bez logowania (tylko do odczytu, np. wyświetlacz ścienny, podgląd dla domowników). | Dashboard (lista i przełącznik dashboardów), Ustawienia → Dashboardy, publiczna strona poza powłoką aplikacji | 2026-10-25 |
 | Powiadomienie o aktualizacji w pasku górnym ✅ wdrożone (2026-10-25) | Po automatycznym, cyklicznym sprawdzeniu wydań (bez klikania „Sprawdź”) pasek górny pokazuje wyraźną informację, że jest nowa wersja (np. plakietka „Dostępna aktualizacja 0.7.0” z linkiem do Ustawienia → Aktualizacje), żeby użytkownik nie przegapił, gdy zapomni zajrzeć. Wymaga cyklicznego sprawdzania po stronie API (np. co kilka godzin) i zapamiętania wyniku; można dać „odłóż/ukryj tę wersję”. W Ustawienia → Aktualizacje przełącznik **„Automatycznie sprawdzaj aktualizacje”** (domyślnie włączony; po wyłączeniu nic nie jest odpytywane i pasek nie pokazuje plakietki, zostaje ręczne „Sprawdź”) oraz wybór częstotliwości sprawdzania; ustawienie na poziomie instalacji, nie konta, bo sprawdza API. Po wprowadzeniu alertów (etap 8) ta sama informacja trafi też do dzwonka. | Pasek górny, Ustawienia → Aktualizacje | 2026-10-25 |
-| Licencje z zewnętrznego serwisu (propozycja, niewdrażane) | Klucz licencji wpisywany w panelu, instalacja pobiera z serwisu podpisany token (plan, funkcje, limity), weryfikuje go offline i odświeża co dobę. Brak internetu i wygaśnięcie nigdy nie wyłączają zbierania danych; degradują tylko funkcje dodatkowe. Szczegóły, etapy L1–L4 i pytania otwarte: `docs/09-licencje-propozycja.md`. | Ustawienia → Licencja, oznaczenia przy funkcjach płatnych | 2026-10-25 |
 
 ### Propozycje z przeglądu projektu (2026-10-25)
 

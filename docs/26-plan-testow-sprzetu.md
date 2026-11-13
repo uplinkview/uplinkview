@@ -133,5 +133,5 @@ nowym fixture. Użytkownik widzi przed instalacją, czego się spodziewać.
 ## Pytania otwarte
 
 - Czy wspieramy Raspberry Pi / ARM jako serwer UplinkView – jeśli tak, potrzebny runner ARM w CI.
-- Czy przyjmować zrzuty publicznie (GitHub) przed decyzją o licencji (`docs/09-licencje-propozycja.md`) –
+- Czy przyjmować zrzuty publicznie (GitHub) –
   zrzut to dane, nie kod, ale warto mieć zgodę na użycie w repo.

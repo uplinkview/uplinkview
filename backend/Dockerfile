@@ -38,8 +38,6 @@ RUN pip install --no-deps --no-build-isolation . \
 
 # Zbudowany panel – serwuje go API (NETPULSE_WEB_DIR)
 COPY --from=web /web/dist /app/web
-# Licencja AGPL-3.0 w obrazie (udostępniany program ma mieć jej tekst)
-COPY LICENSE /app/LICENSE
 ENV NETPULSE_WEB_DIR=/app/web
 
 USER netpulse

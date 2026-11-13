@@ -3,7 +3,7 @@
 **Self-hosted network monitoring for your homelab.** One dashboard for the traffic and port status of your router,
 switches and access points – plus WiFi clients, a network map, dual WAN, Linux servers, Proxmox VE and alerts.
 
-[Polski](README.pl.md) · [License: AGPL-3.0](LICENSE) · [Contributing](CONTRIBUTING.md)
+[Polski](README.pl.md) · [Contributing](CONTRIBUTING.md)
 
 ![UplinkView dashboard](docs/img/dashboard-light.png)
 
@@ -106,11 +106,6 @@ docs/           # documentation (in Polish for now)
 - Optional paid cloud: access from outside your network and push notifications, with your history staying on your server.
 - RouterOS and Omada controller APIs, Synology NAS – once there is real hardware to test on.
 
-## License
+## Contributing
 
-UplinkView is free software under the [GNU AGPL-3.0](LICENSE). You can use it (also at work), change it and share it
-at no cost. If you offer a modified version to others – including as a network service – you have to publish its source
-code under the same license. Everything you install yourself is free with no limits; only the optional cloud will be paid.
-
-Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md). For a commercial license without the AGPL obligations, open an
-issue on GitHub.
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md).

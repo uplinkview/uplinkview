@@ -1,7 +1,6 @@
 /** Teksty interfejsu (polski). Kolejne języki = kolejne pliki o tych samych kluczach. */
 export const pl = {
   "app.name": "UplinkView",
-  "source.link": "{license} · Kod źródłowy",
   "app.loading": "Ładowanie…",
 
   "common.retry": "Spróbuj ponownie",

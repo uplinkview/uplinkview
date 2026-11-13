@@ -34,7 +34,7 @@ dodania własnego OID-u. Obecne drivery zostają, dochodzą trzy warstwy opisane
 | MikroTik (MIKROTIK-MIB) | czujniki, zdrowie, kolejki, PPPoE | strona MikroTika albo eksport z RouterOS |
 | TP-Link Omada | zależnie od modelu | strona wsparcia modelu |
 | Prometheus `snmp_exporter` (`generator.yml`, `snmp.yml`) | gotowe zestawy OID-ów z typami | **Apache 2.0** – można się wzorować |
-| LibreNMS (`mibs/`, definicje YAML) | ogromny zbiór MIB-ów i definicji urządzeń | definicje na **GPLv3** – nie kopiować do czasu decyzji z `docs/09-licencje-propozycja.md` |
+| LibreNMS (`mibs/`, definicje YAML) | ogromny zbiór MIB-ów i definicji urządzeń | definicje na **GPLv3** – nie kopiować |
 | oidref.com, mibs.observium.org | szybkie sprawdzenie, co znaczy OID | tylko do podglądu |
 
 **Najważniejsze źródło to `snmpwalk` z prawdziwego urządzenia.** MIB mówi, co *może* istnieć; urządzenie
@@ -114,7 +114,7 @@ Wersja: minor na każdy przenoszony driver. Najmniej pilne.
 
 - **Nie zastępować driverów surowymi OID-ami** – stracilibyśmy alerty, WAN, topologię i szablony.
 - **Nie odczytywać całego drzewa SNMP co 30 s** – obciąża urządzenia (zwłaszcza AP i małe switche) i bazę.
-- **Nie kopiować definicji z LibreNMS** do czasu decyzji o licencji.
+- **Nie kopiować definicji z LibreNMS** (GPLv3).
 
 ## Kolejność (gdy zapadnie decyzja)
 

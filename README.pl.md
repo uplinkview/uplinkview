@@ -3,7 +3,7 @@
 **Monitoring sieci w homelabie, instalowany u siebie.** Jeden panel z ruchem i stanem portów routera, switchy
 i access pointów, a do tego klienci WiFi, mapa sieci, dual WAN, serwery Linux, Proxmox VE i alerty.
 
-[English](README.md) · [Licencja: AGPL-3.0](LICENSE) · [Współtworzenie](CONTRIBUTING.md)
+[English](README.md) · [Współtworzenie](CONTRIBUTING.md)
 
 ![Pulpit UplinkView](docs/img/dashboard-light.png)
 
@@ -108,12 +108,6 @@ docs/           # dokumentacja
 
 Pełny plan: [`docs/40-plan-dzialania.md`](docs/40-plan-dzialania.md).
 
-## Licencja
+## Współtworzenie
 
-UplinkView jest wolnym oprogramowaniem na licencji [GNU AGPL-3.0](LICENSE). Możesz go używać (także w firmie),
-zmieniać i rozpowszechniać bez opłat. Jeśli udostępniasz zmienioną wersję innym – również jako usługę przez sieć –
-musisz udostępnić jej kod źródłowy na tej samej licencji. Wszystko, co instalujesz u siebie, jest darmowe i bez limitów;
-płatna będzie tylko opcjonalna chmura.
-
-Chcesz pomóc? Zobacz [`CONTRIBUTING.md`](CONTRIBUTING.md). Licencja komercyjna (bez obowiązków AGPL) – napisz w zgłoszeniu
-na GitHubie.
+Chcesz pomóc? Zobacz [`CONTRIBUTING.md`](CONTRIBUTING.md).

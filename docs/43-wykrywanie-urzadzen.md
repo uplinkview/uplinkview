@@ -88,5 +88,5 @@ przechodzi), `test_discovery_db.py` (API), `Discovery.test.tsx`.
 - Skan z kontenera API działa (sieć `bridge`, NAT hosta) – **sprawdzone 13.11.2026 po aktualizacji do 0.73.0**: serwer domowy
   5,5 s, VPS (przez tunel WireGuard) 4,3 s, na obu UCG-Ultra, USW i U6+; raporty z kontenera 724 / 411 / 1234 wartości, bez adresów
   192.168.* i nazw urządzeń (U6+ zostaje – to model z `sysDescr`).
-- Sposób B (wysyłka przyciskiem do serwera projektu) – razem z chmurą i po decyzji o licencji (`docs/24`).
+- Sposób B (wysyłka przyciskiem do serwera projektu) – razem z chmurą (`docs/24`).
 - Zapamiętanie „raport przygotowany / wysłany” i „nie pokazuj więcej” – gdy będą pierwsze zgłoszenia.
