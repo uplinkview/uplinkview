@@ -6,6 +6,7 @@ import { KIND_LABEL, deviceIcon } from "../../../components/widgets/DevicesWidge
 import { t, locale } from "../../../i18n";
 import { ApiError, get, post, type Device } from "../../../lib/api";
 import { createFromFound, preselected, sortFound, type FoundDevice, type ScanPayload, type ScanResult } from "../../../lib/discovery";
+import { vendorModel } from "../../../lib/format";
 import { SnmpCredentialFields } from "./DeviceForm";
 import { SNMP_VERSIONS, buildTarget, emptyForm, validate, type DeviceFormValues, type FormErrors } from "./deviceFormLogic";
 
@@ -167,7 +168,7 @@ export function DiscoveryPanel({ onAdded }: { onAdded?: (devices: Device[]) => v
                         />
                       )}
                       <p className="mt-0.5 truncate text-xs text-text-2">
-                        {[f.host, [f.vendor, f.model].filter(Boolean).join(" "), t(KIND_LABEL[f.kind] ?? "dash.kind.other"), f.firmware].filter(Boolean).join(" · ")}
+                        {[f.host, vendorModel(f.vendor, f.model), t(KIND_LABEL[f.kind] ?? "dash.kind.other"), f.firmware].filter(Boolean).join(" · ")}
                       </p>
                       {row?.state === "error" && <p className="mt-0.5 text-xs text-danger">{row.error}</p>}
                     </div>

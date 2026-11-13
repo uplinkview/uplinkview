@@ -1,7 +1,7 @@
 import { IconCircleCheck } from "@tabler/icons-react";
 import { t, type TextKey } from "../../../i18n";
 import type { ProbeResult } from "../../../lib/api";
-import { formatUptime } from "../../../lib/format";
+import { formatUptime, vendorModel } from "../../../lib/format";
 
 const KIND_LABEL: Record<string, TextKey> = {
   gateway: "dash.kind.gateway",
@@ -12,7 +12,7 @@ const KIND_LABEL: Record<string, TextKey> = {
 
 /** Wynik udanego testu SNMP: co wykryto (typ, model, sterownik) i ile jest portów i sieci WiFi. */
 export function ProbeSummary({ result }: { result: ProbeResult }) {
-  const model = [result.vendor, result.model].filter(Boolean).join(" ") || result.name || "-";
+  const model = vendorModel(result.vendor, result.model) || result.name || "-";
   const kind = t(KIND_LABEL[result.kind] ?? "dash.kind.other").toLowerCase();
   const ports = result.interfaces.filter((i) => !i.hidden).length;
   const wifi = result.wifi.filter((w) => !w.hidden).length;

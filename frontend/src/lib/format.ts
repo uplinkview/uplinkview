@@ -16,6 +16,18 @@ export function relativeTime(iso: string | null, now: number = Date.now()): stri
   return rtf.format(Math.round(diffS / 86400), "day");
 }
 
+/** Producent i model w jednym tekście bez powtórzeń: „OPNsense” zamiast „OPNsense OPNsense”, „Linux 6.8” zamiast „Linux Linux 6.8”. */
+export function vendorModel(vendor: string | null | undefined, model: string | null | undefined): string {
+  const v = vendor?.trim() ?? "";
+  const m = model?.trim() ?? "";
+  if (!v || v === "Generic") return m;
+  if (!m) return v;
+  const lower = m.toLowerCase();
+  const prefix = v.toLowerCase();
+  if (lower === prefix || lower.startsWith(prefix + " ")) return m;
+  return `${v} ${m}`;
+}
+
 export function formatDateTime(iso: string | null): string {
   if (!iso) return "-";
   return dateFormat({ dateStyle: "medium", timeStyle: "medium" }).format(new Date(iso));

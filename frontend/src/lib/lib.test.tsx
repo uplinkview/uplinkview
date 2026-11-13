@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { ApiError, messageFromDetail, request } from "./api";
 import { toChartRows } from "../components/charts/chartData";
-import { formatBps, formatRange, formatUptime, initials, relativeTime } from "./format";
+import { formatBps, formatRange, formatUptime, initials, relativeTime, vendorModel } from "./format";
 import { ThemeProvider, readPref, resolveTheme, useTheme } from "./theme";
 
 describe("api", () => {
@@ -41,6 +41,17 @@ describe("api", () => {
 });
 
 describe("format", () => {
+  it("łączy producenta i model bez powtórzeń", () => {
+    expect(vendorModel("OPNsense", "OPNsense")).toBe("OPNsense");
+    expect(vendorModel("Linux", "Linux 6.8.0-45-generic")).toBe("Linux 6.8.0-45-generic");
+    expect(vendorModel("Ubiquiti", "UCG-Ultra")).toBe("Ubiquiti UCG-Ultra");
+    expect(vendorModel("MikroTik", "MikroTikRB")).toBe("MikroTik MikroTikRB"); // tylko całe słowo
+    expect(vendorModel("Generic", "Printer")).toBe("Printer");
+    expect(vendorModel(null, "U6+")).toBe("U6+");
+    expect(vendorModel("TP-Link", null)).toBe("TP-Link");
+    expect(vendorModel(null, undefined)).toBe("");
+  });
+
   const now = new Date("2026-10-24T20:00:00Z").getTime();
 
   it("relativeTime", () => {

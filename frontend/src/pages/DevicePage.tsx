@@ -13,7 +13,7 @@ import { VerificationBadge } from "../components/Verification";
 import { t, type TextKey } from "../i18n";
 import { ApiError, type Device } from "../lib/api";
 import { formatSpeed, useDevice, useInterfaces, useSensors, useWifiNetworks, type InterfaceItem, type SensorsData } from "../lib/details";
-import { formatBps, formatDateTime, formatUptime, metricFormatter, relativeTime } from "../lib/format";
+import { formatBps, formatDateTime, formatUptime, metricFormatter, relativeTime, vendorModel } from "../lib/format";
 import { liveValue, useLiveDeviceSample } from "../lib/liveHub";
 import { METRICS, newChartConfig, unitClassOf, type ChartConfig } from "../lib/layout";
 import { isOn, useModules } from "../lib/modules";
@@ -46,7 +46,7 @@ function InfoCard({ device }: { device: Device }) {
   const rows: [string, string][] = [
     [t("device.info.host"), `${device.host}${device.port !== 161 ? `:${device.port}` : ""}`],
     [t("device.info.kind"), t(KIND_LABEL[device.kind] ?? "dash.kind.other")],
-    [t("device.info.model"), [device.vendor, device.model].filter(Boolean).join(" ") || "–"],
+    [t("device.info.model"), vendorModel(device.vendor, device.model) || "–"],
     [t("device.info.firmware"), device.firmware ?? "–"],
     [t("device.info.uptime"), formatUptime(device.uptime_s)],
     [t("device.info.driver"), device.detected_driver ?? device.driver],

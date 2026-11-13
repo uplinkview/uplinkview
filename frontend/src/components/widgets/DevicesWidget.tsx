@@ -5,7 +5,7 @@ import type { Device } from "../../lib/api";
 import { useDevicesAvailability } from "../../lib/details";
 import { useDetailLinks } from "../../lib/publicMode";
 import { formatAvailability } from "../../lib/wan";
-import { formatUptime, relativeTime } from "../../lib/format";
+import { formatUptime, relativeTime, vendorModel } from "../../lib/format";
 import type { DeviceKind, DevicesDisplay } from "../../lib/layout";
 import { useCollection } from "../../lib/panels";
 import { useDevices } from "../../lib/queries";
@@ -95,7 +95,7 @@ function DeviceCard({ device, availability }: { device: Device; availability: nu
       <dl className="flex justify-between gap-3 text-xs text-text-2">
         <div className="min-w-0">
           <dt className="sr-only">Model</dt>
-          <dd className="truncate">{[device.vendor, device.model].filter(Boolean).join(" ") || "-"}</dd>
+          <dd className="truncate">{vendorModel(device.vendor, device.model) || "-"}</dd>
         </div>
         <div className="shrink-0 text-right">
           <dt className="sr-only">{t("dash.polled")}</dt>
