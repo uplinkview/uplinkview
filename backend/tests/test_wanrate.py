@@ -16,34 +16,42 @@ from netpulse.wanrate import SlotTracker, WanPort, WanSampler
 MBPS = 1_000_000 / 8  # bajtów na sekundę przy 1 Mb/s
 
 
-def feed(tracker: SlotTracker, key, rates_mbps: list[float], start: float = 1000.0, step: float = 1.0) -> list:
-    """Licznik odświeżany co `step` s; `rates_mbps[i]` to prędkość w i-tym odcinku. Zwraca gotowe przedziały."""
-    octets = 0
-    tracker.add(key, start, octets)
+def feed(tracker: SlotTracker, key, rates_mbps: list[float], start: float = 1000.0, step: float = 1.0, read: float = 0.25) -> list:
+    """Licznik odświeżany co `step` s (0,1 s po pełnej sekundzie), odczyt co `read` s; `rates_mbps[i]` to prędkość
+    w i-tym odcinku. Zwraca gotowe przedziały."""
+    edges = [start + 0.1 + i * step for i in range(len(rates_mbps) + 1)]
+    totals = [0]
+    for rate in rates_mbps:
+        totals.append(totals[-1] + int(rate * MBPS * step))
     out = []
-    for i, rate in enumerate(rates_mbps, start=1):
-        octets += int(rate * MBPS * step)
-        tracker.add(key, start + i * step, octets)
+    ts = start
+    while ts <= edges[-1] + read:
+        n = sum(1 for e in edges if e <= ts)
+        tracker.add(key, ts, totals[min(n, len(totals)) - 1] if n else 0)
         out += tracker.ready(key)
+        ts += read
     return out
 
 
 def mbps(slots) -> list[float | None]:
-    return [None if v is None else round(v / 1e6, 1) for _, v in slots]
+    return [None if v is None else round(v / 1e6) for _, v in slots]
 
 
 def test_download_shows_real_speed_and_duration():
-    """Pobieranie 800 Mb/s przez 20 s między ruchem 1 Mb/s: cztery przedziały po 800 Mb/s, reszta 1 Mb/s – nie średnia."""
+    """Pobieranie 800 Mb/s przez 20 s między ruchem 1 Mb/s: cztery przedziały ok. 800 Mb/s, reszta ok. 1 Mb/s – nie średnia."""
     slots = feed(SlotTracker(), "wan", [1.0] * 10 + [800.0] * 20 + [1.0] * 10)
-    assert [s for s, _ in slots] == list(range(1000, 1040, 5))
-    assert mbps(slots) == [1.0, 1.0, 800.0, 800.0, 800.0, 800.0, 1.0, 1.0]
+    assert [s for s, _ in slots][:8] == list(range(1000, 1040, 5))
+    values = mbps(slots)[:8]
+    assert values[0] <= 2 and values[1] <= 20
+    assert all(760 <= v <= 840 for v in values[2:6])  # 20 s pobierania – prędkość i czas trwania
+    assert values[6] <= 40 and values[7] <= 2
 
 
 def test_bytes_are_conserved_with_slow_counter_refresh():
     """Licznik odświeżany co 3 s: bajty dzielą się na przedziały według czasu, suma się zgadza (bez „0, potem podwójnie”)."""
     slots = feed(SlotTracker(), "wan", [100.0] * 10, step=3.0)
-    assert all(v is not None and abs(v / 1e6 - 100) < 0.5 for _, v in slots)
-    assert len(slots) == 6  # 30 s znane do ostatniej zmiany licznika (1030 s): 1000–1025
+    inner = [v for _, v in slots[1:-1]]
+    assert len(inner) >= 3 and all(v is not None and 80 < v / 1e6 < 120 for v in inner)
 
 
 def test_slot_not_aligned_with_counter_is_known_only_when_covered():
@@ -64,8 +72,10 @@ def test_gap_reset_and_impossible_speed_leave_slots_empty():
     tracker.add("wan", 1105.0, 10)  # reset licznika
     tracker.add("wan", 1110.0, 10 + int(5 * 5000 * MBPS), max_bps=1.1e9)  # 5 Gb/s na porcie 1 Gb/s
     assert all(v is None for _, v in tracker.ready("wan"))
-    tracker.add("wan", 1115.0, 10 + int(5 * 5000 * MBPS) + int(5 * 50 * MBPS))
-    assert mbps(tracker.ready("wan"))[-1] == 50.0
+    base = 10 + int(5 * 5000 * MBPS)
+    for k in range(1, 61):  # potem zwykły ruch 50 Mb/s, odczyt co 0,25 s
+        tracker.add("wan", 1110.0 + k * 0.25, base + int(k * 0.25 * 50 * MBPS))
+    assert mbps(tracker.ready("wan"))[-1] == 50
 
 
 def test_full_speed_with_counter_refreshed_every_second_keeps_all_bytes():
@@ -158,3 +168,10 @@ def test_one_line_from_fine_rates_with_average_where_missing():
     assert merged[2].values["out_bps"] == 2e6  # brak pomiaru wysyłania – średnia
     assert merged[1].values["in_errors"] is None
     assert merge_fine(points, {}) == points
+
+
+def test_constant_full_speed_gives_flat_line():
+    """Stałe 850 Mb/s, licznik co 1 s, odczyt co 0,25 s: przedziały blisko 850 (pobieranie 75 GB pokazywało do 984 przy 0,5 s)."""
+    slots = feed(SlotTracker(), "wan", [850.0] * 120)
+    values = [v for v in mbps(slots)[1:-1] if v is not None]
+    assert len(values) >= 20 and all(800 <= v <= 900 for v in values)

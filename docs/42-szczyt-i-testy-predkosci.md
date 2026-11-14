@@ -70,7 +70,7 @@ prawdziwy ruch**: pobieranie gry 100 GB albo krótki test prędkości ma być wi
 
 Od 0.85.0:
 
-- **Próbnik** `netpulse/wanrate.py` (pętla w kolektorze, `NETPULSE_WAN_SAMPLE_INTERVAL`, domyślnie 0,5 s, 0 = wyłączony)
+- **Próbnik** `netpulse/wanrate.py` (pętla w kolektorze, `NETPULSE_WAN_SAMPLE_INTERVAL`, domyślnie 0,25 s od 0.85.2, wcześniej 0,5 s; 0 = wyłączony)
   czyta same liczniki portów WAN (jedno małe zapytanie SNMP na router, limit czasu 0,8 s, milczący router pomijany 30 s).
 - **Przedziały 5 s równo z zegarem** (`SlotTracker`): przyrost licznika między dwiema jego *zmianami* dzielony na przedziały
   proporcjonalnie do czasu – suma bajtów się zgadza przy każdym tempie odświeżania licznika (UCG Ultra ok. 1 s). Przedział
@@ -115,3 +115,11 @@ liczników zmierzone na UCG Ultra (ok. 1 s). **Porównanie z UCG Ultra (VPS, 14.
 (27,1 / 27,3 MB, 16,1 / 16,2 MB, 9,5 / 9,0 MB); w kubełku z testem prędkości 600 zamiast 1645 MB – przedziały odrzucone przez
 limit portu (poprawione w 0.85.1, `JITTER_S`). Średnia z 30 s w tym kubełku: 1643,8 / 1645,4 MB. Najwyższa prędkość UniFi
 (`maxRxRateBps`, bajty/s) to wartość ~1-sekundowa, UplinkView – 5-sekundowa, więc przy krótkich skokach jest niższa.
+
+**Pobieranie 75,7 GB (VPS, 14.11.2026, 0.85.1, 17:05–17:20):** pobrane UCG 72 237 MB, UplinkView z przedziałów 5 s 72 286 MB
+(+0,1 %), ze średniej 30 s −0,1 %, wysłane +0,1 %. Linia trzymała się ok. 840 Mb/s przez cały czas pobierania, ale pojedyncze
+przedziały pokazywały do 984 Mb/s (UniFi: najwyżej 848). Przyczyna: przy odczycie co 0,5 s chwila zmiany licznika była znana
+z dokładnością do 0,5 s, więc część bajtów trafiała do sąsiedniego przedziału (symulacja: ±8 % przy stałych 850 Mb/s).
+Od 0.85.2 chwila zmiany = środek między odczytami (`MAX_READ_GAP_S`), odczyt co 0,25 s (±4 %). Widget „Na żywo” (odczyt co
+1,5 s) zgadza się z licznikami jądra bramy (`/sys/class/net/eth4/statistics`) z opóźnieniem ok. 0,5 s, średnio 15,8 / 14,9 Mb/s
+w 45 s – skala bez kalibracji; pojedyncze odczyty skaczą przy ruchu w porywach, bo licznik bramy zmienia się co ok. 1 s.

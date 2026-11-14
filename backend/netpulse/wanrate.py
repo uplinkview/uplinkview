@@ -58,9 +58,16 @@ def make_client(target) -> SnmpClient:
     return PySnmpClient(target.host, target.credentials, port=target.port, timeout=READ_TIMEOUT_S, retries=0)
 
 
+# Licznik zmienił się gdzieś między poprzednim a bieżącym odczytem: za chwilę zmiany bierzemy środek tego odcinka
+# (najwyżej `MAX_READ_GAP_S` wstecz – po pominiętych odczytach nie wiemy więcej). Chwila samego odczytu przesuwała bajty
+# do następnego przedziału: przy pobieraniu 850 Mb/s pojedyncze przedziały pokazywały do 984 Mb/s (VPS, 14.11.2026, 0.85.1).
+MAX_READ_GAP_S = 1.0
+
+
 @dataclass
 class _Counter:
-    last: tuple[float, int] | None = None  # (czas zauważenia ostatniej zmiany, wartość licznika)
+    last: tuple[float, int] | None = None  # (szacowana chwila ostatniej zmiany, wartość licznika)
+    read_at: float | None = None  # chwila poprzedniego odczytu (z tą samą albo inną wartością)
     slots: dict[int, list[float]] = field(default_factory=dict)  # początek przedziału → [bajty, pokryte sekundy]
 
 
@@ -76,8 +83,11 @@ class SlotTracker:
         if octets is None:
             return
         c = self._counters.setdefault(key, _Counter())
+        read_at, c.read_at = c.read_at, ts
         if c.last is not None and octets == c.last[1]:
             return  # licznik jeszcze się nie odświeżył
+        if read_at is not None and read_at < ts:
+            ts = ts - min(ts - read_at, MAX_READ_GAP_S) / 2
         prev, c.last = c.last, (ts, octets)
         if prev is None or ts <= prev[0] or ts - prev[0] > self.max_gap_s:
             return

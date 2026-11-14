@@ -165,7 +165,7 @@ prędkości bramy UniFi z kontrolera (`speedtest-status` → `unifi.parse_speedt
 `speedtest_down_bps|up_bps|ping_ms`, źródło wykresu `speedtest`, szablon „Testy prędkości bramy”) – zgodność 1:1 z bramą;
 (2) osobne serie szczytu (0.70.0–0.83.0) usunięte w 0.84.0 (migracja 0021, `RENAMED_METRICS` w `layout_schemas.py`). **Od 0.85.0 jedna linia
 na kierunek = prawdziwa prędkość** (wymaganie użytkownika, ważniejsze niż 1:1 z UniFi dla ruchu WAN): `netpulse/wanrate.py` czyta liczniki
-portów WAN co 0,5 s (`NETPULSE_WAN_SAMPLE_INTERVAL`), bajty między zmianami licznika rozkłada na przedziały 5 s → `wan_rate_metrics`
+portów WAN co 0,25 s (`NETPULSE_WAN_SAMPLE_INTERVAL`, od 0.85.2; chwila zmiany = środek między odczytami), bajty między zmianami licznika rozkłada na przedziały 5 s → `wan_rate_metrics`
 (migracja 0022, agregat `wan_rate_metrics_1h` z `max`); `/api/dashboard/traffic` i `/api/interfaces/{id}/metrics` dają w kubełku najwyższą
 prędkość z 5 s, bez pomiaru – średnią (`fine_series` + `merge_fine` w `api/metrics.py`), kubełki ruchu WAN od 5 s (`FINE_BUCKETS_S`).
 Bajty transferu dalej z `interface_metrics`. Opis: `docs/42-szczyt-i-testy-predkosci.md`.
