@@ -1,8 +1,12 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 import { setLanguage } from "../i18n";
 import { resetLiveHub } from "../lib/liveHub";
+
+// findBy*/waitFor czekają do 3 s zamiast 1 s: pierwszy test w pliku ładuje moduły panelu na żądanie i na obciążonym
+// serwerze CI trwało to czasem ponad sekundę (Wan.test.tsx „Teraz: LTE”, 1160 ms – test przechodził po ponowieniu).
+configure({ asyncUtilTimeout: 3000 });
 
 // Testy sprawdzają polskie teksty – niezależnie od języka środowiska (jsdom: en-US)
 setLanguage("pl", { reload: false });
