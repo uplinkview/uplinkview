@@ -47,8 +47,11 @@ WRITE_AFTER_S = 20.0  # przedział z jednym kierunkiem (drugi nieznany) zapisuje
 TARGETS_TTL = 60.0  # jak często odświeżać listę portów WAN z bazy
 # Odczyt co pół sekundy nie może czekać jak zwykłe odpytywanie (2 s i ponowienie): zgubiony pakiet nadrobi następny odczyt
 READ_TIMEOUT_S = 0.8
-# Router, który nie odpowiada, pomijamy na pół minuty – inaczej jego limit czasu wstrzymywałby odczyt pozostałych
+# Router, który nie odpowiada, pomijamy na pół minuty – inaczej jego limit czasu wstrzymywałby odczyt pozostałych.
+# Dopiero po `FAILS_BEFORE_BACKOFF` nieudanych odczytach z rzędu: brama pod pełnym obciążeniem czasem spóźnia się z jedną
+# odpowiedzią, a pół minuty przerwy spłaszczało wykres (pobieranie 850 Mb/s, VPS 14.11.2026, 0.85.3).
 BACKOFF_S = 30.0
+FAILS_BEFORE_BACKOFF = 5
 
 
 def make_client(target) -> SnmpClient:
@@ -142,6 +145,7 @@ class WanSampler:
         self.interval = settings.wan_sample_interval if interval is None else interval
         self.tracker = SlotTracker()
         self._skip_until: dict[int, float] = {}  # urządzenie → kiedy spróbować ponownie po braku odpowiedzi
+        self._fails: dict[int, int] = {}  # urządzenie → nieudane odczyty z rzędu
         self._clients: dict[int, tuple[object, SnmpClient]] = {}
         self._targets: dict[int, tuple[object, tuple[WanPort, ...]]] = {}  # urządzenie → (cel SNMP, porty WAN)
         self._targets_at = 0.0
@@ -194,10 +198,16 @@ class WanSampler:
             client = await self._client(target)
             values = await client.get(oids)
         except (SnmpError, TimeoutError, OSError) as exc:
-            log.debug("%s: brak odpowiedzi przy pomiarze prędkości WAN – %s", target.name, exc)
+            fails = self._fails[target.id] = self._fails.get(target.id, 0) + 1
+            if fails < FAILS_BEFORE_BACKOFF:
+                log.debug("%s: brak odpowiedzi przy pomiarze prędkości WAN (%s z rzędu) – %s", target.name, fails, exc)
+                return  # pojedyncze spóźnienie nadrobi następny odczyt
+            log.info("%s: brak odpowiedzi przy pomiarze prędkości WAN – przerwa %s s (%s)", target.name, int(BACKOFF_S), exc)
+            self._fails[target.id] = 0
             await self._drop(target.id)
             self._skip_until[target.id] = time.monotonic() + BACKOFF_S
             return
+        self._fails.pop(target.id, None)
         for p in ports:
             limit = p.speed_mbps * 1_000_000 * rate_factor(p.if_type) if p.speed_mbps else None
             for direction, oid in (("in", O.IF_HC_IN_OCTETS), ("out", O.IF_HC_OUT_OCTETS)):

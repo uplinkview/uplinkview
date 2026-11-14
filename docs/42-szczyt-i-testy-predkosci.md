@@ -125,3 +125,9 @@ Od 0.85.2 chwila zmiany = środek między odczytami (`MAX_READ_GAP_S`), odczyt c
 w 45 s – skala bez kalibracji; pojedyncze odczyty skaczą przy ruchu w porywach, bo licznik bramy zmienia się co ok. 1 s. Instalacje sprzed 0.85.2 mają w `.env` dopisane `NETPULSE_WAN_SAMPLE_INTERVAL=0.5` (`uplinkview update`
 i updater dopisują brakujące zmienne, nie zmieniają istniejących), więc od 0.85.3 dawna wartość domyślna zamienia się na 0.25
 (`OLD_DEFAULTS` w `updater/netpulse_updater/envfile.py` i ta sama linia w `scripts/netpulse`); inna wartość ustawiona ręcznie zostaje.
+
+**Pobieranie 18:01 i 18:13 (VPS, 14.11.2026, 0.85.3):** kubełek 18:00 – UCG 10 507,8 MB, UplinkView 10 507,6 MB, linia 5 s
+790–843 Mb/s (UniFi, szczyt z 1 s: 907), bez skoków ponad łącze. Przy drugim pobieraniu linia była płaska przez 25 s
+(5 przedziałów po 651,4 Mb/s): brama pod pełnym obciążeniem raz nie odpowiedziała w 0,8 s, a próbnik od razu robił
+przerwę 30 s i rozkładał bajty z niej równo. Od 0.85.4 przerwa dopiero po `FAILS_BEFORE_BACKOFF` (5) nieudanych odczytach
+z rzędu (router, który nie odpowiada wcale, dalej nie spowalnia pozostałych), a sama przerwa trafia do logu kolektora.

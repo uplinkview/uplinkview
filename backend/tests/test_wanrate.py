@@ -114,41 +114,62 @@ def test_rows_wait_for_both_directions():
     assert rows == [{"time": datetime.fromtimestamp(1000, UTC), "interface_id": 7, "in_bps": 8e8, "out_bps": None}]
 
 
-def test_silent_router_does_not_slow_down_sampling_of_others():
-    class Client:
-        def __init__(self, alive: bool) -> None:
-            self.alive, self.reads, self.octets = alive, 0, 0
+class _Client:
+    def __init__(self, alive: bool = True, late: set[int] | None = None) -> None:
+        self.alive, self.reads, self.octets, self.late = alive, 0, 0, late or set()
 
-        async def get(self, oids):
-            self.reads += 1
-            if not self.alive:
-                raise SnmpError("timeout")
-            self.octets += 1000
-            return {oid: self.octets for oid in oids}
+    async def get(self, oids):
+        self.reads += 1
+        if not self.alive or self.reads in self.late:
+            raise SnmpError("timeout")
+        self.octets += 1000
+        return {oid: self.octets for oid in oids}
 
-        async def close(self) -> None:
-            pass
+    async def close(self) -> None:
+        pass
 
-    clients = {1: Client(alive=True), 2: Client(alive=False)}
+
+def _sampler(clients: dict) -> WanSampler:
     sampler = WanSampler(client_factory=lambda target: clients[target.id], interval=1)
     port = (WanPort(50, 5, 1000, 6),)
     sampler._targets = {dev_id: (SimpleNamespace(id=dev_id, name=f"r{dev_id}"), port) for dev_id in clients}
     sampler._targets_at = time.monotonic()  # lista portów świeża – bez pytania bazy
-    written = []
 
     async def write(rows):
-        written.extend(rows)
+        pass
 
     sampler.write = write  # type: ignore[method-assign]
+    return sampler
+
+
+def test_silent_router_does_not_slow_down_sampling_of_others():
+    clients = {1: _Client(), 2: _Client(alive=False)}
+    sampler = _sampler(clients)
+    n = wanrate.FAILS_BEFORE_BACKOFF
 
     async def go() -> None:
-        for _ in range(5):
+        for _ in range(n + 5):
             await sampler.sample()
 
     asyncio.run(go())
-    assert clients[1].reads == 5
-    assert clients[2].reads == 1  # jedna próba, potem przerwa
-    assert wanrate.READ_TIMEOUT_S < 1 and wanrate.BACKOFF_S >= 10
+    assert clients[1].reads == n + 5
+    assert clients[2].reads == n  # kilka prób z rzędu, potem przerwa
+    assert wanrate.READ_TIMEOUT_S < 1 and wanrate.BACKOFF_S >= 10 and n * wanrate.READ_TIMEOUT_S < 5
+
+
+def test_single_late_answer_does_not_pause_sampling():
+    """Brama pod obciążeniem spóźnia się z pojedynczą odpowiedzią: odczyt idzie dalej bez półminutowej przerwy
+    (pobieranie 850 Mb/s, VPS 14.11.2026 – płaska linia przez 25 s)."""
+    clients = {1: _Client(late={3, 7, 8})}
+    sampler = _sampler(clients)
+
+    async def go() -> None:
+        for _ in range(20):
+            await sampler.sample()
+
+    asyncio.run(go())
+    assert clients[1].reads == 20
+    assert sampler._skip_until.get(1, 0.0) == 0.0
 
 
 def test_fine_buckets_only_for_wan_traffic():
