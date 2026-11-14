@@ -128,16 +128,18 @@ def test_sampler_reads_only_wan_ports_and_writes_five_second_rows(gateway):
         assert list(targets) == [dev_id]
         target, ports = targets[dev_id]
         assert [p.if_index for p in ports] == [5]  # tylko port z rolą WAN, bez LAN
-        for second in range(21):
+        for second in range(22):  # zmiana z chwili 21 s (szacowana na 20,5 s) domyka przedział 15–20 s
             client.octets = int(second * 200 * MBPS / 8)
             await sampler.sample_device(target, ports, float(start + second))
         assert client.asked[0] == [f"{O.IF_HC_IN_OCTETS}.5", f"{O.IF_HC_OUT_OCTETS}.5"]
-        await sampler.write(sampler.take_rows(float(start + 21)))
+        await sampler.write(sampler.take_rows(float(start + 22)))
         async with Session() as s:
             rows = (await s.execute(select(WanRateMetric).order_by(WanRateMetric.time))).scalars().all()
         assert [r.interface_id for r in rows] == [wan_id] * 4
         assert [int(r.time.timestamp()) for r in rows] == [start, start + 5, start + 10, start + 15]
-        assert all(round(r.in_bps / MBPS) == 200 and round(r.out_bps / MBPS) == 200 for r in rows)
-        await sampler.write(sampler.take_rows(float(start + 21)))  # nic nowego – bez powtórek
+        # pierwszy przedział po starcie próbnika: bez wcześniejszego odczytu chwila zmiany nie jest przesuwana (ok. +10 %)
+        assert 200 <= round(rows[0].in_bps / MBPS) <= 225
+        assert all(round(r.in_bps / MBPS) == 200 and round(r.out_bps / MBPS) == 200 for r in rows[1:])
+        await sampler.write(sampler.take_rows(float(start + 22)))  # nic nowego – bez powtórek
 
     run(go)
