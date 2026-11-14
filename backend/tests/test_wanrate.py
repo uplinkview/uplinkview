@@ -68,6 +68,32 @@ def test_gap_reset_and_impossible_speed_leave_slots_empty():
     assert mbps(tracker.ready("wan"))[-1] == 50.0
 
 
+def test_full_speed_with_counter_refreshed_every_second_keeps_all_bytes():
+    """Licznik bramy odświeżany co ~1 s (z drganiem), odczyt co 0,5 s, 900 Mb/s na porcie 1 Gb/s: dwie zmiany licznika
+    bywają widoczne 0,5 s od siebie (chwilowo „1,8 Gb/s”). Do 0.85.0 te odcinki były odrzucane i przedziały puste –
+    test prędkości na VPS zgubił 1 GB z 1,6 GB (14.11.2026). Teraz każdy przedział jest i suma bajtów się zgadza."""
+    import random
+
+    rnd = random.Random(1)
+    rate = 900e6 / 8
+    t0 = 1000.0
+    updates, u = [], t0 + 0.3
+    while u < t0 + 60:
+        updates.append(u)
+        u += 1.0 + rnd.uniform(-0.25, 0.25)
+    tracker = SlotTracker()
+    slots = []
+    for k in range(121):
+        ts = t0 + k * 0.5
+        seen = [x for x in updates if x <= ts]
+        tracker.add("wan", ts, int(rate * (seen[-1] - t0)) if seen else 0, 64, 1.1e9)
+        slots += tracker.ready("wan")
+    assert len(slots) >= 10 and all(v is not None for _, v in slots)
+    assert all(700e6 < v < 1.1e9 for _, v in slots[1:])
+    total = sum(v for _, v in slots) * 5 / 8
+    assert abs(total - rate * 5 * len(slots)) / (rate * 5 * len(slots)) < 0.05
+
+
 def test_rows_wait_for_both_directions():
     sampler = WanSampler(client_factory=None, interval=1)
     sampler._pending = {(7, 1000): {"at": 1006.0, "in": 8e8}, (7, 995): {"at": 1001.0, "in": 1e6, "out": 2e5}}

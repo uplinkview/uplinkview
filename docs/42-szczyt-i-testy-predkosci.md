@@ -75,6 +75,8 @@ Od 0.85.0:
 - **Przedziały 5 s równo z zegarem** (`SlotTracker`): przyrost licznika między dwiema jego *zmianami* dzielony na przedziały
   proporcjonalnie do czasu – suma bajtów się zgadza przy każdym tempie odświeżania licznika (UCG Ultra ok. 1 s). Przedział
   zapisany, gdy w całości pokryty; luka ponad 60 s, reset licznika i prędkość ponad 1,1× portu zostawiają go pustym.
+  Limit prędkości liczony z zapasem 1,5 s (`JITTER_S`): licznik odświeża się co ~1 s, a zmianę widać przy odczycie co 0,5 s,
+  więc dwie zmiany mogą wyglądać na 0,5 s od siebie (od 0.85.1; w 0.85.0 test prędkości 900 Mb/s gubił przedziały).
 - **Tabela** `wan_rate_metrics` (migracja 0022, hypertable z kompresją i retencją jak inne metryki; `time` = początek
   przedziału) i agregat `wan_rate_metrics_1h` z **maksimum** godzinowym (`Aggregate(fn="max")`).
 - **Wykres** (`/api/dashboard/traffic`, `/api/interfaces/{id}/metrics`): w każdym kubełku najwyższa prędkość z 5 s
@@ -109,4 +111,7 @@ krótki limit czasu (0,8 s, bez ponowień), a router, który nie odpowiada, jest
 
 Test prędkości: pola sprawdzone 12.11.2026 na prawdziwej bramie (UCG Ultra, wynik 455 / 51 Mb/s, ping 6 ms, 17 s) –
 z tej odpowiedzi jest test `test_speedtest_from_real_controller_answer`. Szczyt: logika i zapis w testach; odświeżanie
-liczników zmierzone na UCG Ultra (ok. 1 s). Od 0.85.0 do sprawdzenia na serwerze: pobieranie dużego pliku i test prędkości na wykresie 1 h i 24 h kontra brama.
+liczników zmierzone na UCG Ultra (ok. 1 s). **Porównanie z UCG Ultra (VPS, 14.11.2026, 0.85.0):** bajty z pomiaru co 5 s w kubełkach bez dużego ruchu zgodne z bramą
+(27,1 / 27,3 MB, 16,1 / 16,2 MB, 9,5 / 9,0 MB); w kubełku z testem prędkości 600 zamiast 1645 MB – przedziały odrzucone przez
+limit portu (poprawione w 0.85.1, `JITTER_S`). Średnia z 30 s w tym kubełku: 1643,8 / 1645,4 MB. Najwyższa prędkość UniFi
+(`maxRxRateBps`, bajty/s) to wartość ~1-sekundowa, UplinkView – 5-sekundowa, więc przy krótkich skokach jest niższa.

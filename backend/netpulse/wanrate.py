@@ -37,6 +37,10 @@ from .snmp import oids as O
 log = logging.getLogger("netpulse.wanrate")
 
 SLOT_S = 5  # długość przedziału zapisu
+# Zapas czasu przy sprawdzaniu „ponad możliwości łącza”: licznik odświeża się co ok. 1 s, a zmianę widzimy przy odczycie
+# co 0,5 s – dwie zmiany mogą wyglądać na 0,5 s od siebie, choć bajty szły przez sekundę (prędkość ×2). Bez zapasu
+# test prędkości 900 Mb/s na porcie 1 Gb/s gubił przedziały (VPS 14.11.2026: 600 MB zamiast 1645 MB w 5 minutach).
+JITTER_S = 1.5
 MAX_GAP_S = 60.0  # dłuższa przerwa między zmianami licznika = nie wiemy, kiedy szły bajty – przedziały zostają puste
 KEEP_SLOTS_S = 300.0  # niedokończone przedziały starsze niż to zapominamy
 WRITE_AFTER_S = 20.0  # przedział z jednym kierunkiem (drugi nieznany) zapisujemy po tym czasie
@@ -81,8 +85,8 @@ class SlotTracker:
         if delta is None:
             return  # reset urządzenia – liczymy od następnej zmiany
         span = ts - prev[0]
-        if max_bps and delta * 8 / span > max_bps:
-            return  # ponad możliwości łącza – błąd licznika; przedziały zostają puste
+        if max_bps and delta * 8 > max_bps * (span + JITTER_S):
+            return  # ponad możliwości łącza nawet z zapasem – błąd licznika; przedziały zostają puste
         start = int(prev[0] // self.slot_s) * self.slot_s
         while start < ts:
             overlap = min(ts, start + self.slot_s) - max(prev[0], start)
