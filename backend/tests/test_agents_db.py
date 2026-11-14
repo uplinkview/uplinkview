@@ -167,6 +167,7 @@ def test_agent_report_flow(client):
         "speedtest": [],
         "wan_ping": [],
         "vpn": [],
+        "lan_client": [],
     }
     net = client.get(f"/api/devices/{dev}/agent-metrics", params={"source": "agent_net", "key": "eth0"}).json()
     assert net[-1]["values"] == {"rx_bps": 1000.0, "tx_bps": 2000.0}
