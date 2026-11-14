@@ -48,7 +48,6 @@ COLUMNS_AFTER_BASELINE = {
     "notification_channels": ["secret", "config", "quiet_from", "quiet_to", "quiet_critical", "quiet_backlog"],
     "alerts": ["muted", "maintenance"],
     "users": ["role", "totp_secret", "totp_enabled", "totp_last_step", "totp_recovery"],
-    "interface_metrics": ["in_bps_max", "out_bps_max"],
 }
 
 

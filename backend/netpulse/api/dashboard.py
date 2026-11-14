@@ -105,10 +105,9 @@ async def summary():
 # date_bin (PostgreSQL 14+) działa z TimescaleDB i bez niego; kubełki wyrównane do stałego początku
 _TRAFFIC_SQL = text(
     """
-    SELECT bucket, SUM(in_bps) AS in_bps, SUM(out_bps) AS out_bps, SUM(in_bps_max) AS in_bps_max, SUM(out_bps_max) AS out_bps_max FROM (
+    SELECT bucket, SUM(in_bps) AS in_bps, SUM(out_bps) AS out_bps FROM (
         SELECT date_bin(CAST(:stride AS interval), m.time, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS bucket,
-               m.interface_id, AVG(m.in_bps) AS in_bps, AVG(m.out_bps) AS out_bps,
-               MAX(m.in_bps_max) AS in_bps_max, MAX(m.out_bps_max) AS out_bps_max
+               m.interface_id, AVG(m.in_bps) AS in_bps, AVG(m.out_bps) AS out_bps
         FROM interface_metrics m
         JOIN interfaces i ON i.id = m.interface_id
         JOIN devices d ON d.id = i.device_id
@@ -138,8 +137,7 @@ _WIFI_SQL = text(
 # Te same zestawienia z agregatów godzinowych – dla zakresów dłuższych niż 7 dni (aggregates.py)
 _TRAFFIC_1H_SQL = text(
     """
-    SELECT bucket, SUM(in_bps) AS in_bps, SUM(out_bps) AS out_bps,
-           CAST(NULL AS double precision) AS in_bps_max, CAST(NULL AS double precision) AS out_bps_max FROM (
+    SELECT bucket, SUM(in_bps) AS in_bps, SUM(out_bps) AS out_bps FROM (
         SELECT date_bin(CAST(:stride AS interval), m.bucket, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS bucket,
                m.interface_id, AVG(m.in_bps) AS in_bps, AVG(m.out_bps) AS out_bps
         FROM interface_metrics_1h m
@@ -185,9 +183,8 @@ async def _aggregate(sql, sql_1h, minutes: int, columns: list[str], offset: int 
 
 @router.get("/traffic", response_model=SeriesOut)
 async def traffic(minutes: int = MinutesQuery, offset: int = OffsetQuery):
-    """Ruch WAN (suma po wszystkich routerach): pobieranie `in_bps` i wysyłanie `out_bps` – średnie z kubełka – oraz
-    od 0.70.0 szczyt `in_bps_max` / `out_bps_max` (najwyższa średnia z ok. 5 s; puste powyżej 7 dni i dla danych sprzed 0.70.0)."""
-    return await _aggregate(_TRAFFIC_SQL, _TRAFFIC_1H_SQL, minutes, ["in_bps", "out_bps", "in_bps_max", "out_bps_max"], offset)
+    """Ruch WAN (suma po wszystkich routerach): pobieranie `in_bps` i wysyłanie `out_bps` – średnie z kubełka."""
+    return await _aggregate(_TRAFFIC_SQL, _TRAFFIC_1H_SQL, minutes, ["in_bps", "out_bps"], offset)
 
 
 @router.get("/wifi", response_model=SeriesOut)

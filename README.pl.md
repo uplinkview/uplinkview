@@ -30,7 +30,7 @@ robi kopię zapasową bazy. Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`
 
 ## Co potrafi
 
-- **Pulpit** – karty urządzeń, ruch WAN ze szczytami, błędy i dropy, tryb „Na żywo” (ruch WAN co 1–2 s), wiele pulpitów
+- **Pulpit** – karty urządzeń, ruch WAN (pobieranie i wysyłanie), błędy i dropy, tryb „Na żywo” (ruch WAN co 1–2 s), wiele pulpitów
   na koncie, wykresy w stylu Grafany (wiele źródeł, progi, porównania, powiększanie), pulpity publiczne tylko do odczytu
   na wyświetlacz ścienny. Motyw jasny i ciemny, polski i angielski.
 - **Urządzenia i porty** – stan portów, prędkość, PoE, strony urządzenia, portu i klienta, dostępność w procentach,

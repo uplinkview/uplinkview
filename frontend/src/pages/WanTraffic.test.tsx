@@ -1,50 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { buildLines, seriesName } from "../components/charts/panelData";
 import { bucketSeconds } from "../components/widgets/chartSource";
-import { t } from "../i18n";
-import { METRICS, SOURCE_METRICS, defaultSeries, newChartConfig, unitClassOf } from "../lib/layout";
+import { METRICS, SOURCE_METRICS, defaultSeries, newChartConfig } from "../lib/layout";
 import { sourceModule } from "../lib/modules";
 import { WIDGET_TEMPLATES } from "../lib/widgetTemplates";
 import { DEVICE } from "../test/mockApi";
 
 const PORT = { id: 5, if_index: 5, name: "eth4", label: "WAN", alias: null, role: "wan", hidden: false, mac: null, admin_up: true, oper_status: "up", speed_mbps: 1000, in_bps: 1, out_bps: 1 };
 
-describe("szczyt ruchu WAN (od 0.70.0)", () => {
-  it("jest serią źródeł Ruch WAN i Port, w tej samej jednostce co średnia", () => {
+describe("wykres ruchu WAN", () => {
+  it("od 0.84.0 tylko pobieranie i wysyłanie – bez serii szczytu i bez „maks.” w dymku", () => {
     for (const kind of ["wan", "interface"] as const) {
-      expect(SOURCE_METRICS[kind]).toEqual(expect.arrayContaining(["in_bps_max", "out_bps_max"]));
+      expect(SOURCE_METRICS[kind]).not.toContain("in_bps_max");
+      expect(SOURCE_METRICS[kind]).not.toContain("out_bps_max");
     }
-    expect(unitClassOf("in_bps_max")).toBe("rate");
-    expect(unitClassOf("out_bps_max")).toBe(unitClassOf("out_bps"));
-    // Domyślny wykres zostaje bez szczytu – dokłada go opcja szablonu albo edytor
     expect(defaultSeries("wan").map((s) => s.key)).toEqual(["in_bps", "out_bps"]);
-  });
-
-  it("nazwy serii na wykresie WAN mówią o pobieraniu i wysyłaniu", () => {
-    expect(seriesName({ kind: "wan" }, { key: "in_bps_max", color: 4 })).toBe("Pobieranie – szczyt");
-    expect(seriesName({ kind: "wan" }, { key: "out_bps_max", color: 3 })).toBe("Wysyłanie – szczyt");
-    expect(seriesName({ kind: "interface", id: 5, device_id: 1 }, { key: "in_bps_max", color: 4 })).toBe("Odbierane – szczyt (5 s)");
-  });
-
-  it("od 0.71.0 szablon Ruch WAN nie dokłada osobnej linii szczytu – szczyt jest w dymku", () => {
+    expect(seriesName({ kind: "wan" }, { key: "in_bps", color: 1 })).toBe("Pobieranie");
+    expect(seriesName({ kind: "wan" }, { key: "out_bps", color: 2 })).toBe("Wysyłanie");
     const tpl = WIDGET_TEMPLATES.find((x) => x.id === "wan_traffic")!;
-    expect(tpl.options).toEqual(["compare"]);
     const w = tpl.build({});
     if (w.type !== "chart") throw new Error("szablon nie zbudował wykresu");
     expect(w.config.queries[0].series.map((s) => s.key)).toEqual(["in_bps", "out_bps"]);
-  });
-
-  it("szczyt kubełka trafia do serii średniej (dymek „· maks.”), także bez serii szczytu na wykresie", () => {
+    // stare odpowiedzi API ze szczytem nie dokładają niczego do serii
     const config = newChartConfig({ kind: "wan" }, [{ key: "in_bps", color: 1 }, { key: "out_bps", color: 2 }]);
-    const data = new Map([["A", { interval_s: 300, points: [
-      { time: "2026-11-12T19:05:00Z", values: { in_bps: 26.2e6, out_bps: 3.5e6, in_bps_max: 455e6, out_bps_max: 51e6 } },
-      { time: "2026-11-12T19:10:00Z", values: { in_bps: 0.5e6, out_bps: 0.1e6, in_bps_max: null, out_bps_max: null } },
-    ] }]]);
-    const [down, up] = buildLines(config, data, () => "");
-    expect(down.peaks?.get(Date.parse("2026-11-12T19:05:00Z"))).toBe(455e6);
-    expect(down.peaks?.has(Date.parse("2026-11-12T19:10:00Z"))).toBe(false);
-    expect(up.peaks?.get(Date.parse("2026-11-12T19:05:00Z"))).toBe(51e6);
-    expect(t("chart.withPeak", { value: "26 Mb/s", peak: "455 Mb/s" })).toBe("26 Mb/s · maks. 455 Mb/s");
+    const data = new Map([["A", { interval_s: 300, points: [{ time: "2026-11-12T19:05:00Z", values: { in_bps: 26.2e6, out_bps: 3.5e6, in_bps_max: 455e6 } }] }]]);
+    const lines = buildLines(config, data, () => "");
+    expect(lines.map((l) => l.name)).toEqual(["Pobieranie", "Wysyłanie"]);
+    expect(lines[0]).not.toHaveProperty("peaks");
   });
 
   it("kubełki wykresu jak w UniFi: 24 h po 5 min, 7 dni po godzinie", () => {

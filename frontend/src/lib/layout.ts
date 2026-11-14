@@ -399,8 +399,6 @@ export const METRICS: Record<string, { label: TextKey; unitClass: UnitClass }> =
   in_bps: { label: "metric.in_bps", unitClass: "rate" },
   out_bps: { label: "metric.out_bps", unitClass: "rate" },
   // Szczyt w cyklu (od 0.70.0, porty WAN): najwyższa średnia z ok. 5 s
-  in_bps_max: { label: "metric.in_bps_max", unitClass: "rate" },
-  out_bps_max: { label: "metric.out_bps_max", unitClass: "rate" },
   ping_ms: { label: "metric.ping_ms", unitClass: "ms" },
   rx_bps: { label: "metric.rx_bps", unitClass: "rate" },
   tx_bps: { label: "metric.tx_bps", unitClass: "rate" },
@@ -466,8 +464,8 @@ export const METRICS: Record<string, { label: TextKey; unitClass: UnitClass }> =
 
 /** Metryki dostępne dla źródła (zgodnie z endpointami metryk i schematem serwera). */
 export const SOURCE_METRICS: Record<SourceKind, string[]> = {
-  wan: ["in_bps", "out_bps", "in_bps_max", "out_bps_max"],
-  interface: ["in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards", "in_bps_max", "out_bps_max"],
+  wan: ["in_bps", "out_bps"],
+  interface: ["in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards"],
   device: ["cpu_percent", "mem_used_percent", "load1", "poll_ms"],
   wifi_total: ["clients"],
   wifi_network: ["clients", "rx_bps", "tx_bps"],

@@ -99,10 +99,43 @@ Source = Annotated[
     Field(discriminator="kind"),
 ]
 
+# Usunięte metryki → ich następczynie. Szczyt ruchu (0.70.0–0.83.0) zniknął w 0.84.0: zapisane wykresy, liczby
+# i mapy cieplne z serią szczytu dostają zwykłą średnią (powtórzona seria w zapytaniu wypada).
+RENAMED_METRICS = {"in_bps_max": "in_bps", "out_bps_max": "out_bps"}
+
+
+def upgrade_metric_key(data):
+    """`key` usuniętej metryki → następczyni (StatConfig, HeatmapConfig)."""
+    if isinstance(data, dict) and data.get("key") in RENAMED_METRICS:
+        data = {**data, "key": RENAMED_METRICS[data["key"]]}
+    return data
+
+
+def upgrade_query_series(data):
+    """Serie usuniętych metryk w zapytaniu wykresu → następczynie; seria, której następczyni już jest, wypada.
+    Inne powtórzenia zostają – odrzuca je walidacja zapytania."""
+    if not isinstance(data, dict) or not isinstance(data.get("series"), list):
+        return data
+    items = data["series"]
+    if not any(isinstance(i, dict) and i.get("key") in RENAMED_METRICS for i in items):
+        return data
+    seen = {i.get("key") for i in items if isinstance(i, dict) and i.get("key") not in RENAMED_METRICS}
+    series = []
+    for item in items:
+        if isinstance(item, dict) and item.get("key") in RENAMED_METRICS:
+            key = RENAMED_METRICS[item["key"]]
+            if key in seen:
+                continue
+            seen.add(key)
+            item = {**item, "key": key}
+        series.append(item)
+    return {**data, "series": series}
+
+
 # Metryki dostępne dla źródła (klucze z odpowiedzi endpointów metryk)
 ALLOWED_METRICS: dict[str, tuple[str, ...]] = {
-    "wan": ("in_bps", "out_bps", "in_bps_max", "out_bps_max"),
-    "interface": ("in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards", "in_bps_max", "out_bps_max"),
+    "wan": ("in_bps", "out_bps"),
+    "interface": ("in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards"),
     "device": ("cpu_percent", "mem_used_percent", "load1", "poll_ms"),
     "wifi_total": ("clients",),
     "wifi_network": ("clients", "rx_bps", "tx_bps"),
@@ -146,6 +179,11 @@ class ChartQuery(Strict):
     source: Source
     series: list[SeriesConfig] = Field(min_length=1, max_length=6)
     offset_min: OffsetMinutes = 0
+
+    @model_validator(mode="before")
+    @classmethod
+    def _upgrade(cls, data):
+        return upgrade_query_series(data)
 
     @model_validator(mode="after")
     def _metrics_match_source(self) -> ChartQuery:
@@ -304,6 +342,11 @@ class StatConfig(Strict):
     show_change: bool = False
 
     _strip = field_validator("title")(lambda cls, v: _title(v))
+
+    @model_validator(mode="before")
+    @classmethod
+    def _upgrade(cls, data):
+        return upgrade_metric_key(data)
 
     @model_validator(mode="after")
     def _metric(self) -> StatConfig:
@@ -669,6 +712,11 @@ class HeatmapConfig(Strict):
     color: ColorIndex = 1
 
     _strip = field_validator("title")(lambda cls, v: _title(v))
+
+    @model_validator(mode="before")
+    @classmethod
+    def _upgrade(cls, data):
+        return upgrade_metric_key(data)
 
     @model_validator(mode="after")
     def _metric(self) -> HeatmapConfig:

@@ -30,7 +30,6 @@ from .db.models import (
 )
 from .drivers import PollResult, poll_device
 from .modules import ensure_modules, is_enabled
-from .peaks import PeakSampler
 from .rates import CounterTracker, rate_factor, sample_times, wait_for_slot
 from .snmp import SnmpClient, SnmpCredentials, SnmpError
 
@@ -71,7 +70,7 @@ def spread(values: dict, slots: list[datetime]) -> list[tuple[datetime, dict]]:
     """Wiersze próbki: jeden na każdą część przedziału (`rates.sample_times`), przyrosty w ostatnim."""
     if len(slots) == 1:
         return [(slots[0], values)]
-    head = {k: (None if k in _COUNTS or k.endswith("_max") else v) for k, v in values.items()}
+    head = {k: (None if k in _COUNTS else v) for k, v in values.items()}
     return [(at, head) for at in slots[:-1]] + [(slots[-1], values)]
 
 
@@ -88,10 +87,9 @@ def make_client(target: DeviceTarget) -> SnmpClient:
 
 
 class Collector:
-    def __init__(self, client_factory=make_client, alert_engine=None, peaks: PeakSampler | None = None) -> None:
+    def __init__(self, client_factory=make_client, alert_engine=None) -> None:
         self.alert_engine = alert_engine
         # Szczyt ruchu portów WAN mierzony między cyklami (od 0.70.0); None = bez pomiaru (testy, polecenia CLI)
-        self.peaks = peaks
         self.tracker = CounterTracker()
         # Ostatni stan łącza każdego portu: odczyt z chwili, gdy łącze padło albo wróciło, nie liczy się (od 0.54.4)
         self._oper: dict[tuple, str] = {}
@@ -291,12 +289,6 @@ class Collector:
             for field in ("in_errors", "out_errors", "in_discards", "out_discards"):
                 res = self.tracker.update(key + (field,), ts, getattr(i, field), 32)
                 values[field] = res[0] if res else None
-            if self.peaks is not None:
-                # Zawsze odbieramy (zeruje okno); zapisujemy tylko przy wiarygodnej średniej. Szczyt nie może być
-                # niższy od średniej z całego cyklu – okna szczytu i cyklu nie pokrywają się co do sekundy.
-                for field, peak in zip(("in_bps", "out_bps"), self.peaks.take(dev_id, i.if_index), strict=True):
-                    if peak is not None and values[field] is not None:
-                        values[f"{field}_max"] = max(peak, values[field])
             if changed or any(v is not None for v in values.values()):
                 values["oper_up"] = i.oper_status == "up"
                 if_rates[i.if_index] = values
@@ -503,6 +495,5 @@ async def run() -> None:
     await ensure_modules()
     engine = AlertEngine(notifier=Notifier())
     await engine.ensure_default_rules()
-    peaks = PeakSampler()
-    await asyncio.gather(Collector(alert_engine=engine, peaks=peaks).run_forever(), peaks.run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(), ProxmoxCollector().run_forever(),
+    await asyncio.gather(Collector(alert_engine=engine).run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(), ProxmoxCollector().run_forever(),
                          OpnsenseCollector().run_forever(), ChecksCollector().run_forever())

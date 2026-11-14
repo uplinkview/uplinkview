@@ -111,7 +111,6 @@ Plik `/opt/uplinkview/deploy/.env`:
 | `NETPULSE_POLL_INTERVAL`  | 30        | co ile sekund odpytywać urządzenia |
 | `NETPULSE_RETENTION_DAYS` | 30        | ile dni trzymać metryki           |
 | `NETPULSE_COMPRESS_AFTER_DAYS` | 7    | po ilu dniach baza kompresuje metryki (0 = bez kompresji) |
-| `NETPULSE_PEAK_INTERVAL` | 0.5       | co ile sekund czytać liczniki portów WAN do pomiaru szczytu (0 = bez szczytu) |
 
 Progi kontroli miejsca (zmienne środowiskowe polecenia, nie `.env`): `NETPULSE_MIN_FREE_MB` (domyślnie
 2000), `NETPULSE_WARN_FREE_MB` (4000), `NETPULSE_KEEP_BUILD_CACHE_HOURS` (72), np.

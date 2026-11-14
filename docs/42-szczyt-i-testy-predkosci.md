@@ -1,4 +1,4 @@
-# Zgodność z UniFi, szczyt ruchu WAN i testy prędkości bramy (od 0.70.0, 0.71.0)
+# Zgodność z UniFi i testy prędkości bramy (od 0.70.0, 0.71.0; szczyt ruchu usunięty w 0.84.0)
 
 ## Po co
 
@@ -38,14 +38,12 @@ Od 0.71.0:
    (60–120 s) dzieli się na części po 30 s, przyrosty błędów idą do ostatniej części (`collector.spread`).
 3. **Kubełki wykresów z równej drabinki** – 30 s, 1, 2, 5, 10, 15, 30 min, 1 h (`aggregates.RAW_BUCKETS_S`, w panelu
    `bucketSeconds`): zakres 24 h = 5 minut, 7 dni = godzina, jak w UniFi.
-4. **Linia = średnia, najwyższa prędkość w dymku** („26 Mb/s · maks. 455 Mb/s”) – jak w UniFi; szablon „Ruch WAN” nie ma
-   już opcji osobnej linii szczytu. Serie szczytu dalej można dodać w edytorze wykresu.
+4. **Linia = średnia z kubełka**, jak w UniFi (do 0.83.0 w dymku była też najwyższa prędkość – usunięta, niżej).
 5. **Niemożliwa szybkość w jednym kierunku odrzuca całą próbkę** – router „dogania” zatrzymane liczniki, drugi kierunek
    z tego odczytu też jest zawyżony (12.11.2026: wysyłanie 75,9 Mb/s na łączu 50 Mb/s podniosło 5 minut z 1,6 do 9,2 Mb/s).
 
 Granice zgodności: UplinkView liczy bajty z liczników SNMP z dokładnością do odświeżania licznika w urządzeniu (UCG Ultra
-ok. 1 s). Najwyższa prędkość UniFi to wartość chwilowa z bramy, UplinkView – najwyższa średnia z 5 s (odczyt co 0,5 s,
-dokładność ok. ±10 %), więc „maks.” bywa niższe niż w UniFi. Na portach switcha UniFi sam rozkłada raporty na kubełki,
+ok. 1 s). Na portach switcha UniFi sam rozkłada raporty na kubełki,
 stąd pojedyncze kubełki mogą się różnić, choć suma się zgadza. Narzędzie porównania (kubełki z bazy bramy kontra
 UplinkView) było jednorazowe, poza repo.
 
@@ -64,44 +62,25 @@ ponownie trafia w ten sam wiersz (klucz główny), więc nie ma powtórek.
   Kafelek „ostatni test” to zwykły widget „Liczba” z tym źródłem, wartością „ostatnia” i własnym zakresem (np. 7 dni).
 - Wymaga modułu UniFi i kontrolera z kluczem API. Bez zmian w bazie.
 
-## Szczyt ruchu WAN
+## Szczyt ruchu WAN – usunięty w 0.84.0
 
-Moduł `netpulse/peaks.py` (pętla w kolektorze obok głównej) czyta **same liczniki portów WAN co sekundę** – jedno małe
-zapytanie SNMP na router – i dla każdego cyklu pamięta najwyższą prędkość z okna co najmniej 5 s. Kolektor zapisuje ją
-obok średniej: `interface_metrics.in_bps_max` i `out_bps_max` (migracja 0018).
-
-- **Tylko porty z rolą WAN** na urządzeniach SNMP (także porty ustawione w Ustawienia → Łącza WAN). Pozostałe porty mają
-  samą średnią.
-- **Okno 5 s**: krótszy skok jest uśredniany w oknie (2 s × 500 Mb/s to szczyt 200 Mb/s), dłuższy widać w pełni.
-- **Prędkość liczona między zmianami licznika**, nie między odczytami. Urządzenia odświeżają liczniki SNMP co sekundę
-  (UCG Ultra, zmierzone 12.11.2026) albo co kilka sekund; przy rzadszym odświeżaniu okno samo się wydłuża, zamiast
-  pokazywać „zero, potem podwójnie”.
-- **Dokładność ok. ±20 %** dla okna 5 s: chwilę zmiany licznika znamy z dokładnością do sekundy. Szczyt to przybliżenie
-  krótkich skoków, a nie wynik testu prędkości – dokładne liczby testu daje źródło „testy prędkości bramy”.
-- Szczyt nigdy nie jest niższy od średniej z cyklu; wartość ponad możliwości łącza (1,1× prędkości portu Ethernet) jest odrzucana.
-- **Zakresy powyżej 7 dni** czytają agregaty godzinowe, w których szczytu nie ma – seria jest wtedy pusta. Dane sprzed
-  0.70.0 też nie mają szczytu.
-- Wyłączenie: `NETPULSE_PEAK_INTERVAL=0` w `deploy/.env` (domyślnie od 0.71.0 `0.5` – odczyt co pół sekundy; instalacje
-  sprzed 0.71.0 mają w `.env` wpisane `1` – zmiana na `0.5` i `sudo uplinkview restart` daje dokładniejszy szczyt).
-
-W panelu szczyt jest **w dymku wykresu** obok średniej (od 0.71.0, „· maks.”), dla serii pobierania i wysyłania źródeł
-**Ruch WAN** i **Port**. Osobne serie „Pobieranie – szczyt” i „Wysyłanie – szczyt” (`in_bps_max`, `out_bps_max`) zostały
-w edytorze wykresu; wykres dodany w 0.70.x z opcją „Pokaż szczyt” ma je dalej – usuwa się je w Edytuj → zapytanie.
+Od 0.70.0 do 0.83.0 osobny próbnik (`peaks.py`) czytał liczniki portów WAN co 0,5–1 s i zapisywał najwyższą średnią z ok. 5 s
+w `interface_metrics.in_bps_max` / `out_bps_max`; panel pokazywał go w dymku („· maks.”) i jako serie „Pobieranie – szczyt”,
+„Wysyłanie – szczyt”. Na prośbę użytkownika (14.11.2026) całość usunięta: wykres ruchu ma tylko **Pobieranie** i **Wysyłanie**
+(średnie z kubełka, zgodne z UniFi), migracja 0021 usuwa kolumny, zmienna `NETPULSE_PEAK_INTERVAL` nic już nie robi.
+Zapisane wykresy, liczby i mapy cieplne z serią szczytu wczytują się dalej – seria zamienia się w średnią
+(`RENAMED_METRICS` w `api/layout_schemas.py`). Dokładną prędkość krótkiego testu dają **testy prędkości bramy** (wyżej).
+Kafelki „Pobieranie WAN” / „Wysyłanie WAN” dalej podają najwyższą wartość średniej w zakresie („szczyt … o 15:18”) – to inna rzecz.
 
 ## API
 
-- `GET /api/dashboard/traffic` – oprócz `in_bps`, `out_bps` zwraca `in_bps_max`, `out_bps_max` (maksimum z kubełka; suma po łączach WAN).
-- `GET /api/interfaces/{id}/metrics` – to samo dla jednego portu.
+- `GET /api/dashboard/traffic` – `in_bps`, `out_bps` (średnia z kubełka, suma po łączach WAN).
 - `GET /api/devices/{id}/agent-metrics?source=speedtest&key=<łącze>` – testy prędkości (`down_bps`, `up_bps`, `ping_ms`).
 - `GET /api/devices/{id}/agent-keys` – łącza z testem z ostatnich 30 dni w polu `speedtest` (inne źródła: ostatnia godzina).
 
 ## Dla programisty
 
-- `peaks.PeakTracker` (czysta logika, `test_peaks.py`), `peaks.PeakSampler` (pętla; kolektor odbiera przez `take`).
-  `Collector(peaks=None)` działa jak dotąd – testy i polecenia CLI nie uruchamiają próbnika.
-- Kolumny `…_max` w `api/metrics._series` agreguje `max`, pozostałe `avg`; agregat godzinowy pomija kolumny, których nie ma.
-- Migracja 0018 dodaje kolumny osobnymi instrukcjami – tabela ma kompresję TimescaleDB (zasady w `docs/13-migracje-bazy.md`).
-- Atrapa `frontend/dev/mock-api.mjs` zwraca szczyt i przykładowe testy prędkości.
+- Atrapa `frontend/dev/mock-api.mjs` zwraca przykładowe testy prędkości.
 
 ## Stan
 
@@ -113,5 +92,4 @@ krótki limit czasu (0,8 s, bez ponowień), a router, który nie odpowiada, jest
 
 Test prędkości: pola sprawdzone 12.11.2026 na prawdziwej bramie (UCG Ultra, wynik 455 / 51 Mb/s, ping 6 ms, 17 s) –
 z tej odpowiedzi jest test `test_speedtest_from_real_controller_answer`. Szczyt: logika i zapis w testach; odświeżanie
-liczników zmierzone na UCG Ultra (ok. 1 s). **Do potwierdzenia na serwerze po aktualizacji:** szczyt w czasie
-prawdziwego testu prędkości w porównaniu z wynikiem bramy.
+liczników zmierzone na UCG Ultra (ok. 1 s). Pomiar szczytu usunięty w 0.84.0.

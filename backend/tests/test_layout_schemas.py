@@ -447,3 +447,15 @@ def test_chart_backup_link_color_option():
     base = {"source": {"kind": "wan"}, "series": [{"key": "in_bps"}]}
     assert ChartConfig.model_validate(base).wan_backup is False
     assert ChartConfig.model_validate({**base, "wan_backup": True}).wan_backup is True
+
+
+def test_removed_peak_series_become_averages():
+    """Szczyt ruchu usunięty w 0.84.0: zapisany wykres z seriami szczytu dalej się wczytuje – jako Pobieranie i Wysyłanie."""
+    series = [{"key": "in_bps"}, {"key": "out_bps"}, {"key": "in_bps_max", "color": 3}, {"key": "out_bps_max"}]
+    layout = DashboardLayout.model_validate(
+        {"version": 1, "widgets": [{"id": "c1", "type": "chart", "w": 6, "config": {"queries": [{"id": "A", "source": {"kind": "wan"}, "series": series}]}}]}
+    )
+    assert [s.key for s in layout.widgets[0].config.queries[0].series] == ["in_bps", "out_bps"]
+    # sam szczyt (bez średniej) – zamienia się w średnią
+    only = ChartConfig.model_validate({"queries": [{"id": "A", "source": {"kind": "wan"}, "series": [{"key": "out_bps_max", "color": 3}]}]})
+    assert [(s.key, s.color) for s in only.queries[0].series] == [("out_bps", 3)]

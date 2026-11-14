@@ -261,9 +261,6 @@ class InterfaceMetric(Base):
     )
     in_bps: Mapped[float | None] = mapped_column(Float)
     out_bps: Mapped[float | None] = mapped_column(Float)
-    # Szczyt w cyklu (od 0.70.0, tylko porty WAN): najwyższa średnia z ok. 5 s – peaks.py; None = bez pomiaru
-    in_bps_max: Mapped[float | None] = mapped_column(Float)
-    out_bps_max: Mapped[float | None] = mapped_column(Float)
     in_errors: Mapped[int | None] = mapped_column(BigInteger)
     out_errors: Mapped[int | None] = mapped_column(BigInteger)
     in_discards: Mapped[int | None] = mapped_column(BigInteger)

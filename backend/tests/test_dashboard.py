@@ -163,9 +163,7 @@ def test_traffic_series_sums_wan_per_bucket(client):
     total_in = max(p["values"]["in_bps"] for p in points)
     assert total_in <= 15e6 + 1  # nigdy 9e9, 7e9 ani 4e9
     assert total_in >= 5e6
-    # Od 0.70.0 także szczyt; próbki bez pomiaru szczytu dają puste wartości
-    assert all(set(p["values"]) == {"in_bps", "out_bps", "in_bps_max", "out_bps_max"} for p in points)
-    assert all(p["values"]["in_bps_max"] is None for p in points)
+    assert all(set(p["values"]) == {"in_bps", "out_bps"} for p in points)
 
 
 def test_wifi_series_excludes_hidden_networks(client):

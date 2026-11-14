@@ -7,7 +7,6 @@ import { GridComponent, MarkAreaComponent, MarkLineComponent, TooltipComponent, 
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { t } from "../../i18n";
 import type { ChartKind, Threshold, ThresholdStyle } from "../../lib/layout";
 import { useRefresh } from "../../lib/refresh";
 import { useTheme } from "../../lib/theme";
@@ -150,10 +149,7 @@ export default function PanelChart({ lines, kind, stack, smooth, left, right, th
             const head = timeFmt.format(new Date(params[0].axisValue));
             const rows = params.map((p) => {
               const fmt = lines[p.seriesIndex]?.axis === "right" && right ? right.format : left.format;
-              // Średnia z kubełka, a obok najwyższa prędkość w nim (porty WAN) – jak w dymku wykresu UniFi
-              const peak = p.value[1] == null ? undefined : lines[p.seriesIndex]?.peaks?.get(p.value[0]);
-              const value = p.value[1] == null ? "–" : fmt(p.value[1]);
-              return { marker: p.marker, name: p.seriesName, value: peak == null ? value : t("chart.withPeak", { value, peak: fmt(peak) }) };
+              return { marker: p.marker, name: p.seriesName, value: p.value[1] == null ? "–" : fmt(p.value[1]) };
             });
             return tooltipHtml(head, text, rows);
           },

@@ -30,7 +30,7 @@ backup first.
 
 ## Features
 
-- **Dashboard** – device cards, WAN traffic with peaks, errors and drops, a live mode (WAN traffic every 1–2 s),
+- **Dashboard** – device cards, WAN traffic (download and upload), errors and drops, a live mode (WAN traffic every 1–2 s),
   several dashboards per account, Grafana-style charts (multiple sources, thresholds, comparisons, zoom), and read-only
   public dashboards for a wall display. Light and dark theme, English and Polish.
 - **Devices and ports** – port state, speed, PoE, device / port / client detail pages, availability in percent,

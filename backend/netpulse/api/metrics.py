@@ -49,7 +49,7 @@ def _bucket_seconds(minutes: int) -> int:
 async def _aggregate_series(agg: aggregates.Aggregate, obj_id: int, columns: list[str], minutes: int, offset: int = 0) -> list[Point]:
     """Szereg z agregatu godzinowego, przeliczony na większe kubełki (długie zakresy wykresów)."""
     since, until = window(minutes, offset)
-    # Agregat godzinowy nie ma wszystkich kolumn tabeli (np. szczytu ruchu) – te serie są wtedy puste
+    # Agregat godzinowy może nie mieć wszystkich kolumn tabeli – te serie są wtedy puste
     wanted, columns = columns, [c for c in columns if c in agg.columns]
     view = table(agg.view, column("bucket"), column(agg.key), *[column(c) for c in columns])
     bucket = func.date_bin(
@@ -87,8 +87,7 @@ async def _series(
         if timescale:
             bucket = func.time_bucket(text(f"INTERVAL '{_bucket_seconds(minutes)} seconds'"), model.time)
             stmt = (
-                # Kolumny szczytu (`…_max`) w kubełku to maksimum, reszta – średnia
-                select(bucket.label("bucket"), *[(func.max(c) if c.key.endswith("_max") else func.avg(c)).label(c.key) for c in cols])
+                select(bucket.label("bucket"), *[func.avg(c).label(c.key) for c in cols])
                 .where(*where)
                 .group_by("bucket")
                 .order_by("bucket")
@@ -132,7 +131,7 @@ async def interface_metrics(interface_id: int, minutes: int = MinutesQuery, offs
         InterfaceMetric,
         InterfaceMetric.interface_id,
         interface_id,
-        ["in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards", "in_bps_max", "out_bps_max"],
+        ["in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards"],
         minutes,
         offset=offset,
     )
