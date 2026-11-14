@@ -39,12 +39,29 @@ def _iso(ts: int | None) -> str | None:
     return datetime.fromtimestamp(ts, UTC).isoformat() if ts else None
 
 
+# Prędkość z przyrostu bajtów od poprzedniego zdjęcia (od 0.85.5): `rx_rate`/`tx_rate` kontrolera to wartość z ok. 1 s,
+# więc jeden odczyt co 30 s przy ruchu w porywach trafiał raz w szczyt, raz w ciszę (tunel WG-VPS 14.11.2026: −53 % / −27 %
+# względem liczników jądra bramy w 10 min; bajty kontrolera zgodne co do bajta). Chwilowa wartość zostaje dla pierwszego
+# odczytu sesji, po przerwie dłuższej niż `RATE_MAX_GAP` i po wyzerowaniu licznika.
+RATE_MAX_GAP = timedelta(seconds=150)
+
+
+def _rate(now: datetime, prev_at: str | None, old: dict, since: str | None, field: str, value: float | None, fallback: float | None) -> float | None:
+    if value is None or not prev_at or not old.get("connected") or old.get("since") != since or old.get(field) is None:
+        return fallback
+    dt = (now - datetime.fromisoformat(prev_at)).total_seconds()
+    if dt <= 0 or dt > RATE_MAX_GAP.total_seconds() or value < old[field]:
+        return fallback
+    return (value - old[field]) * 8 / dt
+
+
 def snapshot(
     servers: list[VpnServer], users: list[VpnUser], sessions: list[VpnSession], prev: dict | None, now: datetime, device_id: int | None
 ) -> dict:
     """Stan VPN do zapisu: serwery i klienci (skonfigurowani i połączeni). Rozłączony klient ma `last_seen` z poprzedniego
     stanu – widget pokazuje „ostatnio połączony”. Klient spoza listy (np. OpenVPN, L2TP) pojawia się, gdy się połączy."""
     previous = {u["name"]: u for u in (prev or {}).get("users", [])}
+    prev_at = (prev or {}).get("at")
     by_name = {s.user: s for s in sessions}
     names = [u.name for u in users] + [s.user for s in sessions if s.user not in {u.name for u in users}]
     names += [n for n in previous if n not in names]  # klient, którego usunięto z listy, a łączył się – zostaje do końca zdjęcia
@@ -57,18 +74,19 @@ def snapshot(
         if s is None and u is None and not old.get("connected"):
             continue  # nie ma go w konfiguracji ani w połączeniach – stary wpis znika
         connected = s is not None
+        since = _iso(s.connected_at) if s else None
         out_users.append(
             {
                 "name": name,
                 "server_id": (s.server_id if s else None) or (u.server_id if u else None) or old.get("server_id"),
                 "tunnel_ip": (s.tunnel_ip if s else None) or (u.tunnel_ip if u else None) or old.get("tunnel_ip"),
                 "connected": connected,
-                "since": _iso(s.connected_at) if s else None,
+                "since": since,
                 "remote_ip": s.remote_ip if s else old.get("remote_ip"),
                 "down_bytes": s.tx_bytes if s else old.get("down_bytes"),
                 "up_bytes": s.rx_bytes if s else old.get("up_bytes"),
-                "down_bps": s.tx_bps if s else None,
-                "up_bps": s.rx_bps if s else None,
+                "down_bps": _rate(now, prev_at, old, since, "down_bytes", s.tx_bytes, s.tx_bps) if s else None,
+                "up_bps": _rate(now, prev_at, old, since, "up_bytes", s.rx_bytes, s.rx_bps) if s else None,
                 "last_seen": now.isoformat() if connected else old.get("last_seen"),
             }
         )

@@ -196,7 +196,7 @@ Klienci VPN bramy UniFi z kontrolera (`rest/networkconf` → `remote-user-vpn`, 
 stan w `app_settings` (`vpn:<kontroler>`), metryki `vpn_connected|vpn_down_bps|vpn_up_bps` w `metrics` na bramie (klucz = klient),
 bez migracji. Kod: `netpulse/vpn.py`, `unifi.py` (`UnifiApi.vpn`), `api/vpn.py` (`GET /api/vpn`), widget `vpn`, źródło wykresu `vpn`,
 alert i zdarzenie `vpn_connect`. Od 0.72.0: `rx_rate`/`tx_rate` kontrolera są już w b/s (do 0.71.1 ×8, migracja 0019 poprawia
-historię) i widget VPN na żywo (`/api/live/vpn`, `VpnLiveHub`, `useLiveVpn` + `withLiveVpn`). Interfejs, którego nie ma w odczycie SNMP (np. `wgsrv1` między sesjami, rola `vpn`), dostaje
+historię) i widget VPN na żywo (`/api/live/vpn`, `VpnLiveHub`, `useLiveVpn` + `withLiveVpn`). Od 0.85.5 historia prędkości klienta z przyrostu bajtów między zdjęciami (`vpn._rate`; chwilowy `rx_rate` co 30 s dawał −53 %). Interfejs, którego nie ma w odczycie SNMP (np. `wgsrv1` między sesjami, rola `vpn`), dostaje
 `oper_status = "notPresent"` bez próbek (panel: „brak sesji” / „nieobecny”). Opis: `docs/30-vpn.md`.
 
 ## Wykrywanie urządzeń i raport urządzenia (0.73.0)

@@ -19,6 +19,13 @@ Kolektor UniFi co cykl (30 s) czyta z kontrolera (sprawdzone na UCG Ultra, Netwo
 prędkość 8 razy za dużą) – sprawdzone 13.11.2026 na UCG Ultra: 30 MB przez tunel WireGuard to w kontrolerze 66,8 Mb/s
 przy ok. 9 MB/s (72 Mb/s) w liczniku `wg show`. Migracja 0019 dzieli zapisaną historię `vpn_down_bps|vpn_up_bps` przez 8. Brak serwera VPN = żadnych dalszych zapytań. Błąd odczytu VPN nie psuje reszty odczytu kontrolera.
 
+**Prędkość w historii z przyrostu bajtów (0.85.5).** `rx_rate`/`tx_rate` to wartość z ok. 1 s – dobra dla widgetu na żywo
+(średnio zgodna z jądrem bramy: 44,0 / 44,5 kb/s w 39 s), ale jeden odczyt co 30 s przy ruchu w porywach trafia raz w szczyt,
+raz w ciszę. Porównanie 14.11.2026 (tunel WG-VPS `wgsrv2`, 10 min, liczniki `/sys/class/net/wgsrv2/statistics`): port `wgsrv2`
+z SNMP i bajty klienta z kontrolera zgodne co do bajta (3,029 / 1,388 MB), historia `vpn_down_bps|vpn_up_bps` −53 % / −27 %.
+Od 0.85.5 `vpn.snapshot` liczy prędkość z różnicy `down_bytes`/`up_bytes` od poprzedniego zdjęcia (ta sama sesja – `since`,
+licznik nie spadł, przerwa ≤ 150 s, `RATE_MAX_GAP`); inaczej – wartość z kontrolera.
+
 ## Gdzie zapisuje
 
 - **Stan** (kto jest połączony, od kiedy, skąd, ostatni transfer) – zdjęcie w `app_settings` pod `vpn:<id kontrolera>`

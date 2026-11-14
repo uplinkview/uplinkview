@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import json
 from datetime import UTC, datetime, timedelta
 
@@ -47,6 +48,23 @@ def test_snapshot_keeps_offline_users_and_last_seen():
     phone2 = snap2["users"][0]
     assert not phone2["connected"] and phone2["last_seen"] == NOW.isoformat() and phone2["down_bps"] is None
     assert phone2["down_bytes"] == 76148892 and phone2["remote_ip"] == "203.0.113.7"
+
+
+def test_rate_from_byte_counters_between_samples():
+    """Prędkość z przyrostu bajtów od poprzedniego odczytu, nie chwilowa wartość z ok. 1 s (tunel WG-VPS 14.11.2026:
+    chwilowe odczyty co 30 s dawały −53 % / −27 % względem liczników jądra bramy)."""
+    servers, users, (s,) = parsed()
+    snap = snapshot(servers, users, [s], None, NOW, 1)
+    assert snap["users"][0]["down_bps"] == 147888  # pierwszy odczyt sesji – wartość z kontrolera
+    more = dataclasses.replace(s, tx_bytes=s.tx_bytes + 3_000_000, rx_bytes=s.rx_bytes + 600_000, tx_bps=5000, rx_bps=1)
+    phone = snapshot(servers, users, [more], snap, NOW + timedelta(seconds=30), 1)["users"][0]
+    assert phone["down_bps"] == 800_000 and phone["up_bps"] == 160_000  # 3 MB i 0,6 MB w 30 s
+    # Nowa sesja (inny czas połączenia), wyzerowany licznik albo długa przerwa – znowu wartość z kontrolera
+    new = dataclasses.replace(more, connected_at=s.connected_at + 100, tx_bytes=10)
+    assert snapshot(servers, users, [new], snap, NOW + timedelta(seconds=30), 1)["users"][0]["down_bps"] == 5000
+    reset = dataclasses.replace(more, tx_bytes=10)
+    assert snapshot(servers, users, [reset], snap, NOW + timedelta(seconds=30), 1)["users"][0]["down_bps"] == 5000
+    assert snapshot(servers, users, [more], snap, NOW + timedelta(minutes=5), 1)["users"][0]["down_bps"] == 5000
 
 
 def test_metrics_connected_flag_for_everyone_traffic_only_when_connected():
