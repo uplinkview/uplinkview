@@ -142,7 +142,7 @@ async def _probe(host: str, t: ApiTarget) -> Probe:
         update_available=snap.update_available,
         gateways=len(snap.gateways),
         monitored=sum(1 for g in snap.gateways if g.up is not None),
-        interfaces=sum(1 for i in snap.interfaces if i.identifier),
+        interfaces=sum(1 for i in snap.interfaces if i.identifier and not i.device.startswith("lo")),
         services=len(snap.services),
         hosts=len(snap.hosts),
         dhcp=snap.dhcp,
@@ -237,7 +237,8 @@ async def device_data(device_id: int):
         last_error=api.last_error,
         dhcp=snap.get("dhcp"),
         gateways=snap.get("gateways") or [],
-        interfaces=[i for i in snap.get("interfaces") or [] if i.get("identifier")],
+        # przypisane interfejsy bez pętli zwrotnej (lo0 OPNsense pokazuje jako przypisany „Loopback”)
+        interfaces=[i for i in snap.get("interfaces") or [] if i.get("identifier") and not str(i.get("device", "")).startswith("lo")],
         services=snap.get("services") or [],
         hosts=snap.get("hosts") or [],
     )

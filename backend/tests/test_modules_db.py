@@ -73,8 +73,8 @@ def client():
 
 
 def test_defaults_without_entry_are_all_on_and_fresh_install_starts_with_integrations_off(client):
-    assert client.get("/api/modules").json() == {"proxmox": True, "unifi": True, "agents": True, "backups": True}
-    assert run(ensure_modules) == {"proxmox": False, "unifi": False, "agents": False, "backups": True}
+    assert client.get("/api/modules").json() == {"proxmox": True, "unifi": True, "opnsense": True, "agents": True, "backups": True}
+    assert run(ensure_modules) == {"proxmox": False, "unifi": False, "opnsense": False, "agents": False, "backups": True}
     assert client.get("/api/modules").json()["proxmox"] is False
     # Drugi start niczego nie zmienia
     client.put("/api/modules", json={"proxmox": True})
@@ -87,7 +87,7 @@ def test_existing_install_keeps_configured_integrations(client):
             s.add(Controller(name="UniFi", host="10.7.0.1", api_key="klucz-api-1234"))
 
     run(configured)
-    assert run(ensure_modules) == {"proxmox": False, "unifi": True, "agents": False, "backups": True}
+    assert run(ensure_modules) == {"proxmox": False, "unifi": True, "opnsense": False, "agents": False, "backups": True}
 
 
 def test_only_admin_changes_modules(client):

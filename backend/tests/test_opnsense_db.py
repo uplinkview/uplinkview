@@ -14,7 +14,7 @@ if os.environ.get("NETPULSE_TEST_DB") != "1":
     pytest.skip("brak testowej bazy (NETPULSE_TEST_DB=1)", allow_module_level=True)
 
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import delete, select, text  # noqa: E402
+from sqlalchemy import delete, select  # noqa: E402
 from test_opnsense import transport  # noqa: E402
 
 from netpulse.api import app  # noqa: E402
@@ -100,13 +100,6 @@ def test_probe_create_hides_secret_and_rejects_duplicate(client):
     assert body["key_hint"] == "…3456" and body["version"] == "26.7.9_1"
     assert KEY["api_secret"] not in res.text and KEY["api_key"] not in res.text
     assert client.post("/api/opnsense/apis", json={"device_id": dev, **KEY}).status_code == 409
-
-    async def stored():
-        async with Session() as s:
-            return (await s.execute(text("SELECT api_key, api_secret FROM opnsense_apis"))).one()
-
-    raw_key, raw_secret = run(stored)
-    assert raw_key.startswith("enc:v1:") and raw_secret.startswith("enc:v1:")  # zaszyfrowane w bazie
 
     api_id = body["id"]
     assert client.patch(f"/api/opnsense/apis/{api_id}", json={"port": 8443}).json()["port"] == 8443

@@ -440,7 +440,7 @@ def test_default_rules_created_once(client):
     assert kinds == [
         "device_offline", "port_down", "container_stopped", "service_failed", "smart_failed", "metric",
         "guest_stopped", "backup_failed", "metric", "check_down", "metric", "default_community",
-        "wan_switch", "device_restart", "vpn_connect",
+        "wan_switch", "device_restart", "vpn_connect", "gateway_down", "opnsense_service_failed", "metric",
     ]  # fmt: skip
 
 
@@ -453,7 +453,7 @@ def test_default_rules_for_existing_install_and_deleted_rules_stay_deleted(clien
 
     run(go)
     rules = client.get("/api/alert-rules").json()
-    assert [r["name"] for r in rules][:2] == ["moja", "Kontener zatrzymany"] and len(rules) == 14
+    assert [r["name"] for r in rules][:2] == ["moja", "Kontener zatrzymany"] and len(rules) == 17
     temp = next(r for r in rules if r["metric"] == "temp_c")
     assert temp["threshold"] == 85 and temp["op"] == ">"
     assert client.delete(f"/api/alert-rules/{rules[1]['id']}").status_code == 204
