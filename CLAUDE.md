@@ -419,6 +419,9 @@ Od 0.58.1 menu w grupach Monitoring / Zdarzenia / Integracje / System – pole `
   MIKROTIK-MIB 7.25.1** (tabela `metrics`, `GET /api/devices/{id}/sensors`, źródła wykresów `snmp_sensor|snmp_poe|snmp_sfp`,
   alerty `temp_c` i `sfp_rx_dbm`; opis w `docs/12-mikrotik-omada-snmp.md`). Fizyczny routerboard (kilka rdzeni, PPPoE,
   czujniki, PoE, SFP) dalej tylko na syntetycznym `mikrotik-hex.snmprec`.
+- **OPNsense API – dalsze etapy** – lista w `docs/46-opnsense-api.md` („Do zrobienia”, 14.11.2026): 1 ruch na urządzenie,
+  2 DNS (Unbound), 3 IDS (Suricata), 4 VPN, 5 zapora, 6 zdrowie systemu, 7 Insight/NetFlow, 8 akcje (zapis, osobna decyzja).
+  Każdy punkt API najpierw sprawdzić sondą na prawdziwym OPNsense.
 - **API RouterOS i API kontrolera Omada** – robić dopiero z prawdziwym sprzętem (razem z weryfikacją MikroTika).
 - **Proxmox – reszta na prawdziwym sprzęcie** – PVE 9.2.24 (192.168.1.86, VM 100 + LXC 101, kopia LXC 101) działa;
   po 0.28.5 sprawdzić „ostatnia kopia” LXC 101 w panelu i alert „brak świeżej kopii” po 36 h bez nowej kopii.

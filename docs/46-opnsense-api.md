@@ -78,11 +78,33 @@ Wyłączony moduł „OPNsense API” ukrywa rodzaje `gateway_down`, `opnsense_s
 UplinkView używa tylko odczytów (GET), ale z grupą `admins` klucz pozwala na wszystko. Ograniczone uprawnienia
 (osobna grupa z samymi stronami statusu) – w etapie 2.
 
-## Etap 2 (do zrobienia)
+## Do zrobienia (zapisane 14.11.2026)
 
-- Minimalne uprawnienia użytkownika API zamiast `admins` (sprawdzić, które uprawnienia otwierają każdy punkt API).
-- Klienci OPNsense na stronie Klienci (historia, nazwy z DHCP).
-- VPN (WireGuard, OpenVPN, IPsec), DNS (Unbound: zapytania, blokowane), zapora (stany, reguły z licznikami).
-- Nazwy interfejsów z API (WAN/LAN) jako etykiety portów – kolektor SNMP nadpisuje dziś etykiety co cykl, trzeba
+Lista z wiedzy o API OPNsense – **przed budową każdego punktu sprawdzić go sondą na prawdziwym OPNsense 26.7**
+(tylko GET, dane logowania nie są wypisywane) i zapisać zanonimizowaną odpowiedź w `tests/fixtures/opnsense_api/`.
+Kolejność według wartości dla użytkownika:
+
+1. **Ruch na urządzenie w sieci** (`diagnostics/traffic/top`): kto ile pobiera i wysyła na żywo – strona Klienci
+   z ruchem dla użytkowników bez UniFi; historia w `client_metrics` / `known_clients`, nazwy z DHCP.
+2. **DNS – Unbound**: zapytania, zablokowane przez listy blokad, najczęstsze domeny i klienci (jak Pi-hole);
+   wykresy, alert przy nagłym skoku zapytań.
+3. **IDS – Suricata** (`ids/service/query_alerts`): wykryte zdarzenia (sygnatura, źródło, cel, waga), alert przy
+   groźnym zdarzeniu, lista na stronie urządzenia.
+4. **VPN**: WireGuard (klienci, ostatni handshake, przesłane dane), OpenVPN (sesje), IPsec (tunele w górze/w dole);
+   alerty „tunel nie działa” i „nowe połączenie” – jak VPN z UniFi (`docs/30-vpn.md`).
+5. **Zapora**: liczba stanów względem limitu (ostrzeżenie przed przepełnieniem), liczniki reguł (ruch, blokady),
+   dziennik zapory (ostatnie blokady, najczęściej blokowane adresy).
+6. **Zdrowie systemu**: temperatury, mbufy, błędy interfejsów (dokładniej niż SNMP), komunikaty systemu (raporty
+   awarii, ostrzeżenia konfiguracji), certyfikaty z datą ważności (alert przed wygaśnięciem), dynamiczny DNS
+   (czy adres się zaktualizował), CARP (który OPNsense jest główny, alert przy przełączeniu).
+7. **Historia ruchu – Insight / NetFlow** (gdy włączony w OPNsense): ruch według hostów, portów i protokołów,
+   raporty „kto zużył najwięcej w miesiącu”.
+8. **Akcje (zapis)** – na końcu i tylko po osobnej decyzji: restart usługi, zablokowanie urządzenia, aktualizacja.
+   Wymagają uprawnień zapisu, potwierdzeń w panelu i wpisów w dzienniku zdarzeń.
+
+Przy pierwszym z tych etapów także:
+- minimalne uprawnienia użytkownika API zamiast `admins` (sprawdzić, które uprawnienia otwierają każdy punkt API),
+- nazwy interfejsów z API (WAN/LAN) jako etykiety portów – kolektor SNMP nadpisuje dziś etykiety co cykl, trzeba
   to rozwiązać w kolektorze.
-- Klaster CARP (dwa OPNsense) i kilka bram WAN – bez sprzętu, nie sprawdzone.
+
+Bez sprzętu, nie sprawdzone: klaster CARP (dwa OPNsense), kilka bram WAN.
