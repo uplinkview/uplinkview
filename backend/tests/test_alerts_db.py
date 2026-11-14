@@ -458,7 +458,7 @@ def test_default_rules_for_existing_install_and_deleted_rules_stay_deleted(clien
     assert temp["threshold"] == 85 and temp["op"] == ">"
     assert client.delete(f"/api/alert-rules/{rules[1]['id']}").status_code == 204
     run(go)
-    assert len(client.get("/api/alert-rules").json()) == 13
+    assert len(client.get("/api/alert-rules").json()) == 16
 
 
 def test_rules_api_validation(client):
