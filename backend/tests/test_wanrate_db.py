@@ -88,7 +88,8 @@ def test_chart_line_is_the_real_speed_not_the_average(gateway):
         hour = c.get("/api/dashboard/traffic", params={"minutes": 60}).json()
         assert hour["interval_s"] == 30  # kubełek 15 s, ale luki dopiero po 75 s
         by_time = {p["time"][:19]: p["values"] for p in hour["points"]}
-        assert by_time[base.strftime("%Y-%m-%dT%H:%M:%S")]["in_bps"] == 2 * MBPS  # bez pomiaru co 5 s – średnia
+        first = (base + timedelta(seconds=15)).strftime("%Y-%m-%dT%H:%M:%S")  # kubełek 15 s z próbką średniej
+        assert by_time[first]["in_bps"] == 2 * MBPS  # bez pomiaru co 5 s – średnia
         assert max(v["in_bps"] or 0 for v in by_time.values()) == 800 * MBPS
         assert sum(1 for v in by_time.values() if v["in_bps"] == 800 * MBPS) >= 1
         port = c.get(f"/api/interfaces/{wan_id}/metrics", params={"minutes": 60}).json()
