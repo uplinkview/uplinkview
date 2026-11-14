@@ -156,12 +156,17 @@ def test_transfer_usage(ucg):
     eth4 = interface_id("eth4")
     now = datetime.now(UTC)
 
+    eth0 = interface_id("eth0")
+
     async def samples():
         async with Session() as s, s.begin():
             await s.execute(delete(InterfaceMetric))
             # Dwie próbki po 30 s: 8 Mb/s w dół, 0,8 Mb/s w górę → 2 × 30 MB i 2 × 3 MB
             for back in (5, 35):
                 s.add(InterfaceMetric(time=now - timedelta(seconds=back), interface_id=eth4, in_bps=8e6, out_bps=8e5))
+            # WAN routera za bramą (np. OPNsense w VM): rola `wan`, ale nie na liście łączy – jego ruch już policzyło eth4
+            (await s.get(Interface, eth0)).role = "wan"
+            s.add(InterfaceMetric(time=now - timedelta(seconds=5), interface_id=eth0, in_bps=8e9, out_bps=8e9))
 
     run(samples)
     body = client.get("/api/wan/usage").json()

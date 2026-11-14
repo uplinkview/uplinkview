@@ -294,19 +294,20 @@ async def wan_usage(
     reset_day: int = Query(1, ge=1, le=usage.MAX_RESET_DAY, description="dzień miesiąca, od którego liczy się okres (1 = miesiąc kalendarzowy)"),
     device_id: int | None = Query(None, ge=1, description="router; puste = wszystkie"),
 ):
-    """Zużycie transferu portów WAN: dziś i w bieżącym okresie (miesiąc albo okres od dnia `reset_day`)."""
+    """Zużycie transferu łączy WAN: dziś i w bieżącym okresie (miesiąc albo okres od dnia `reset_day`).
+
+    Porty z listy łączy WAN (Ustawienia → Łącza WAN). Porty z rolą `wan` spoza listy się nie liczą: to zwykle WAN
+    routera za bramą (np. MikroTik albo OPNsense w maszynie wirtualnej), którego ruch przeszedł już przez łącze bramy –
+    liczony dwa razy zawyżałby licznik. Bez listy (pusta) – wszystkie porty z rolą `wan`."""
     timescale = await timescale_available()
     async with Session() as session:
         hidden = hidden_drivers(await read_modules(session))
-        q = (
-            select(Interface, Device.name)
-            .join(Device, Device.id == Interface.device_id)
-            .where(Interface.role == "wan", Device.driver.not_in(hidden or ("",)))
-        )
+        links = {x.interface_id: x for x in (await session.scalars(select(WanLink))).all()}
+        q = select(Interface, Device.name).join(Device, Device.id == Interface.device_id).where(Device.driver.not_in(hidden or ("",)))
+        q = q.where(Interface.id.in_(list(links))) if links else q.where(Interface.role == "wan")
         if device_id is not None:
             q = q.where(Device.id == device_id)
         ports = (await session.execute(q)).all()
-        links = {x.interface_id: x for x in (await session.scalars(select(WanLink))).all()}
         data = await usage.load(session, [p.id for p, _ in ports], reset_day, timescale)
 
     order = sorted(ports, key=lambda p: (links[p[0].id].position if p[0].id in links else 99, p[1], p[0].if_index))

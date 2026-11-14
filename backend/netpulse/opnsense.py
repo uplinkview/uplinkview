@@ -9,6 +9,7 @@ odpowiedziach z OPNsense 26.7: `tests/fixtures/opnsense_api/*.json`). Opis: docs
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
@@ -23,6 +24,9 @@ SERVICES = "core/service/search"
 ARP = "diagnostics/interface/get_arp"
 # DHCP: od 25.1 domyślnie dnsmasq, do wyboru Kea; ISC DHCP (wtyczka) ma własny punkt
 LEASES = ("dnsmasq/leases/search", "kea/leases4/search", "dhcpv4/leases/search_lease")
+# Ruch na adres (od 0.82.0): OPNsense próbkuje ruch interfejsu przez kilka sekund; lista identyfikatorów po przecinku
+TRAFFIC_TOP = "diagnostics/traffic/top/{}"
+TRAFFIC_TIMEOUT_S = 30.0  # odpowiedź trwa 3–11 s (bez ruchu – ok. 11 s i status „timeout”)
 
 _NUMBER = re.compile(r"-?\d+(?:[.,]\d+)?")
 
@@ -75,6 +79,9 @@ class Host:
     manufacturer: str | None
     source: str  # dhcp | arp
     expires: int | None = None  # koniec dzierżawy (unix), tylko DHCP
+    # Ruch z próbki OPNsense (od 0.82.0), b/s; None = nie mierzono (adres spoza sieci LAN albo brak odczytu)
+    down_bps: float | None = None
+    up_bps: float | None = None
 
 
 @dataclass
@@ -86,6 +93,8 @@ class Snapshot:
     services: list[Service] = field(default_factory=list)
     hosts: list[Host] = field(default_factory=list)
     dhcp: str | None = None  # z którego serwera DHCP są dzierżawy (dnsmasq | kea | isc); None = brak
+    # Odczyt ruchu urządzeń (od 0.82.0): "ok", tekst błędu albo None (nie mierzono – brak sieci LAN albo uprawnień)
+    traffic: str | None = None
 
     @property
     def update_available(self) -> bool:
@@ -254,6 +263,63 @@ def merge_hosts(leases: list[Host], arp: list[Host]) -> list[Host]:
     return sorted(by_mac.values(), key=lambda h: tuple(int(p) for p in (h.ip or "999.0.0.0").split(".") if p.isdigit()))
 
 
+def lan_interfaces(interfaces: list[Iface]) -> list[Iface]:
+    """Sieci lokalne do pomiaru ruchu urządzeń: przypisane, z adresem IPv4, bez bramy i trasy domyślnej (to WAN), bez pętli."""
+    return [
+        i
+        for i in interfaces
+        if i.identifier and i.addr4 and not i.gateways and not i.default_route and not i.device.startswith("lo")
+    ]
+
+
+def parse_top(body: Any) -> dict[str, list[tuple[str, float, float]]]:
+    """Próbka ruchu na adres: {identyfikator: [(adres, pobieranie b/s, wysyłanie b/s)]}.
+
+    Sprawdzone na 26.7.9 (ruch w jedną stronę z licznikiem interfejsu obok): `*_in` = ruch DO adresu (pobieranie),
+    `*_out` = ruch OD adresu. `cumulative_bytes_*` to bajty z jednej sekundy próbki – zgodne z licznikiem interfejsu
+    w 98–100 %; `rate_bits_*` jest stale o połowę niższe (średnia z 2 s z jedną sekundą danych), więc go nie używamy.
+    Status „timeout” = w czasie próbki nie było ruchu."""
+    out: dict[str, list[tuple[str, float, float]]] = {}
+    if not isinstance(body, dict):
+        return out
+    for ident, part in body.items():
+        if not isinstance(part, dict):
+            continue
+        rows = []
+        for r in part.get("records") or []:
+            if not isinstance(r, dict) or not _text(r.get("address")):
+                continue
+            down, up = r.get("cumulative_bytes_in"), r.get("cumulative_bytes_out")
+            if isinstance(down, int | float) and isinstance(up, int | float):
+                rows.append((str(r["address"]).strip(), float(down) * 8, float(up) * 8))
+        out[str(ident)] = rows
+    return out
+
+
+def apply_traffic(hosts: list[Host], lans: list[Iface], top: dict[str, list[tuple[str, float, float]]]) -> None:
+    """Wpisuje ruch urządzeniom z sieci LAN, które OPNsense zmierzył; urządzenie z tej sieci bez wpisu = 0 b/s.
+    Adresy spoza sieci LAN (serwery w internecie, po drugiej stronie) są pomijane."""
+    nets = []
+    for i in lans:
+        if i.identifier in top:
+            try:
+                nets.append(ipaddress.ip_interface(i.addr4 or "").network)
+            except ValueError:
+                continue
+    rates: dict[str, tuple[float, float]] = {}
+    for ident in top:
+        for addr, down, up in top[ident]:
+            prev = rates.get(addr, (0.0, 0.0))
+            rates[addr] = (prev[0] + down, prev[1] + up)
+    for h in hosts:
+        try:
+            ip = ipaddress.ip_address(h.ip or "")
+        except ValueError:
+            continue
+        if any(ip in n for n in nets):
+            h.down_bps, h.up_bps = rates.get(str(ip), (0.0, 0.0))
+
+
 def parse_firmware(body: Any) -> tuple[str | None, str | None]:
     product = body.get("product") if isinstance(body, dict) else None
     if not isinstance(product, dict):
@@ -331,3 +397,28 @@ class OpnsenseApi:
                 break
         snap.hosts = merge_hosts(leases, parse_arp(arp))
         return snap
+
+    async def read_traffic(self, snap: Snapshot) -> None:
+        """Ruch urządzeń w sieciach LAN (osobno od `snapshot`, bo trwa kilka sekund). Błąd nie przerywa odczytu –
+        trafia do `snap.traffic`; brak sieci LAN albo uprawnień = None (nie mierzono)."""
+        lans = lan_interfaces(snap.interfaces)
+        if not lans:
+            return
+        path = TRAFFIC_TOP.format(",".join(i.identifier or "" for i in lans))
+        try:
+            res = await self._client.get(self.base + path, timeout=TRAFFIC_TIMEOUT_S)
+        except httpx.HTTPError as exc:
+            snap.traffic = f"Brak połączenia z OPNsense: {type(exc).__name__}: {exc}"
+            return
+        if res.status_code in (403, 404):
+            return
+        if res.status_code != 200:
+            snap.traffic = f"OPNsense odpowiedział kodem {res.status_code} dla {path}"
+            return
+        try:
+            body = res.json()
+        except ValueError:
+            snap.traffic = "OPNsense zwrócił odpowiedź, która nie jest JSON-em"
+            return
+        apply_traffic(snap.hosts, lans, parse_top(body))
+        snap.traffic = "ok"

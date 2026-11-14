@@ -182,10 +182,13 @@ sumy bajtów WAN i portów LAN zgodne co do 0,1–1 %. Opis: `docs/42-szczyt-i-t
 
 ## Zużycie transferu (0.82.0)
 
-Widget `wan_usage` („Zużycie transferu”): bajty pobrane/wysłane portami z rolą `wan` dziś i w okresie (miesiąc albo od dnia
+Widget `wan_usage` („Zużycie transferu”): bajty pobrane/wysłane łączami z listy `wan_links` (od 0.82.1; bez listy – porty
+z rolą `wan`; WAN routera za bramą, np. CHR/OPNsense w VM, liczyłby się podwójnie) dziś i w okresie (miesiąc albo od dnia
 `reset_day` 1–28), słupki dni, opcjonalnie pakiet `limit_gb` z prognozą. Bajty = suma `in_bps × poll_interval / 8` z surowych
 próbek (część okresu starsza niż `retention_days` – z agregatu godzinowego), dni w TZ serwera. Kod: `netpulse/usage.py`,
 `GET /api/wan/usage` (`api/wan.py`), `WanUsageWidget.tsx`, pulpit publiczny w `resolve()`. Bez migracji. Opis: `docs/19-dual-wan.md`.
+Porównanie z UCG 14.11.2026 (VPS, 47 pełnych godzin): +0,12 %; ruch ginie tylko w próbkach przy padnięciu/powrocie łącza
+i restarcie kolektora. Historia UniFi zaczyna się od aktualizacji bramy 11.11 01:00.
 
 ## VPN (0.57.0)
 

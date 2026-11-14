@@ -69,7 +69,17 @@ Stany łącza: **w użyciu** (zielony), **nieaktywne – zapas** (czerwony pusty
 
 ## Zużycie transferu (0.82.0)
 
-Licznik dzienny i miesięczny dla portów z rolą WAN (te same porty co ruch WAN na pulpicie: WAN 1, WAN 2…).
+Licznik dzienny i miesięczny dla łączy z listy **Ustawienia → Łącza WAN** (WAN 1, WAN 2…). Porty z rolą WAN spoza
+listy się nie liczą (od 0.82.1): to zwykle WAN routera za bramą – np. MikroTik albo OPNsense w maszynie wirtualnej –
+którego ruch przeszedł już przez łącze bramy, więc liczony drugi raz zawyżałby licznik. Gdy lista jest pusta, licznik
+bierze wszystkie porty z rolą WAN.
+
+**Porównanie z UCG Ultra (14.11.2026, VPS, 11–14.11):** 47 pełnych godzin – pobrane 36,41 GB w UniFi i 36,46 GB
+w UplinkView (+0,12 %), wysłane +0,12 %, pojedyncze godziny do ±2 %. Godziny z brakującymi próbkami tracą ruch:
+chwila, gdy łącze padło albo wróciło (test awarii WAN 1 11.11, godzina 21:00: −14 %), restart kolektora przy
+aktualizacji UplinkView (−3 … −8 % w godzinie). Wszystkie godziny razem: −0,9 %. Pierwszy kubełek UniFi po aktualizacji
+bramy (11.11 01:00) jest niepełny po stronie UniFi – historia UniFi zaczyna się wtedy od nowa, więc sum z dłuższego
+okresu nie da się porównać.
 
 - **Skąd bajty.** Każda próbka kolektora to średnia prędkość portu z 30 s, więc bajty = prędkość × 30 s ÷ 8, zsumowane
   po próbkach. Po pominiętym odczycie (przerwa do 2 min) kolektor dzieli przedział na części po 30 s

@@ -4,7 +4,9 @@ Zapisuje w ogólnej tabeli `metrics` na urządzeniu OPNsense:
 - `wan_latency_ms`, `wan_jitter_ms`, `wan_loss_percent` – klucz = interfejs bramy (np. `em1`), jak pomiary bramy UniFi,
   więc działa to samo źródło wykresu „Opóźnienie WAN” i te same reguły alertów,
 - `gateway_up` (1/0) – klucz = nazwa bramy (WAN_DHCP), tylko bramy z monitorowaniem,
-- `opnsense_service_up` (1/0) – klucz = nazwa usługi.
+- `opnsense_service_up` (1/0) – klucz = id usługi,
+- `client_down_bps`, `client_up_bps` (od 0.82.0) – ruch urządzenia w sieci LAN z próbki OPNsense, klucz = MAC;
+  wiersz dla każdego znanego urządzenia (DHCP/ARP) z mierzonej sieci, także 0 – średnia na wykresie jest wtedy uczciwa.
 Stan bram trafia też do łączy WAN (`wan_links.apply_controller`): brama działa/nie działa i która ma trasę domyślną –
 kolektor SNMP użyje tego w następnym cyklu (aktywne łącze, alert przełączenia WAN).
 Pozostałe dane (wersja, interfejsy, usługi, urządzenia z DHCP i ARP) – w `opnsense_apis.snapshot` do panelu.
@@ -70,6 +72,10 @@ def metric_rows(dev_id: int, snap: Snapshot, now: datetime) -> list[dict]:
                     rows.setdefault((name, g.interface), value)  # kilka bram na jednym interfejsie (v4/v6) – pierwsza
     for s in snap.services:
         rows[("opnsense_service_up", s.name)] = 1.0 if s.running else 0.0
+    for h in snap.hosts:
+        if h.down_bps is not None and h.up_bps is not None:
+            rows[("client_down_bps", h.mac)] = h.down_bps
+            rows[("client_up_bps", h.mac)] = h.up_bps
     return [{"time": now, "device_id": dev_id, "name": n, "key": k[:255], "value": v} for (n, k), v in rows.items()]
 
 
@@ -114,6 +120,7 @@ class OpnsenseCollector:
         client = self.client_factory(target)
         try:
             snap = await client.snapshot()
+            await client.read_traffic(snap)
         except OpnsenseError as exc:
             log.warning("%s (%s): %s", target.name, target.host, exc)
             await self.save_failure(target, now, str(exc))
