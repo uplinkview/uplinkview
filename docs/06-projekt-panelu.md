@@ -108,6 +108,7 @@ Pulpit składa się z **widgetów**. Widget to `{ typ, konfiguracja }` zapisana 
 | `wan_status`      | Aktywny WAN: porty WAN routera, które działa, którym idzie ruch (0.19.0) |
 | `wan_chart`       | Aktywne łącze WAN: linia każdego WAN-u i pasy stanu, moment przełączenia (0.19.0) |
 | `wan_sla`         | SLA łączy WAN: dostępność w %, liczba i czas przerw za 24 godz./7/30 dni (0.19.0) |
+| `wan_usage`       | Zużycie transferu: dziś i w miesiącu (albo okresie od dnia 1–28), słupki dni, opcjonalnie pakiet GB z prognozą (0.82.0) |
 
 Widgety WAN opisuje `docs/19-dual-wan.md`.
 

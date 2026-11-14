@@ -19,6 +19,7 @@ import {
   IconShieldLock,
   IconTable,
   IconTimeline,
+  IconTransfer,
   IconWorld,
   type Icon,
 } from "@tabler/icons-react";
@@ -40,6 +41,7 @@ import { SummaryWidget } from "./SummaryWidget";
 import { WanChartWidget } from "./WanChartWidget";
 import { WanSlaWidget } from "./WanSlaWidget";
 import { WanStatusWidget } from "./WanStatusWidget";
+import { WanUsageWidget } from "./WanUsageWidget";
 
 export const WIDGET_TYPES: { type: WidgetType; label: TextKey; description: TextKey; icon: Icon }[] = [
   { type: "status", label: "widget.type.status", description: "widget.type.status.desc", icon: IconCircleCheck },
@@ -62,6 +64,7 @@ export const WIDGET_TYPES: { type: WidgetType; label: TextKey; description: Text
   { type: "wan_status", label: "widget.type.wan_status", description: "widget.type.wan_status.desc", icon: IconWorld },
   { type: "wan_chart", label: "widget.type.wan_chart", description: "widget.type.wan_chart.desc", icon: IconArrowsExchange },
   { type: "wan_sla", label: "widget.type.wan_sla", description: "widget.type.wan_sla.desc", icon: IconShieldCheck },
+  { type: "wan_usage", label: "widget.type.wan_usage", description: "widget.type.wan_usage.desc", icon: IconTransfer },
 ];
 
 export function widgetTitle(w: Widget): string {
@@ -82,6 +85,8 @@ export function widgetTitle(w: Widget): string {
       return t("widget.type.wan_chart");
     case "wan_sla":
       return t("widget.type.wan_sla");
+    case "wan_usage":
+      return t("widget.type.wan_usage");
     case "stat":
       return statTitle(w.config);
     case "bargauge":
@@ -128,6 +133,8 @@ export function WidgetView({ widget }: { widget: Widget }) {
       return <WanChartWidget deviceId={widget.config.device_id} metric={widget.config.metric} rangeMin={widget.config.range_min} height={widget.config.height} />;
     case "wan_sla":
       return <WanSlaWidget deviceId={widget.config.device_id} days={widget.config.days} />;
+    case "wan_usage":
+      return <WanUsageWidget deviceId={widget.config.device_id} resetDay={widget.config.reset_day} limitGb={widget.config.limit_gb} />;
     case "stat":
       return <StatWidget config={widget.config} />;
     case "bargauge":

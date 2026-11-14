@@ -220,6 +220,11 @@ export type WanChartWidgetModel = WidgetBase & {
   config: { device_id?: number | null; metric: WanMetric; range_min?: RangeMinutes | null; height: ChartHeight };
 };
 export type WanSlaWidgetModel = WidgetBase & { type: "wan_sla"; config: { device_id?: number | null; days: 1 | 7 | 30 } };
+/** Licznik zużycia transferu (od 0.82.0): dziś i w okresie od dnia `reset_day`, opcjonalnie pakiet `limit_gb` (pobrane + wysłane). */
+export type WanUsageWidgetModel = WidgetBase & {
+  type: "wan_usage";
+  config: { device_id?: number | null; reset_day: number; limit_gb?: number | null };
+};
 
 // --- panele od 0.27.0 (schemat: backend/netpulse/api/layout_schemas.py) ---------------------
 export type CollectionKind = "devices" | "ports" | "disks" | "wifi" | "containers" | "services" | "clients" | "checks" | "guests";
@@ -340,6 +345,7 @@ export type Widget =
   | WanStatusWidgetModel
   | WanChartWidgetModel
   | WanSlaWidgetModel
+  | WanUsageWidgetModel
   | StatWidgetModel
   | BarGaugeWidgetModel
   | TableWidgetModel
@@ -615,6 +621,8 @@ export function newWidget(type: WidgetType, id: string = newId()): Widget {
       return { id, type, w: 8, config: { device_id: null, metric: "in_bps", range_min: null, height: "md" } };
     case "wan_sla":
       return { id, type, w: 12, config: { device_id: null, days: 7 } };
+    case "wan_usage":
+      return { id, type, w: 4, config: { device_id: null, reset_day: 1, limit_gb: null } };
     case "stat":
       return {
         id,
@@ -694,6 +702,8 @@ export function defaultHeight(w: Widget): number {
     case "wan_sla":
     case "state_timeline":
       return 6;
+    case "wan_usage":
+      return 7;
     case "heatmap":
       return 7;
     case "bargauge":
@@ -785,7 +795,7 @@ export function swapInReadingOrder(l: DashboardLayout, id: string, dir: -1 | 1):
 /** Widgety z listą (od 0.56.0): ich treść rośnie z danymi (porty, zdarzenia, alerty), więc w podglądzie karta
  * wydłuża się, gdy treść się nie mieści, zamiast pokazywać pasek przewijania. Wykresy i liczby skalują się do karty. */
 export const AUTO_HEIGHT = new Set<Widget["type"]>([
-  "table", "bargauge", "poe", "state_timeline", "alerts", "events", "checks", "wan_status", "wan_sla", "devices", "server", "status", "vpn",
+  "table", "bargauge", "poe", "state_timeline", "alerts", "events", "checks", "wan_status", "wan_sla", "wan_usage", "devices", "server", "status", "vpn",
 ]);
 
 /** Ile wierszy siatki potrzeba, żeby zmieścić `px` treści (odwrotność `rowsToPx`; do 2 px zapasu na zaokrąglenia).

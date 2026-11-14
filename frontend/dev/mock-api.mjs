@@ -302,6 +302,34 @@ createServer(async (req, res) => {
   // --- pulpit: układ, moduły i dane paneli (wykresy, kolekcje, stany) ---
   // Mapa sieci z obciążeniem kabli: brama – switch (uplink mocno zajęty) – AP, modem za bramą
   // Dwa łącza WAN: światłowód niesie ruch, 25 minut temu przełączenie na LTE na 10 minut
+  // Licznik transferu (0.82.0): okres od `reset_day`, dzień po dniu kilkadziesiąt GB, dziś część dnia
+  if (route === "GET /api/wan/usage") {
+    const resetDay = Number(url.searchParams.get("reset_day") ?? 1);
+    const pad = (n) => String(n).padStart(2, "0");
+    const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() - (today.getDate() < resetDay ? 1 : 0), resetDay);
+    const next = new Date(start.getFullYear(), start.getMonth() + 1, resetDay);
+    const days = [];
+    for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+      const i = days.length;
+      const part = iso(d) === iso(today) ? (today.getHours() * 60 + today.getMinutes()) / 1440 : 1;
+      days.push({ day: iso(d), rx_bytes: Math.round((18 + 9 * Math.sin(i * 1.3) + (d.getDay() % 6 === 0 ? 14 : 0)) * 1e9 * part), tx_bytes: Math.round((2.2 + Math.cos(i)) * 1e9 * part) });
+    }
+    const add = (a, b) => ({ rx_bytes: a.rx_bytes + b.rx_bytes, tx_bytes: a.tx_bytes + b.tx_bytes });
+    const period = days.reduce(add, { rx_bytes: 0, tx_bytes: 0 });
+    const todayT = { rx_bytes: days.at(-1).rx_bytes, tx_bytes: days.at(-1).tx_bytes };
+    const lte = { rx_bytes: 1.2e9, tx_bytes: 0.3e9 };
+    return send(res, 200, {
+      timezone: "Europe/Warsaw", reset_day: resetDay, today: iso(today), period_start: iso(start), next_period_start: iso(next),
+      total_today: todayT, total_period: add(period, lte),
+      ports: [
+        { interface_id: 4, device_id: 1, device_name: "UCG Ultra", name: "Światłowód", today: todayT, period },
+        { interface_id: 3, device_id: 1, device_name: "UCG Ultra", name: "LTE", today: { rx_bytes: 0, tx_bytes: 0 }, period: lte },
+      ],
+      days,
+    });
+  }
   if (route === "GET /api/wan/history") {
     const minutes = Number(url.searchParams.get("minutes") ?? 60);
     const stride = bucketS(minutes);

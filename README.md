@@ -37,7 +37,7 @@ backup first.
   history for up to a year (hourly aggregates), automatic network discovery.
 - **WiFi** – networks and clients with signal, presence and roaming history (UniFi Network API).
 - **Network map** – topology from LLDP with cable load and speed.
-- **Dual WAN** – link state, failover, SLA, latency to each link, gateway speed tests.
+- **Dual WAN** – link state, failover, SLA, latency to each link, gateway speed tests, daily and monthly data usage (with an optional data plan).
 - **Servers** – Linux over SNMP or with the lightweight UplinkView agent (Docker containers, systemd services, SMART,
   temperatures) and Proxmox VE (VMs, LXC containers, storage, vzdump backups).
 - **Availability checks** – ping (latency, loss, jitter), HTTP(S) with certificate expiry, TCP port, DNS.

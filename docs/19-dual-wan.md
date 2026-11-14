@@ -12,6 +12,7 @@ dostępność (SLA) każdego łącza.
 | Widget **Aktywny WAN** | Porty WAN routera i ich stan. Zielona kropka: łącze jest w użyciu (idzie nim ruch). Czerwona: łącze nieaktywne – pusta to łącze zapasowe gotowe do przejęcia ruchu, pełna to awaria. Nad listą: „Teraz: …”, czyli łącze, którym idzie ruch. |
 | Widget **Aktywne łącze WAN** | Wykres z osobną linią dla każdego WAN-u. Linia łącza jest rysowana tylko wtedy, gdy szedł nim ruch, więc po awarii WAN 1 linia WAN 2 zaczyna się w chwili przełączenia. Pod wykresem są pasy stanu każdego łącza (zielony – w użyciu, jasnoczerwony – zapas, czerwony – awaria) i lista ostatnich przełączeń. |
 | Widget **SLA łączy WAN** | Dostępność każdego łącza w % za 24 godz., 7 albo 30 dni (przełącznik w karcie), liczba przerw, łączny czas przerw, najdłuższa przerwa, ile czasu łącze niosło ruch i ostatnia przerwa (albo trwająca). |
+| Widget **Zużycie transferu** (od 0.82.0) | Ile danych pobrano i wysłano przez WAN **dziś** i **w tym miesiącu** (albo w okresie od wybranego dnia), słupki dzień po dniu, przy kilku łączach – podział na łącza. Opcjonalnie pakiet w GB (np. internet mobilny): pasek wykorzystania i prognoza na koniec okresu. Opis niżej: „Zużycie transferu”. |
 | **Ustawienia → Łącza WAN** | Które porty routera są WAN 1, WAN 2… Kolejność to priorytet: WAN 1 to łącze główne. |
 
 Widgety dodaje się jak inne: Dashboard → Edytuj pulpit → Dodaj widget. W ustawieniach widgetu można wybrać router
@@ -65,6 +66,28 @@ bez pełnego cyklu odczytu pomiędzy (drugi router dowiaduje się o przełączen
 
 Stany łącza: **w użyciu** (zielony), **nieaktywne – zapas** (czerwony pusty), **nie działa** (czerwony pełny),
 **brak danych** (szary – router nie odpowiada na SNMP albo kolektor nie działa).
+
+## Zużycie transferu (0.82.0)
+
+Licznik dzienny i miesięczny dla portów z rolą WAN (te same porty co ruch WAN na pulpicie: WAN 1, WAN 2…).
+
+- **Skąd bajty.** Każda próbka kolektora to średnia prędkość portu z 30 s, więc bajty = prędkość × 30 s ÷ 8, zsumowane
+  po próbkach. Po pominiętym odczycie (przerwa do 2 min) kolektor dzieli przedział na części po 30 s
+  (`rates.sample_times`), więc nic nie ginie, a suma zgadza się z UniFi (porównanie sum bajtów WAN z 13.11.2026: 0,1–1 %).
+  **Ograniczenie:** po dłuższej przerwie w odczytach routera (router nie odpowiadał na SNMP, restart kolektora)
+  kolektor zapisuje jedną próbkę, więc ruch z tej przerwy jest zaniżony; restart routera zeruje liczniki i ruchu
+  z chwili restartu nie da się odtworzyć.
+- **Dzień i miesiąc** liczone w strefie czasowej serwera (TZ), od północy.
+- **Początek okresu**: 1. dzień miesiąca (miesiąc kalendarzowy) albo dowolny dzień 1–28, jak u operatora, który liczy
+  pakiet np. od 15. dnia. Licznik okresu zaczyna od zera w tym dniu.
+- **Pakiet** (opcjonalnie, GB, pobrane + wysłane): pasek wykorzystania (pomarańczowy od 80 %, czerwony od 100 %)
+  i prognoza na koniec okresu z dotychczasowego tempa (od 2. dnia okresu).
+- **Starsze dane**: surowe próbki są trzymane `retention_days` (domyślnie 30 dni); część okresu starsza niż one pochodzi
+  z agregatu godzinowego (średnia × 3600 s).
+- API: `GET /api/wan/usage?reset_day=1&device_id=` → `total_today`, `total_period`, `ports` (dziś i okres na port),
+  `days` (każdy dzień okresu do dziś), `period_start`, `next_period_start`. Kod: `backend/netpulse/usage.py`,
+  `api/wan.py`, panel `components/widgets/WanUsageWidget.tsx`. Na pulpicie publicznym widget działa z ustawionym
+  routerem i dniem startu okresu.
 
 ## Jak liczone jest SLA
 

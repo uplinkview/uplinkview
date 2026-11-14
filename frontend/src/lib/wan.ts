@@ -110,6 +110,43 @@ export function useWanSla(days: SlaDays) {
   });
 }
 
+/** Zużycie transferu (GET /api/wan/usage, od 0.82.0): bajty dziś i w okresie rozliczeniowym. */
+export interface UsageTotals {
+  rx_bytes: number;
+  tx_bytes: number;
+}
+
+export interface WanUsage {
+  timezone: string;
+  reset_day: number;
+  /** Daty lokalne serwera „RRRR-MM-DD” */
+  today: string;
+  period_start: string;
+  next_period_start: string;
+  total_today: UsageTotals;
+  total_period: UsageTotals;
+  ports: { interface_id: number; device_id: number; device_name: string; name: string; today: UsageTotals; period: UsageTotals }[];
+  days: ({ day: string } & UsageTotals)[];
+}
+
+export function useWanUsage(resetDay: number, deviceId?: number | null) {
+  const { refetchInterval } = useRefresh();
+  const params = new URLSearchParams({ reset_day: String(resetDay) });
+  if (deviceId != null) params.set("device_id", String(deviceId));
+  return useQuery({
+    queryKey: ["wan", "usage", resetDay, deviceId ?? null],
+    queryFn: () => get<WanUsage>(`/api/wan/usage?${params}`),
+    // Licznik rośnie co cykl kolektora (30 s) – częściej nie ma sensu
+    refetchInterval: refetchInterval === false ? false : Math.max(30_000, refetchInterval),
+  });
+}
+
+/** Dzień okresu „RRRR-MM-DD” jako data lokalna (bez przesunięcia strefy przeglądarki). */
+export const localDay = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
 /** Łącze WAN, które zgłasza kontroler UniFi, a nie ma go na liście łączy (podpowiedź w ustawieniach). */
 export interface WanSuggestion {
   device_id: number;

@@ -463,6 +463,14 @@ class WanSlaConfig(Strict):
     days: Literal[1, 7, 30] = 7
 
 
+class WanUsageConfig(Strict):
+    """Licznik zużycia transferu (od 0.82.0): dziś i w okresie rozliczeniowym, opcjonalnie z limitem pakietu."""
+
+    device_id: int | None = Field(None, ge=1)
+    reset_day: int = Field(1, ge=1, le=28)  # dzień miesiąca, od którego liczy się okres (1 = miesiąc kalendarzowy)
+    limit_gb: float | None = Field(None, gt=0, le=1_000_000)  # pakiet na okres (pobrane + wysłane); puste = bez limitu
+
+
 class SummaryWidget(Strict):
     id: str = Field(pattern=WIDGET_ID)
     type: Literal["summary"]
@@ -591,6 +599,16 @@ class WanSlaWidget(Strict):
     y: int | None = Field(None, ge=0, le=MAX_ROW)
     h: int | None = Field(None, ge=1, le=MAX_HEIGHT)
     config: WanSlaConfig = WanSlaConfig()
+
+
+class WanUsageWidget(Strict):
+    id: str = Field(pattern=WIDGET_ID)
+    type: Literal["wan_usage"]
+    w: GridWidth
+    x: int | None = Field(None, ge=0, lt=GRID_COLS)
+    y: int | None = Field(None, ge=0, le=MAX_ROW)
+    h: int | None = Field(None, ge=1, le=MAX_HEIGHT)
+    config: WanUsageConfig = WanUsageConfig()
 
 
 class StatWidget(Strict):
@@ -770,6 +788,7 @@ Widget = Annotated[
     | WanStatusWidget
     | WanChartWidget
     | WanSlaWidget
+    | WanUsageWidget
     | StatWidget
     | BarGaugeWidget
     | TableWidget

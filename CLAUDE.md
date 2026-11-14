@@ -180,6 +180,13 @@ w obu miejscach**), szczyt WAN w dymku obok średniej (`PanelLine.peaks`), niemo
 Porównanie 13.11.2026 (SSH do bramy kluczem `~/.ssh/netpulse_ucg`, tylko odczyt; baza `unifi-network` na 127.0.0.1:5434):
 sumy bajtów WAN i portów LAN zgodne co do 0,1–1 %. Opis: `docs/42-szczyt-i-testy-predkosci.md`.
 
+## Zużycie transferu (0.82.0)
+
+Widget `wan_usage` („Zużycie transferu”): bajty pobrane/wysłane portami z rolą `wan` dziś i w okresie (miesiąc albo od dnia
+`reset_day` 1–28), słupki dni, opcjonalnie pakiet `limit_gb` z prognozą. Bajty = suma `in_bps × poll_interval / 8` z surowych
+próbek (część okresu starsza niż `retention_days` – z agregatu godzinowego), dni w TZ serwera. Kod: `netpulse/usage.py`,
+`GET /api/wan/usage` (`api/wan.py`), `WanUsageWidget.tsx`, pulpit publiczny w `resolve()`. Bez migracji. Opis: `docs/19-dual-wan.md`.
+
 ## VPN (0.57.0)
 
 Klienci VPN bramy UniFi z kontrolera (`rest/networkconf` → `remote-user-vpn`, `v2/.../wireguard/users`, `stat/remoteuservpn`):

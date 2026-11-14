@@ -143,6 +143,7 @@ export const WIDGET_TEMPLATES: WidgetTemplate[] = [
   },
   { id: "wan_status", group: "internet", thumb: "status", asks: [], sizes: [4, 6], build: (ctx) => sized(newWidget("wan_status"), ctx, 4) },
   { id: "vpn", group: "internet", thumb: "list", asks: [], sizes: [4, 6], module: "unifi", build: (ctx) => sized(newWidget("vpn"), ctx, 4) },
+  { id: "wan_usage", group: "internet", thumb: "stat", asks: [], sizes: [4, 6, 12], recommended: true, build: (ctx) => sized(newWidget("wan_usage"), ctx, 4) },
   { id: "wan_sla", group: "internet", thumb: "stat", asks: [], sizes: [4, 6, 12], build: (ctx) => sized(newWidget("wan_sla"), ctx, 4) },
   {
     id: "check_latency",

@@ -245,6 +245,12 @@ async def resolve(layout: DashboardLayout, opts: PublicOptions, raw: str) -> Any
         if days not in SLA_DAYS:
             raise HTTPException(403, "Niedozwolony okres")
         return await wan.sla(days)
+    if path == "/api/wan/usage" and "wan_usage" in types:
+        # Licznik transferu (od 0.82.0): tylko router i dzień startu okresu ustawione w którymś widgecie
+        wanted = (_int(query.get("device_id"), 0) or None, _int(query.get("reset_day"), 1))
+        if wanted not in {(w.config.device_id, w.config.reset_day) for w in widgets if w.type == "wan_usage"}:
+            raise HTTPException(403, "Tych danych nie ma na tym pulpicie")
+        return await wan.wan_usage(reset_day=wanted[1], device_id=wanted[0])
     if m := re.fullmatch(r"/api/collections/(\w+)", path):
         device_id = _int(query.get("device_id"), 0) or None
         # Tabela urządzeń (CPU, RAM) i paski dostępności sprawdzeń (od 0.42.0)

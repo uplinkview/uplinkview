@@ -236,7 +236,12 @@ def test_wan_widgets():
     assert (parsed.widgets[1].config.metric, parsed.widgets[1].config.height) == ("out_bps", "md")
     assert parsed.widgets[2].config.days == 30
     assert DashboardLayout.model_validate(layout({"id": "c", "type": "wan_sla", "w": 6})).widgets[0].config.days == 7
+    usage = DashboardLayout.model_validate(layout({"id": "u", "type": "wan_usage", "w": 4, "config": {"reset_day": 15, "limit_gb": 100}})).widgets[0]
+    assert (usage.config.device_id, usage.config.reset_day, usage.config.limit_gb) == (None, 15, 100)
+    assert DashboardLayout.model_validate(layout({"id": "u", "type": "wan_usage", "w": 4})).widgets[0].config.reset_day == 1
     for bad in (
+        {"id": "u", "type": "wan_usage", "w": 4, "config": {"reset_day": 29}},
+        {"id": "u", "type": "wan_usage", "w": 4, "config": {"limit_gb": 0}},
         {"id": "c", "type": "wan_sla", "w": 6, "config": {"days": 5}},
         {"id": "b", "type": "wan_chart", "w": 6, "config": {"metric": "clients"}},
         {"id": "a", "type": "wan_status", "w": 6, "config": {"cos": 1}},

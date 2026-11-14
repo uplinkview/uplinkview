@@ -19,6 +19,7 @@ import {
   type WanMetric,
   type WanSlaWidgetModel,
   type WanStatusWidgetModel,
+  type WanUsageWidgetModel,
   type Widget,
 } from "../../lib/layout";
 import { SLA_DAYS, type SlaDays } from "../../lib/wan";
@@ -272,14 +273,18 @@ const CHECKS_DAYS: ChecksDays[] = [7, 30];
 
 // --- łącza WAN ----------------------------------------------------------------------------------
 
-type WanWidget = WanStatusWidgetModel | WanChartWidgetModel | WanSlaWidgetModel;
+type WanWidget = WanStatusWidgetModel | WanChartWidgetModel | WanSlaWidgetModel | WanUsageWidgetModel;
+const RESET_DAYS = Array.from({ length: 28 }, (_, i) => i + 1);
 
 /** Widgety WAN: router (puste = wszystkie), dla wykresu metryka, zakres i wysokość, dla SLA okres. */
 function WanForm({ initial, isNew, onSave, onClose }: { initial: WanWidget; isNew: boolean; onSave: (w: Widget) => void; onClose: () => void }) {
   const devices = useDevices();
   const [widget, setWidget] = useState<WanWidget>(initial);
   const routers = (devices.data ?? []).filter((d: Device) => d.kind === "gateway");
-  type WanPatch = Partial<WanChartWidgetModel["config"]> | Partial<WanSlaWidgetModel["config"]>;
+  type WanPatch = Partial<WanChartWidgetModel["config"]> | Partial<WanSlaWidgetModel["config"]> | Partial<WanUsageWidgetModel["config"]>;
+  const [limit, setLimit] = useState(widget.type === "wan_usage" && widget.config.limit_gb ? String(widget.config.limit_gb) : "");
+  const limitValue = limit.trim() ? Number(limit.replace(",", ".")) : null;
+  const limitError = limitValue != null && !(limitValue > 0 && limitValue <= 1_000_000) ? t("usage.cfg.limitError") : undefined;
   const setConfig = (patch: WanPatch) => setWidget((w) => ({ ...w, config: { ...w.config, ...patch } }) as WanWidget);
   return (
     <Dialog
@@ -291,7 +296,11 @@ function WanForm({ initial, isNew, onSave, onClose }: { initial: WanWidget; isNe
           <Button variant="ghost" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button variant="primary" onClick={() => onSave(widget)}>
+          <Button
+            variant="primary"
+            disabled={Boolean(limitError)}
+            onClick={() => onSave(widget.type === "wan_usage" ? { ...widget, config: { ...widget.config, limit_gb: limitValue } } : widget)}
+          >
             {t(isNew ? "widget.add.title" : "common.save")}
           </Button>
         </>
@@ -348,6 +357,32 @@ function WanForm({ initial, isNew, onSave, onClose }: { initial: WanWidget; isNe
               </option>
             ))}
           </Select>
+        )}
+        {widget.type === "wan_usage" && (
+          <>
+            <Select
+              id="usage-reset"
+              label={t("usage.cfg.resetDay")}
+              value={widget.config.reset_day}
+              onChange={(e) => setConfig({ reset_day: Number(e.target.value) })}
+            >
+              {RESET_DAYS.map((d) => (
+                <option key={d} value={d}>
+                  {d === 1 ? t("usage.cfg.calendar") : t("usage.cfg.day", { day: d })}
+                </option>
+              ))}
+            </Select>
+            <Field
+              id="usage-limit"
+              label={t("usage.cfg.limit")}
+              inputMode="decimal"
+              placeholder={t("usage.cfg.limitNone")}
+              hint={t("usage.cfg.limitHint")}
+              value={limit}
+              error={limitError}
+              onChange={(e) => setLimit(e.target.value)}
+            />
+          </>
         )}
       </div>
     </Dialog>
@@ -430,6 +465,7 @@ export function WidgetEditDialog({ widget, isNew = false, onSave, onClose }: { w
     case "wan_status":
     case "wan_chart":
     case "wan_sla":
+    case "wan_usage":
       return <WanForm initial={widget} isNew={isNew} onClose={onClose} onSave={onSave} />;
     case "stat":
       return <StatForm initial={widget.config} isNew={isNew} onClose={onClose} onSave={(config) => onSave({ ...widget, config })} />;

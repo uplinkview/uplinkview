@@ -3,6 +3,7 @@
 - GET /api/wan/status – łącza i ich bieżący stan (active | standby | down | unknown), ruch, od kiedy w tym stanie,
 - GET /api/wan/history?minutes= – ruch aktywnego łącza w kubełkach, odcinki stanów i momenty przełączenia,
 - GET /api/wan/sla?days= – dostępność w %, czas i liczba przerw dla każdego łącza,
+- GET /api/wan/usage?reset_day=&device_id= – zużycie transferu dziś i w okresie rozliczeniowym (od 0.82.0),
 - GET/PUT /api/wan/links – które porty są WAN 1, WAN 2 … (zapis: administrator),
 - GET /api/wan/suggestions – łącza WAN, które zgłasza kontroler UniFi, a nie ma ich na liście.
 """
@@ -10,17 +11,18 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import distinct_on
 
-from .. import wan_links
-from ..db import Session
+from .. import usage, wan_links
+from ..config import settings
+from ..db import Session, timescale_available
 from ..db.models import Device, Interface, WanLink, WanLinkMetric
-from ..modules import is_enabled
+from ..modules import hidden_drivers, is_enabled, read_modules
 from ..wan import Sample, compute_sla, segments, switches
 from .metrics import MinutesQuery, _bucket_seconds
 from .schemas import Point
@@ -246,6 +248,96 @@ async def sla(days: int = Query(1, ge=1, le=90, description="okres wstecz w dnia
             )
         )
     return WanSlaOut(days=days, start=start, end=end, links=out)
+
+
+# --- zużycie transferu ----------------------------------------------------------------------------
+
+
+class UsageTotals(BaseModel):
+    rx_bytes: float  # pobrane
+    tx_bytes: float  # wysłane
+
+
+class UsagePortOut(BaseModel):
+    interface_id: int
+    device_id: int
+    device_name: str
+    name: str  # nazwa łącza WAN (Ustawienia → Łącza WAN) albo etykieta portu
+    today: UsageTotals
+    period: UsageTotals
+
+
+class UsageDayOut(BaseModel):
+    day: date
+    rx_bytes: float
+    tx_bytes: float
+
+
+class WanUsageOut(BaseModel):
+    timezone: str
+    reset_day: int
+    today: date
+    period_start: date
+    next_period_start: date  # dzień, od którego licznik okresu zaczyna od zera
+    total_today: UsageTotals
+    total_period: UsageTotals
+    ports: list[UsagePortOut]
+    days: list[UsageDayOut]  # każdy dzień okresu do dziś
+
+
+def _totals(t: usage.Totals) -> UsageTotals:
+    return UsageTotals(rx_bytes=round(t.rx), tx_bytes=round(t.tx))
+
+
+@router.get("/usage", response_model=WanUsageOut)
+async def wan_usage(
+    reset_day: int = Query(1, ge=1, le=usage.MAX_RESET_DAY, description="dzień miesiąca, od którego liczy się okres (1 = miesiąc kalendarzowy)"),
+    device_id: int | None = Query(None, ge=1, description="router; puste = wszystkie"),
+):
+    """Zużycie transferu portów WAN: dziś i w bieżącym okresie (miesiąc albo okres od dnia `reset_day`)."""
+    timescale = await timescale_available()
+    async with Session() as session:
+        hidden = hidden_drivers(await read_modules(session))
+        q = (
+            select(Interface, Device.name)
+            .join(Device, Device.id == Interface.device_id)
+            .where(Interface.role == "wan", Device.driver.not_in(hidden or ("",)))
+        )
+        if device_id is not None:
+            q = q.where(Device.id == device_id)
+        ports = (await session.execute(q)).all()
+        links = {x.interface_id: x for x in (await session.scalars(select(WanLink))).all()}
+        data = await usage.load(session, [p.id for p, _ in ports], reset_day, timescale)
+
+    order = sorted(ports, key=lambda p: (links[p[0].id].position if p[0].id in links else 99, p[1], p[0].if_index))
+    out_ports = []
+    total_today, total_period = usage.Totals(), usage.Totals()
+    for iface, device_name in order:
+        today, period = data.port(iface.id, data.today), data.port(iface.id)
+        total_today.add(today.rx, today.tx)
+        total_period.add(period.rx, period.tx)
+        link = links.get(iface.id)
+        out_ports.append(
+            UsagePortOut(
+                interface_id=iface.id,
+                device_id=iface.device_id,
+                device_name=device_name,
+                name=link.name if link else iface.label or iface.name,
+                today=_totals(today),
+                period=_totals(period),
+            )
+        )
+    return WanUsageOut(
+        timezone=settings.timezone,
+        reset_day=reset_day,
+        today=data.today,
+        period_start=data.start,
+        next_period_start=data.next_start,
+        total_today=_totals(total_today),
+        total_period=_totals(total_period),
+        ports=out_ports,
+        days=[UsageDayOut(day=d, rx_bytes=round(t.rx), tx_bytes=round(t.tx)) for d, t in data.days({p.id for p, _ in ports})],
+    )
 
 
 # --- konfiguracja ----------------------------------------------------------------------------------

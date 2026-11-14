@@ -2,7 +2,8 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { t } from "../i18n";
 import { newWidget, type Widget } from "../lib/layout";
-import { availabilityTone, formatAvailability, formatDuration, type WanHistory, type WanLink, type WanSla } from "../lib/wan";
+import { availabilityTone, formatAvailability, formatDuration, type WanHistory, type WanLink, type WanSla, type WanUsage } from "../lib/wan";
+import { forecastBytes } from "../components/widgets/WanUsageWidget";
 import { mockApi } from "../test/mockApi";
 import { customWidgets } from "../test/addWidget";
 import { renderApp } from "../test/renderApp";
@@ -172,6 +173,63 @@ describe("widget SLA łączy WAN", () => {
     await user.click(within(period).getByRole("button", { name: "30 dni" }));
     await waitFor(() => expect(calls.some((c) => c.path === "/api/wan/sla?days=30")).toBe(true));
     expect(within(period).getByRole("button", { name: "30 dni" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+const USAGE: WanUsage = {
+  timezone: "Europe/Warsaw",
+  reset_day: 15,
+  today: "2026-11-14",
+  period_start: "2026-10-15",
+  next_period_start: "2026-11-15",
+  total_today: { rx_bytes: 4.2e9, tx_bytes: 0.8e9 },
+  total_period: { rx_bytes: 85e9, tx_bytes: 5e9 },
+  ports: [
+    { interface_id: 8, device_id: 1, device_name: "UCG Ultra", name: "Światłowód", today: { rx_bytes: 4.2e9, tx_bytes: 0.8e9 }, period: { rx_bytes: 80e9, tx_bytes: 4e9 } },
+    { interface_id: 15, device_id: 1, device_name: "UCG Ultra", name: "LTE", today: { rx_bytes: 0, tx_bytes: 0 }, period: { rx_bytes: 5e9, tx_bytes: 1e9 } },
+  ],
+  days: [
+    { day: "2026-11-13", rx_bytes: 3e9, tx_bytes: 1e9 },
+    { day: "2026-11-14", rx_bytes: 4.2e9, tx_bytes: 0.8e9 },
+  ],
+};
+
+describe("widget zużycia transferu", () => {
+  it("pokazuje licznik dzienny i okresu, pakiet i łącza", async () => {
+    const widget = { ...newWidget("wan_usage", "u"), config: { device_id: null, reset_day: 15, limit_gb: 100 } } as Widget;
+    const { calls } = mockApi({ wanUsage: USAGE, layout: dashboard(widget) });
+    renderApp();
+    expect(await screen.findByLabelText("Zużycie – Dziś")).toHaveTextContent("5 GB");
+    expect(screen.getByLabelText(/Zużycie – Okres od/)).toHaveTextContent("90 GB");
+    expect(screen.getByText("90 GB z 100 GB")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Wykorzystanie pakietu" })).toHaveAttribute("aria-valuenow", "90");
+    expect(screen.getByText("LTE")).toBeInTheDocument();
+    expect(calls.some((c) => c.path === "/api/wan/usage?reset_day=15")).toBe(true);
+  });
+
+  it("prognoza na koniec okresu z dotychczasowego tempa", () => {
+    const day16 = new Date(2026, 9, 31).getTime(); // 16 z 31 dni okresu 15.10–15.11: 90 GB × 31/16
+    expect(forecastBytes(USAGE, day16)! / 1e9).toBeCloseTo(174, 0);
+    expect(forecastBytes(USAGE, new Date(2026, 9, 15, 1).getTime())).toBeNull(); // pierwszy dzień – za wcześnie
+  });
+
+  it("formularz: dzień startu okresu i pakiet", async () => {
+    const { state } = mockApi({ layout: dashboard() });
+    renderApp();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Edytuj pulpit" }));
+    await user.click(screen.getByRole("button", { name: "Dodaj widget" }));
+    const picker = await customWidgets(user);
+    await user.click(within(picker).getByRole("button", { name: /Zużycie transferu/ }));
+    const form = await screen.findByRole("dialog", { name: "Zużycie transferu" });
+    await user.selectOptions(within(form).getByLabelText("Początek okresu"), "15");
+    await user.type(within(form).getByLabelText("Pakiet na okres (GB)"), "0");
+    expect(within(form).getByRole("button", { name: "Dodaj widget" })).toBeDisabled();
+    await user.clear(within(form).getByLabelText("Pakiet na okres (GB)"));
+    await user.type(within(form).getByLabelText("Pakiet na okres (GB)"), "50,5");
+    await user.click(within(form).getByRole("button", { name: "Dodaj widget" }));
+    await user.click(screen.getByRole("button", { name: "Zapisz" }));
+    await waitFor(() => expect(state.layout?.widgets.map((w) => [w.type, w.config])).toEqual([["wan_usage", { device_id: null, reset_day: 15, limit_gb: 50.5 }]]));
   });
 });
 

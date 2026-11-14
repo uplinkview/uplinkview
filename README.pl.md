@@ -37,7 +37,7 @@ robi kopię zapasową bazy. Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`
   historia do roku (agregaty godzinowe), wykrywanie urządzeń w sieci.
 - **WiFi** – sieci i klienci z historią sygnału, obecności i przejść między AP (UniFi Network API).
 - **Mapa sieci** – topologia z LLDP z obciążeniem i prędkością kabli.
-- **Dual WAN** – stan łączy, przełączenia, SLA, opóźnienie każdego łącza, testy prędkości bramy.
+- **Dual WAN** – stan łączy, przełączenia, SLA, opóźnienie każdego łącza, testy prędkości bramy, zużycie transferu dzienne i miesięczne (opcjonalnie z pakietem).
 - **Serwery** – Linux przez SNMP albo lekki agent UplinkView (kontenery Docker, usługi systemd, SMART, temperatury)
   i Proxmox VE (maszyny VM i LXC, magazyny, kopie vzdump).
 - **Sprawdzanie dostępności** – ping (opóźnienie, utrata, jitter), HTTP(S) z ważnością certyfikatu, port TCP, DNS.

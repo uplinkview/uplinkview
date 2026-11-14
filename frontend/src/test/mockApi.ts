@@ -29,7 +29,7 @@ import type { ServerStatus } from "../components/widgets/ServerDetails";
 import type { SystemInfo } from "../lib/system";
 import type { Topology } from "../lib/topology";
 import type { Controller, NetworkClient, PoeInfo } from "../lib/unifi";
-import type { WanHistory, WanLink, WanSla, WanStatus, WanSuggestion } from "../lib/wan";
+import type { WanHistory, WanLink, WanSla, WanStatus, WanSuggestion, WanUsage } from "../lib/wan";
 import type { Availability, InterfaceDetail, SensorsData } from "../lib/details";
 import type { DashboardFull, PublicDashboard, PublicPayload } from "../lib/dashboards";
 
@@ -383,6 +383,8 @@ interface MockState {
   wanStatus: WanStatus;
   wanHistory: WanHistory;
   wanSla: WanSla;
+  /** Licznik transferu (ta sama odpowiedź dla każdego okresu i routera) */
+  wanUsage: WanUsage;
   wanLinks: WanLink[];
   wanSuggestions: WanSuggestion[];
   /** Dostępność (ta sama odpowiedź dla każdego okresu, urządzenia i portu) */
@@ -454,6 +456,17 @@ export function mockApi(initial: Partial<MockState> = {}) {
     wanStatus: { links: [], active_ids: [] },
     wanHistory: { interval_s: 30, links: [], points: [], segments: [], switches: [] },
     wanSla: { days: 7, start: "2026-10-18T12:00:00Z", end: "2026-10-25T12:00:00Z", links: [] },
+    wanUsage: {
+      timezone: "UTC",
+      reset_day: 1,
+      today: "2026-11-02",
+      period_start: "2026-11-01",
+      next_period_start: "2026-12-01",
+      total_today: { rx_bytes: 0, tx_bytes: 0 },
+      total_period: { rx_bytes: 0, tx_bytes: 0 },
+      ports: [],
+      days: [],
+    },
     wanLinks: [],
     wanSuggestions: [],
     updates: UPDATES,
@@ -932,6 +945,7 @@ export function mockApi(initial: Partial<MockState> = {}) {
         const days = Number(new URL(path, "http://x").searchParams.get("days") ?? 1);
         return json(200, { ...state.wanSla, days });
       }
+      if (key === "GET /api/wan/usage") return json(200, state.wanUsage);
       if (key === "GET /api/wan/links") return json(200, state.wanLinks);
       if (key === "GET /api/wan/suggestions") return json(200, state.wanSuggestions.filter((h) => !state.wanLinks.some((l) => l.interface_id === h.interface_id)));
       if (key === "PUT /api/wan/links") {

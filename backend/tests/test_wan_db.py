@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from conftest import FIXTURES
@@ -23,7 +23,7 @@ from netpulse.api import app  # noqa: E402
 from netpulse.api.security import login_limiter  # noqa: E402
 from netpulse.collector import Collector  # noqa: E402
 from netpulse.db import Session, engine, init_db  # noqa: E402
-from netpulse.db.models import AppSetting, Device, Interface, User, WanLink, WanLinkMetric  # noqa: E402
+from netpulse.db.models import AppSetting, Device, Interface, InterfaceMetric, User, WanLink, WanLinkMetric  # noqa: E402
 from netpulse.snmp.snmprec import SnmprecClient  # noqa: E402
 from netpulse.unifi import WanPort  # noqa: E402
 
@@ -147,6 +147,34 @@ def test_failover_history_and_sla(ucg):
     ports = {i["name"]: i for i in client.get(f"/api/devices/{saved.json()[0]['device_id']}/interfaces").json()}
     assert ports["eth3"]["role"] == "lan" and ports["eth3"]["label"] == "LAN 4"
     assert len(client.get("/api/wan/links").json()) == 1
+
+
+def test_transfer_usage(ucg):
+    """Licznik transferu: bajty = szybkość × cykl kolektora / 8, dziś i w okresie, każdy dzień okresu na liście."""
+    client, snmp = ucg
+    poll(snmp)
+    eth4 = interface_id("eth4")
+    now = datetime.now(UTC)
+
+    async def samples():
+        async with Session() as s, s.begin():
+            await s.execute(delete(InterfaceMetric))
+            # Dwie próbki po 30 s: 8 Mb/s w dół, 0,8 Mb/s w górę → 2 × 30 MB i 2 × 3 MB
+            for back in (5, 35):
+                s.add(InterfaceMetric(time=now - timedelta(seconds=back), interface_id=eth4, in_bps=8e6, out_bps=8e5))
+
+    run(samples)
+    body = client.get("/api/wan/usage").json()
+    assert body["total_today"] == {"rx_bytes": 60e6, "tx_bytes": 6e6}
+    assert body["total_period"] == body["total_today"]
+    (port,) = body["ports"]
+    assert (port["name"], port["interface_id"], port["period"]["rx_bytes"]) == ("WAN 1", eth4, 60e6)
+    assert body["period_start"].endswith("-01") and body["days"][0]["day"] == body["period_start"]
+    assert body["days"][-1] == {"day": body["today"], "rx_bytes": 60e6, "tx_bytes": 6e6}
+    # Okres od innego dnia i filtr routera
+    assert client.get("/api/wan/usage", params={"reset_day": 15}).json()["period_start"][-2:] == "15"
+    assert client.get("/api/wan/usage", params={"device_id": 999999}).json()["ports"] == []
+    assert client.get("/api/wan/usage", params={"reset_day": 29}).status_code == 422
 
 
 def test_controller_decides_active_link(ucg):

@@ -132,7 +132,7 @@ export function templateWidgets(id: TemplateId): Widget[] {
         sized("server", 4),
       ];
     case "wan":
-      return [sized("wan_status", 4), sized("wan_chart", 8), wanChart(12), newWidget("wan_sla")];
+      return [sized("wan_status", 4), sized("wan_chart", 8), wanChart(12), sized("wan_usage", 4), sized("wan_sla", 8)];
     case "devices":
       return [{ id: newId(), type: "summary", w: 12, config: { tiles: ["devices"] } }, sized("devices", 12), newWidget("poe")];
     case "wall":

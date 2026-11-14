@@ -175,6 +175,12 @@ body {
   }
 }
 
+/* Licznik transferu (0.82.0): dwie liczby obok siebie – rozmiar z szerokości karty, bez łamania „18,4 GB” */
+.np-usage-value {
+  font-size: clamp(1.125rem, 6.5cqw, 2.25rem);
+  line-height: 1.15;
+}
+
 /* Wskaźnik (półkole): bez limitu 192 px – mieści się w karcie */
 @container np-cell (min-height: 260px) {
   .np-gauge {
