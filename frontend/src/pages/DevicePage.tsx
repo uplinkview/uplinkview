@@ -20,6 +20,7 @@ import { isOn, useModules } from "../lib/modules";
 import { formatWatts, usePoe, type PoePort } from "../lib/unifi";
 import { ClientList } from "./ClientList";
 import { DeviceReportCard } from "./DeviceReport";
+import { OpnsenseCard } from "./OpnsenseCard";
 
 export const OPER_STYLE: Record<string, string> = {
   up: "bg-success-soft text-success",
@@ -292,7 +293,9 @@ export function DevicePage() {
   const id = Number(useParams().deviceId);
   const device = useDevice(id);
   const interfaces = useInterfaces(id);
-  const unifi = isOn(useModules().data, "unifi");
+  const modules = useModules().data;
+  const unifi = isOn(modules, "unifi");
+  const opnsense = modules?.opnsense === true; // moduł dodany w 0.81.0 – bez odpowiedzi API nie pytamy
   const poe = usePoe(unifi && device.data?.kind === "switch" ? id : null);
   const sensors = useSensors(id);
   // Porty PoE z kontrolera mają nazwy 0/1, 0/2… jak ifName switcha UniFi w SNMP; PoE z SNMP (MikroTik, TP-Link) – nazwa portu
@@ -377,6 +380,7 @@ export function DevicePage() {
         </div>
         <DeviceCharts deviceId={id} />
 
+        {opnsense && <OpnsenseCard deviceId={id} />}
         {hasSensors && <SensorsCard data={sensorData} />}
         {ports.length > 0 && <PortsCard deviceId={id} interfaces={ports} poe={poeByName} />}
         <WifiCard deviceId={id} />

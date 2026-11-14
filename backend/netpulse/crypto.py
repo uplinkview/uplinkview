@@ -35,6 +35,7 @@ SECRET_COLUMNS: dict[str, tuple[str, ...]] = {
     "controllers": ("api_key",),
     "notification_channels": ("url", "secret"),
     "proxmox_servers": ("token_secret",),
+    "opnsense_apis": ("api_key", "api_secret"),
     "dashboards": ("public_token",),
     "users": ("totp_secret",),
 }

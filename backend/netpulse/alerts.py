@@ -43,7 +43,8 @@ log = logging.getLogger("netpulse.alerts")
 
 SEVERITIES = ("info", "warning", "critical")
 # Rodzaje na ogólnej tabeli `metrics`: z agenta (kontener, usługa systemd, SMART) i z Proxmoxa (maszyna, kopia)
-AGENT_KINDS = ("container_stopped", "service_failed", "smart_failed", "guest_stopped", "backup_failed")
+# … i z OPNsense API (od 0.81.0): brama nie działa, usługa OPNsense zatrzymana
+AGENT_KINDS = ("container_stopped", "service_failed", "smart_failed", "guest_stopped", "backup_failed", "gateway_down", "opnsense_service_failed")
 # Zdarzenia chwilowe (od 0.49.0): alert trwa EVENT_HOLD od zdarzenia i kończy się bez powiadomienia o końcu
 EVENT_KINDS = ("wan_switch", "device_restart", "vpn_connect")
 EVENT_HOLD = timedelta(minutes=10)
@@ -69,6 +70,8 @@ METRICS: dict[str, tuple[str, str]] = {
     "check_latency_ms": ("Sprawdzenie dostępności: opóźnienie", " ms"),
     "check_loss_percent": ("Sprawdzenie dostępności: utrata pakietów (ping)", "%"),
     "check_cert_days": ("Sprawdzenie dostępności: dni do wygaśnięcia certyfikatu", " dni"),
+    "wan_latency_ms": ("Łącze WAN: opóźnienie (pomiar bramy UniFi albo OPNsense)", " ms"),
+    "wan_loss_percent": ("Łącze WAN: utrata pakietów (pomiar bramy OPNsense)", "%"),
 }
 DEVICE_METRICS = ("cpu_percent", "mem_used_percent", "load1")
 DISK_METRICS = ("disk_used_percent",)
@@ -81,13 +84,18 @@ SYSTEM_METRICS = {
 }
 # Metryki z ogólnej tabeli `metrics` (agent, Proxmox, czujniki SNMP): nazwa reguły → nazwa w tabeli
 # (jeden alert na klucz, np. czujnik, dysk albo port SFP)
-AGENT_METRICS = {"temp_c": "temp_c", "smart_reallocated": "smart_reallocated", "backup_age_h": "backup_age_h", "sfp_rx_dbm": "sfp_rx_dbm"}
+AGENT_METRICS = {
+    "temp_c": "temp_c", "smart_reallocated": "smart_reallocated", "backup_age_h": "backup_age_h", "sfp_rx_dbm": "sfp_rx_dbm",
+    "wan_latency_ms": "wan_latency_ms", "wan_loss_percent": "wan_loss_percent",
+}  # fmt: skip
 # Tytuł alertu progu: „<urządzenie>: <co> <klucz> <wartość>”
 AGENT_METRIC_WHAT = {
     "temp_c": "temperatura",
     "smart_reallocated": "realokowane sektory",
     "backup_age_h": "ostatnia kopia",
     "sfp_rx_dbm": "SFP moc odbierana",
+    "wan_latency_ms": "opóźnienie łącza",
+    "wan_loss_percent": "utrata pakietów łącza",
 }
 # Można je zawęzić do jednego urządzenia; pozostałe (WAN, serwer UplinkView) są globalne
 PER_DEVICE_METRICS = DEVICE_METRICS + DISK_METRICS + PORT_METRICS + tuple(AGENT_METRICS)
@@ -104,6 +112,8 @@ AGENT_STATES = {
     "smart_failed": ("smart_ok", "dysk", "zgłasza błąd SMART"),
     "guest_stopped": ("guest_up", "maszyna", "zatrzymana"),
     "backup_failed": ("backup_task_ok", "kopia zapasowa", "zakończyła się błędem"),
+    "gateway_down": ("gateway_up", "brama", "nie działa"),
+    "opnsense_service_failed": ("opnsense_service_up", "usługa", "nie działa"),
 }
 # Jak daleko wstecz szukać stanu portu sprzed przerwy w odczytach (restart switcha trwa minuty, nie godziny)
 BREAK_LOOKBACK = timedelta(hours=1)
@@ -138,6 +148,11 @@ DEFAULT_RULE_SETS = (
         dict(name="Restart urządzenia", kind="device_restart", duration_s=0, severity="info"),
     ),
     (dict(name="Nowe połączenie VPN", kind="vpn_connect", duration_s=0, severity="info"),),
+    (
+        dict(name="OPNsense: brama nie działa", kind="gateway_down", duration_s=60, severity="critical"),
+        dict(name="OPNsense: usługa nie działa", kind="opnsense_service_failed", duration_s=120, severity="warning"),
+        dict(name="Duża utrata pakietów na łączu WAN", kind="metric", metric="wan_loss_percent", op=">", threshold=20.0, duration_s=300, severity="warning"),
+    ),
 )
 DEFAULTS_KEY = "alert_defaults"
 DEFAULT_COMMUNITY_HINT = (
@@ -150,9 +165,10 @@ DEFAULT_COMMUNITY_HINT = (
 KIND_MODULE = {
     "container_stopped": "agents", "service_failed": "agents", "smart_failed": "agents",
     "guest_stopped": "proxmox", "backup_failed": "proxmox", "vpn_connect": "unifi",
+    "gateway_down": "opnsense", "opnsense_service_failed": "opnsense",
 }  # fmt: skip
 # Temperatura nie zależy od modułu: czujniki ma też MikroTik przez SNMP (od 0.50.0)
-METRIC_MODULE = {"smart_reallocated": "agents", "backup_age_h": "proxmox"}
+METRIC_MODULE = {"smart_reallocated": "agents", "backup_age_h": "proxmox", "wan_loss_percent": "opnsense"}
 
 
 def rule_module(rule) -> str | None:
@@ -793,7 +809,10 @@ class AlertEngine:
 
     @staticmethod
     def _state_detail(rule: AlertRule) -> str:
-        text = f"Stan z agenta UplinkView od {rule.duration_s // 60} min" if rule.duration_s >= 60 else "Stan z agenta UplinkView"
+        if rule.kind in ("gateway_down", "opnsense_service_failed"):
+            text = f"Stan z API OPNsense od {rule.duration_s // 60} min" if rule.duration_s >= 60 else "Stan z API OPNsense"
+        else:
+            text = f"Stan z agenta UplinkView od {rule.duration_s // 60} min" if rule.duration_s >= 60 else "Stan z agenta UplinkView"
         return f"{text} (filtr: {rule.match})" if rule.match else text
 
     @staticmethod

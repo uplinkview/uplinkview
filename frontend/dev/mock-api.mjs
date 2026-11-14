@@ -25,6 +25,7 @@ const devices = [
   { id: 2, name: "USW Lite 8 PoE", host: "192.168.1.2", kind: "switch", vendor: "Ubiquiti", model: "UniFi Switch", status: "up", polled: 12, default_community: true },
   { id: 3, name: "U6+", host: "192.168.1.3", kind: "ap", vendor: "Ubiquiti", model: "U6+", status: "up", polled: 12 },
   { id: 5, name: "hEX S", host: "192.168.1.5", kind: "gateway", vendor: "MikroTik", model: "RB760iGS", status: "up", polled: 12, detected_driver: "mikrotik", firmware: "7.25.1" },
+  { id: 8, name: "OPNsense", host: "192.168.1.135", kind: "gateway", vendor: "OPNsense", model: "OPNsense 26.7", status: "up", polled: 12, detected_driver: "opnsense", firmware: "26.7.9" },
   { id: 7, name: "NAS", host: "192.168.1.20", kind: "other", vendor: "Synology", model: "DiskStation", status: "up", polled: 12, detected_driver: "generic", firmware: null },
   { id: 4, name: "Garaż (testowy)", host: "192.168.1.9", kind: "other", vendor: null, model: null, status: "down", polled: 95, error: "192.168.1.9: No SNMP response received before timeout" },
 ].map((d) => ({
@@ -338,7 +339,37 @@ createServer(async (req, res) => {
     });
   }
   if (route === "GET /api/clients") return send(res, 200, []);
-  if (route === "GET /api/modules") return send(res, 200, { proxmox: false, unifi: true, agents: false, backups: false });
+  if (route === "GET /api/modules") return send(res, 200, { proxmox: false, unifi: true, opnsense: true, agents: false, backups: false });
+  // OPNsense API (od 0.81.0) – dane jak z OPNsense 26.7.9 w VirtualBox
+  if (route === "GET /api/opnsense/apis") {
+    return send(res, 200, [{ id: 1, device_id: 8, device_name: "OPNsense", host: "192.168.1.135", port: 443, key_hint: "…a1b2", verify_tls: false, enabled: true, status: "up",
+      version: "26.7.9_1", latest_version: "26.7.10", update_available: true, last_polled_at: ago(12), last_ok_at: ago(12), last_error: null, created_at: ago(86400) }]);
+  }
+  const opn = /^\/api\/opnsense\/devices\/(\d+)$/.exec(url.pathname);
+  if (req.method === "GET" && opn) {
+    if (Number(opn[1]) !== 8) return send(res, 200, { configured: false });
+    return send(res, 200, {
+      configured: true, status: "up", stale: false, version: "26.7.9_1", latest_version: "26.7.10", update_available: true, last_ok_at: ago(12), last_error: null, dhcp: "dnsmasq",
+      gateways: [
+        { name: "WAN_DHCP", address: "192.168.1.1", monitor: "8.8.8.8", status: "none", up: true, delay_ms: 12.3, jitter_ms: 0.8, loss_percent: 0, interface: "em1", default: true },
+        { name: "WAN_GSM", address: "10.64.64.1", monitor: "1.1.1.1", status: "down", up: false, delay_ms: null, jitter_ms: null, loss_percent: 100, interface: "em2", default: false },
+        { name: "WAN_DHCP6", address: null, monitor: null, status: "none", up: null, delay_ms: null, jitter_ms: null, loss_percent: null, interface: null, default: false },
+      ],
+      interfaces: [
+        { device: "em0", identifier: "lan", description: "LAN", status: "up", link_type: "static", addr4: "192.168.10.1/24", gateways: [], default_route: false },
+        { device: "em1", identifier: "wan", description: "WAN", status: "up", link_type: "dhcp", addr4: "192.168.1.135/24", gateways: ["192.168.1.1"], default_route: true },
+        { device: "em2", identifier: "opt1", description: "GSM", status: "up", link_type: "dhcp", addr4: "10.64.64.2/30", gateways: ["10.64.64.1"], default_route: false },
+      ],
+      services: ["configd:Configd", "cron:Cron", "dnsmasq:Dnsmasq DNS/DHCP", "dpinger/WAN_DHCP:Gateway WAN_DHCP", "ntpd:Ntpd", "pf:Packet Filter", "snmpd:Net-SNMP Daemon", "unbound:Unbound", "webgui:Web GUI"]
+        .map((x) => ({ name: x.split(":")[0], description: x.split(":")[1], running: true }))
+        .concat([{ name: "suricata", description: "Intrusion Detection", running: false }]),
+      hosts: [
+        { mac: "02:00:00:00:00:04", ip: "192.168.1.1", hostname: null, interface: "WAN", manufacturer: null, source: "arp", expires: null },
+        { mac: "02:00:00:00:00:02", ip: "192.168.10.126", hostname: "laptop", interface: "LAN", manufacturer: "PCS Systemtechnik GmbH", source: "dhcp", expires: 1794699248 },
+        { mac: "02:00:00:00:00:07", ip: "192.168.10.140", hostname: "nas", interface: "LAN", manufacturer: "Synology Incorporated", source: "dhcp", expires: 1794699248 },
+      ],
+    });
+  }
   if (route === "GET /api/dashboards") return send(res, 200, []);
   if (route === "GET /api/dashboards/default") return send(res, 200, { layout, updated_at: layoutAt });
   if (route === "PUT /api/dashboards/default") {

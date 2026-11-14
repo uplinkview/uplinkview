@@ -1,3 +1,3 @@
 """UplinkView – self-hosted monitoring ruchu sieciowego (router, switch, access point)."""
 
-__version__ = "0.80.1"
+__version__ = "0.81.0"

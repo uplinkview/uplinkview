@@ -18,21 +18,27 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 
 from .db import Session
-from .db.models import Agent, AppSetting, Controller, ProxmoxServer
+from .db.models import Agent, AppSetting, Controller, OpnsenseApi, ProxmoxServer
 
 log = logging.getLogger(__name__)
 
-ModuleId = Literal["proxmox", "unifi", "agents", "backups"]
-MODULES: tuple[ModuleId, ...] = ("proxmox", "unifi", "agents", "backups")
+ModuleId = Literal["proxmox", "unifi", "opnsense", "agents", "backups"]
+MODULES: tuple[ModuleId, ...] = ("proxmox", "unifi", "opnsense", "agents", "backups")
 SETTINGS_KEY = "modules"
-LABELS: dict[str, str] = {"proxmox": "Proxmox VE", "unifi": "UniFi", "agents": "Agenci serwerów", "backups": "Kopia zapasowa z panelu"}
+LABELS: dict[str, str] = {"proxmox": "Proxmox VE", "unifi": "UniFi", "opnsense": "OPNsense API", "agents": "Agenci serwerów", "backups": "Kopia zapasowa z panelu"}
 # Urządzenia, które dostarcza moduł (devices.driver) – ukrywane, gdy moduł jest wyłączony
 DRIVER_MODULE: dict[str, str] = {"agent": "agents", "proxmox": "proxmox", "unifi_api": "unifi"}
 
 
+# Moduły dodane po pierwszym zapisie stanu: w zapisanym stanie ich nie ma, a nie powinny włączać się same
+# (nowa integracja zaczyna wyłączona, jak w nowej instalacji). Bez zapisanego stanu – wszystko włączone (sprzed 0.18).
+ADDED_LATER: frozenset[str] = frozenset({"opnsense"})
+
+
 def _normalize(value: dict | None) -> dict[str, bool]:
-    value = value or {}
-    return {m: bool(value.get(m, True)) for m in MODULES}
+    if not value:
+        return dict.fromkeys(MODULES, True)
+    return {m: bool(value.get(m, m not in ADDED_LATER)) for m in MODULES}
 
 
 async def read_modules(session) -> dict[str, bool]:
@@ -63,6 +69,7 @@ async def detect(session) -> dict[str, bool]:
     return {
         "proxmox": await any_rows(ProxmoxServer),
         "unifi": await any_rows(Controller),
+        "opnsense": await any_rows(OpnsenseApi),
         "agents": await any_rows(Agent),
         "backups": True,
     }

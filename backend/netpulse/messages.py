@@ -28,6 +28,17 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Przełączenie łącza WAN", "WAN link failover"),
     ("Restart urządzenia", "Device restart"),
     ("Nowe połączenie VPN", "New VPN connection"),
+    ("OPNsense: brama nie działa", "OPNsense: gateway down"),
+    ("OPNsense: usługa nie działa", "OPNsense: service not running"),
+    ("Duża utrata pakietów na łączu WAN", "High packet loss on the WAN link"),
+    ("Łącze WAN: opóźnienie (pomiar bramy UniFi albo OPNsense)", "WAN link: latency (UniFi or OPNsense gateway measurement)"),
+    ("Łącze WAN: utrata pakietów (pomiar bramy OPNsense)", "WAN link: packet loss (OPNsense gateway measurement)"),
+    ("opóźnienie łącza", "link latency"),
+    ("utrata pakietów łącza", "link packet loss"),
+    ("brama", "gateway"),
+    ("{device}: brama {name} nie działa", "{device}: gateway {name} is down"),
+    ("Stan z API OPNsense", "State from the OPNsense API"),
+    ("Stan z API OPNsense od {minutes} min", "State from the OPNsense API for {minutes} min"),
     (
         "Community „public” albo „private” zna każdy – każdy w sieci może odczytać to urządzenie. "
         "Ustaw na urządzeniu własne community (albo SNMPv3) i wpisz je w UplinkView: Ustawienia → Urządzenia.",
@@ -359,6 +370,15 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ),
     ("Proxmox odpowiedział kodem {code} dla {path}", "Proxmox responded with code {code} for {path}"),
     ("Proxmox zwrócił odpowiedź, która nie jest JSON-em", "Proxmox returned a response that is not JSON"),
+    # --- OPNsense API (opnsense.py, api/opnsense.py, od 0.81.0) ---
+    ("Nie ma takiego klucza API OPNsense", "No such OPNsense API key"),
+    ("Urządzenie {name} ma już klucz API OPNsense", "Device {name} already has an OPNsense API key"),
+    ("OPNsense {host}: {error}", "OPNsense {host}: {error}"),
+    ("Brak połączenia z OPNsense: {error}", "No connection to OPNsense: {error}"),
+    ("OPNsense odrzucił klucz API (sprawdź klucz i sekret)", "OPNsense rejected the API key (check the key and secret)"),
+    ("Użytkownik klucza API nie ma uprawnień do {path}", "The API key user has no permission for {path}"),
+    ("OPNsense odpowiedział kodem {code} dla {path}", "OPNsense responded with code {code} for {path}"),
+    ("OPNsense zwrócił odpowiedź, która nie jest JSON-em", "OPNsense returned a response that is not JSON"),
     ("Nieoczekiwany format odpowiedzi Proxmox", "Unexpected Proxmox response format"),
     ("Węzeł offline w klastrze Proxmox", "Node offline in the Proxmox cluster"),
     # --- HTTPS, szyfrowanie, baza (api/tls.py, tls.py, crypto.py, db) ---
@@ -410,6 +430,14 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("TP-Link Omada / JetStream przez SNMP: CPU, RAM, PoE, SFP, WAN bramy", "TP-Link Omada / JetStream over SNMP: CPU, RAM, PoE, SFP, gateway WAN"),
     ("zrzuty syntetyczne według oficjalnych MIB TP-Link – czeka na prawdziwy sprzęt", "synthetic dumps based on the official TP-Link MIBs – waiting for real hardware"),
     ("Serwer Linux przez SNMP (snmpd): dyski, obciążenie", "Linux server over SNMP (snmpd): disks, load"),
+    (
+        "OPNsense API: bramy z pomiarem, wersja i aktualizacje, usługi, DHCP i ARP",
+        "OPNsense API: gateways with monitoring, version and updates, services, DHCP and ARP",
+    ),
+    (
+        "OPNsense 26.7.9 w VirtualBox (dnsmasq DHCP, brama monitorowana przez dpinger); VPN bez sesji",
+        "OPNsense 26.7.9 in VirtualBox (dnsmasq DHCP, gateway monitored by dpinger); VPN without sessions",
+    ),
     (
         "OPNsense przez SNMP: rozpoznanie routera, WAN z trasy domyślnej, CPU, RAM, dysk",
         "OPNsense over SNMP: router detection, WAN from the default route, CPU, RAM, disk",

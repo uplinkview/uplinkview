@@ -210,6 +210,15 @@ w VirtualBox (192.168.1.135; `em1` = WAN, `em0` = LAN 192.168.10.1), fixture `op
 **Nowy driver = wpisy w:** `drivers/__init__.py`, `DriverName` (`api/schemas.py`, `lib/api.ts`), `deviceFormLogic.ts`, `devform.driver.*` w `pl.ts`/`en.ts`,
 `verification.SOURCES` + `messages.py`, `NETWORK_DRIVERS` (`lib/discovery.ts`, jeśli sprzęt sieciowy). Opis: `docs/45-opnsense.md`.
 
+Od 0.81.0 moduł „OPNsense API” (`opnsense`, na starych instalacjach wyłączony – `ADDED_LATER` w `modules.py`): klucz API przy urządzeniu
+OPNsense (Ustawienia → OPNsense, tabela `opnsense_apis`, migracja 0020, klucz i sekret w `SECRET_COLUMNS`), tylko GET. Kolektor
+`opnsense_collector.py` co 30 s: bramy → `wan_latency_ms|wan_loss_percent|wan_jitter_ms` (klucz = port, jak bramy UniFi) i `gateway_up`
+(klucz = nazwa bramy), stan łączy przez `wan_links.apply_controller`; usługi → `opnsense_service_up` (klucz = `id` usługi, nie `name`);
+wersja, interfejsy, DHCP (dnsmasq → Kea → ISC) i ARP w `opnsense_apis.snapshot` → `GET /api/opnsense/devices/{id}`, panel `OpnsenseCard.tsx`
+na stronie urządzenia. Alerty `gateway_down`, `opnsense_service_failed`, metryka `wan_loss_percent`. Bramy mierzą tylko z monitorowaniem
+włączonym w OPNsense. Fixtures: `tests/fixtures/opnsense_api/` (prawdziwe odpowiedzi 26.7.9, zanonimizowane). Etap 2 (minimalne uprawnienia
+zamiast `admins`, klienci, VPN, DNS, zapora, etykiety WAN/LAN): `docs/46-opnsense-api.md`.
+
 ## Język angielski (0.74.0–0.76.0)
 
 Etap 4 planu, część 4a (opis i dalsze części: `docs/44-jezyk-angielski.md`). Panel w dwóch językach: `i18n/pl.ts` (źródło kluczy)

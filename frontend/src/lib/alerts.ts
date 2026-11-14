@@ -17,13 +17,23 @@ export type RuleKind =
   | "smart_failed"
   | "guest_stopped"
   | "backup_failed"
+  | "gateway_down"
+  | "opnsense_service_failed"
   | "check_down"
   | "default_community"
   | "wan_switch"
   | "device_restart"
   | "vpn_connect";
-/** Rodzaje ze stanu w agencie i Proxmoxie: kontener, usługa, SMART, maszyna, kopia (bez progu, z filtrem nazwy). */
-export const AGENT_KINDS: RuleKind[] = ["container_stopped", "service_failed", "smart_failed", "guest_stopped", "backup_failed"];
+/** Rodzaje ze stanu w agencie, Proxmoxie i OPNsense: kontener, usługa, SMART, maszyna, kopia, brama (bez progu, z filtrem nazwy). */
+export const AGENT_KINDS: RuleKind[] = [
+  "container_stopped",
+  "service_failed",
+  "smart_failed",
+  "guest_stopped",
+  "backup_failed",
+  "gateway_down",
+  "opnsense_service_failed",
+];
 /** Zdarzenia chwilowe (od 0.49.0): alert trwa 10 minut i kończy się sam. */
 export const EVENT_KINDS: RuleKind[] = ["wan_switch", "device_restart", "vpn_connect"];
 export const RULE_KINDS: RuleKind[] = ["device_offline", "port_down", "metric", ...AGENT_KINDS, "check_down", "default_community", ...EVENT_KINDS];

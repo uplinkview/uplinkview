@@ -494,6 +494,7 @@ async def run() -> None:
     from .checks_collector import ChecksCollector
     from .db import init_db
     from .notifications import Notifier
+    from .opnsense_collector import OpnsenseCollector
     from .proxmox_collector import ProxmoxCollector
     from .sysinfo import SystemCollector
     from .unifi_collector import UnifiCollector
@@ -504,4 +505,4 @@ async def run() -> None:
     await engine.ensure_default_rules()
     peaks = PeakSampler()
     await asyncio.gather(Collector(alert_engine=engine, peaks=peaks).run_forever(), peaks.run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(), ProxmoxCollector().run_forever(),
-                         ChecksCollector().run_forever())
+                         OpnsenseCollector().run_forever(), ChecksCollector().run_forever())

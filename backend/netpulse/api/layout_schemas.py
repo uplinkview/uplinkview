@@ -115,7 +115,7 @@ ALLOWED_METRICS: dict[str, tuple[str, ...]] = {
     "snmp_sensor": ("temp_c", "fan_rpm", "voltage_v", "current_a", "power_w", "channel_util_percent"),
     "snmp_poe": ("poe_power_w", "poe_voltage_v"),
     "snmp_sfp": ("sfp_rx_dbm", "sfp_tx_dbm", "sfp_temp_c", "sfp_voltage_v"),
-    "wan_latency": ("latency_ms", "availability_percent"),
+    "wan_latency": ("latency_ms", "loss_percent", "jitter_ms", "availability_percent"),
     "speedtest": ("down_bps", "up_bps", "ping_ms"),
     "wan_ping": ("latency_ms",),
     "vpn": ("down_bps", "up_bps", "connected"),

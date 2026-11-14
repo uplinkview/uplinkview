@@ -1,0 +1,74 @@
+[
+ {
+  "mac": "02:00:00:00:00:01",
+  "ip": "192.168.10.1",
+  "intf": "em0",
+  "expired": false,
+  "expires": -1,
+  "permanent": true,
+  "type": "ethernet",
+  "manufacturer": "PCS Systemtechnik GmbH",
+  "hostname": "",
+  "intf_description": "LAN"
+ },
+ {
+  "mac": "02:00:00:00:00:02",
+  "ip": "192.168.10.126",
+  "intf": "em0",
+  "expired": false,
+  "expires": 293,
+  "permanent": false,
+  "type": "ethernet",
+  "manufacturer": "PCS Systemtechnik GmbH",
+  "hostname": "",
+  "intf_description": "LAN"
+ },
+ {
+  "mac": "02:00:00:00:00:03",
+  "ip": "192.168.1.238",
+  "intf": "em1",
+  "expired": false,
+  "expires": 78,
+  "permanent": false,
+  "type": "ethernet",
+  "manufacturer": "Micro-Star INTL CO., LTD.",
+  "hostname": "",
+  "intf_description": "WAN"
+ },
+ {
+  "mac": "02:00:00:00:00:04",
+  "ip": "192.168.1.1",
+  "intf": "em1",
+  "expired": false,
+  "expires": 1193,
+  "permanent": false,
+  "type": "ethernet",
+  "manufacturer": "",
+  "hostname": "",
+  "intf_description": "WAN"
+ },
+ {
+  "mac": "02:00:00:00:00:05",
+  "ip": "192.168.1.34",
+  "intf": "em1",
+  "expired": false,
+  "expires": 1193,
+  "permanent": false,
+  "type": "ethernet",
+  "manufacturer": "PCS Systemtechnik GmbH",
+  "hostname": "",
+  "intf_description": "WAN"
+ },
+ {
+  "mac": "02:00:00:00:00:06",
+  "ip": "192.168.1.135",
+  "intf": "em1",
+  "expired": false,
+  "expires": -1,
+  "permanent": true,
+  "type": "ethernet",
+  "manufacturer": "PCS Systemtechnik GmbH",
+  "hostname": "",
+  "intf_description": "WAN"
+ }
+]

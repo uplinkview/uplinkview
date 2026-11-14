@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api", tags=["alerty"], dependencies=[Depends(require
 Severity = Literal["info", "warning", "critical"]
 Kind = Literal[
     "device_offline", "port_down", "metric", "container_stopped", "service_failed", "smart_failed", "guest_stopped", "backup_failed",
-    "check_down", "default_community", "wan_switch", "device_restart", "vpn_connect",
+    "check_down", "default_community", "wan_switch", "device_restart", "vpn_connect", "gateway_down", "opnsense_service_failed",
 ]
 
 

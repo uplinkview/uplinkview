@@ -59,7 +59,7 @@ backup first.
 | Linux servers     | ✅ | SNMP (`snmpd`) or the UplinkView agent |
 | Proxmox VE        | ✅ tested on PVE 9.1 / 9.2 (single node) | Proxmox API (token, PVEAuditor role) |
 | MikroTik          | ✅ tested on RouterOS 7.18 (CHR); sensors, PoE and SFP from the official MIB | SNMP (IF-MIB, MIKROTIK-MIB, HOST-RESOURCES-MIB) |
-| OPNsense          | ✅ tested on OPNsense 26.7 (VirtualBox): router, WAN from the default route | SNMP (`os-net-snmp` plugin) |
+| OPNsense          | ✅ tested on OPNsense 26.7 (VirtualBox): router, WAN from the default route; gateways (latency, loss), services, DHCP/ARP hosts, version | SNMP (`os-net-snmp` plugin) + OPNsense API (key) |
 | TP-Link Omada     | SNMP driver from the official MIBs, waiting for real hardware | SNMP |
 | Anything else     | ✅ basics | generic SNMP driver (IF-MIB) |
 

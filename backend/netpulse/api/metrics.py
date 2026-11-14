@@ -184,7 +184,13 @@ AGENT_SOURCES: dict[str, dict[str, tuple[str, float]]] = {
     },
     "snmp_poe": {"poe_power_w": ("poe_power_w", 1.0), "poe_voltage_v": ("poe_voltage_v", 1.0)},
     # Łącza WAN bramy UniFi (od 0.55.0): brama pinguje internet każdym łączem, też zapasowym; klucz = interfejs łącza
-    "wan_latency": {"latency_ms": ("wan_latency_ms", 1.0), "availability_percent": ("wan_availability_percent", 1.0)},
+    # … i bramy OPNsense (od 0.81.0: opóźnienie, rozrzut i utrata pakietów z dpinger)
+    "wan_latency": {
+        "latency_ms": ("wan_latency_ms", 1.0),
+        "loss_percent": ("wan_loss_percent", 1.0),
+        "jitter_ms": ("wan_jitter_ms", 1.0),
+        "availability_percent": ("wan_availability_percent", 1.0),
+    },
     "wan_ping": {"latency_ms": ("wan_ping_ms", 1.0)},
     # Testy prędkości bramy UniFi (od 0.70.0): wynik dokładnie z bramy, punkt w chwili testu; klucz = interfejs łącza
     "speedtest": {"down_bps": ("speedtest_down_bps", 1.0), "up_bps": ("speedtest_up_bps", 1.0), "ping_ms": ("speedtest_ping_ms", 1.0)},

@@ -42,7 +42,7 @@ const AUTH_ACTIONS = ["setup", "login", "login_failed", "logout", "password", "t
 /** Zasoby z pierwszego członu ścieżki API (szablon trasy, np. /api/devices/{device_id}) – nazwy w `audit.res.*`. */
 const RESOURCES = [
   "devices", "interfaces", "alert-rules", "alerts", "maintenance", "users", "dashboards", "dashboard", "checks", "controllers",
-  "notification-channels", "backups", "modules", "updates", "wan", "agents", "proxmox", "preferences", "system", "probe",
+  "notification-channels", "backups", "modules", "updates", "wan", "agents", "proxmox", "opnsense", "preferences", "system", "probe",
 ];
 
 const VERBS: Record<string, TextKey> = { POST: "audit.verb.add", PUT: "audit.verb.change", PATCH: "audit.verb.change", DELETE: "audit.verb.delete" };

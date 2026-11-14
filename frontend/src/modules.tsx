@@ -8,6 +8,7 @@ import {
   IconActivity,
   IconBellRinging,
   IconServerCog,
+  IconFlame,
   IconDatabase,
   IconDevicesPc,
   IconDownload,
@@ -58,6 +59,7 @@ const ClientPage = page(() => import("./pages/ClientPage"), "ClientPage");
 const ClientsPage = page(() => import("./pages/ClientsPage"), "ClientsPage");
 const ProxmoxPage = page(() => import("./pages/ProxmoxPage"), "ProxmoxPage");
 const ProxmoxSettingsPage = page(() => import("./pages/settings/ProxmoxSettingsPage"), "ProxmoxSettingsPage");
+const OpnsenseSettingsPage = page(() => import("./pages/settings/OpnsenseSettingsPage"), "OpnsenseSettingsPage");
 const TopologyPage = page(() => import("./pages/TopologyPage"), "TopologyPage");
 const ControllersPage = page(() => import("./pages/settings/ControllersPage"), "ControllersPage");
 const DashboardsPage = page(() => import("./pages/settings/dashboards/DashboardsPage"), "DashboardsPage");
@@ -282,6 +284,13 @@ export const modules: NavModule[] = [
         icon: IconServerCog,
         element: <ProxmoxSettingsPage />,
         module: "proxmox",
+      },
+      {
+        path: "opnsense",
+        label: "nav.settings.opnsense",
+        icon: IconFlame,
+        element: <OpnsenseSettingsPage />,
+        module: "opnsense",
       },
       {
         path: "alert-rules",

@@ -39,6 +39,7 @@ from . import (
     metrics,
     modules_api,
     notifications,
+    opnsense,
     panels,
     preferences,
     proxmox,
@@ -136,6 +137,7 @@ app.include_router(maintenance.router)
 app.include_router(metrics.router)
 app.include_router(modules_api.router)
 app.include_router(notifications.router)
+app.include_router(opnsense.router)
 app.include_router(panels.router)
 app.include_router(preferences.router)
 app.include_router(proxmox.router)

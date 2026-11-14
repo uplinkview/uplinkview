@@ -20,6 +20,7 @@ import type { CollectionRow, StatesResponse } from "../lib/panels";
 import type { BackupsResponse } from "../lib/backups";
 import type { Modules } from "../lib/modules";
 import type { ProxmoxGuest, ProxmoxServer, ProxmoxStorage } from "../lib/proxmox";
+import type { OpnsenseApiKey, OpnsenseDeviceData } from "../lib/opnsense";
 import type { Alert, AlertRule } from "../lib/alerts";
 import type { DashboardLayout } from "../lib/layout";
 import { CLASSIC_LAYOUT } from "./layouts";
@@ -351,6 +352,9 @@ interface MockState {
   pveServers: ProxmoxServer[];
   pveGuests: ProxmoxGuest[];
   pveStorages: ProxmoxStorage[];
+  /** OPNsense API (od 0.81.0): klucze i dane strony urządzenia (null = urządzenie bez klucza) */
+  opnKeys: OpnsenseApiKey[];
+  opnDevice: OpnsenseDeviceData | null;
   /** Sprawdzenia dostępności (ping, HTTP, TCP) */
   checks: Check[];
   /** Odpowiedź na POST /api/checks/test */
@@ -418,10 +422,12 @@ export function mockApi(initial: Partial<MockState> = {}) {
     audit: [],
     agents: [],
     backups: { backups: [], restore: { state: "idle" } },
-    modules: { proxmox: true, unifi: true, agents: true, backups: true },
+    modules: { proxmox: true, unifi: true, opnsense: true, agents: true, backups: true },
     pveServers: [],
     pveGuests: [],
     pveStorages: [],
+    opnKeys: [],
+    opnDevice: null,
     checks: [],
     checkTest: { up: true, latency_ms: 14.6, loss_percent: 0, jitter_ms: 0.4, status_code: null, cert_days: null, error: null },
     alerts: [],
@@ -667,6 +673,34 @@ export function mockApi(initial: Partial<MockState> = {}) {
         const { token_secret: _secret, ...fields } = body as Record<string, unknown>;
         Object.assign(s, fields);
         return json(200, s);
+      }
+      if (key === "GET /api/opnsense/apis") return json(200, state.opnKeys);
+      if (/^GET \/api\/opnsense\/devices\/\d+$/.test(key)) return json(200, state.opnDevice ?? { configured: false });
+      if (key === "POST /api/opnsense/probe" || /^POST \/api\/opnsense\/apis\/\d+\/probe$/.test(key)) {
+        return json(200, { version: "26.7.9_1", latest: "26.7.9", update_available: false, gateways: 2, monitored: 1, interfaces: 2, services: 17, hosts: 4, dhcp: "dnsmasq" });
+      }
+      if (key === "POST /api/opnsense/apis") {
+        const b = body as { device_id: number; port: number; verify_tls: boolean; api_key: string };
+        const device = state.devices.find((d) => d.id === b.device_id);
+        const created: OpnsenseApiKey = {
+          id: state.opnKeys.length + 1, device_id: b.device_id, device_name: device?.name ?? "?", host: device?.host ?? "?", port: b.port,
+          key_hint: `…${b.api_key.slice(-4)}`, verify_tls: b.verify_tls, enabled: true, status: "unknown", version: "26.7.9_1", latest_version: "26.7.9",
+          update_available: false, last_polled_at: null, last_ok_at: null, last_error: null, created_at: "2026-11-14T10:00:00Z",
+        };
+        state.opnKeys.push(created);
+        return json(201, created);
+      }
+      const opn = /^(PATCH|DELETE) \/api\/opnsense\/apis\/(\d+)$/.exec(key);
+      if (opn) {
+        const k = state.opnKeys.find((x) => x.id === Number(opn[2]));
+        if (!k) return json(404, { detail: "Nie ma takiego klucza API OPNsense" });
+        if (opn[1] === "DELETE") {
+          state.opnKeys = state.opnKeys.filter((x) => x !== k);
+          return json(204);
+        }
+        const { api_key: _key, api_secret: _secret, ...fields } = body as Record<string, unknown>;
+        Object.assign(k, fields);
+        return json(200, k);
       }
       if (key === "GET /api/backups") return json(200, state.backups);
       if (key === "POST /api/backups/upload") {

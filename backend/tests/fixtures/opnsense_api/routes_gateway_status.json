@@ -1,0 +1,25 @@
+{
+ "items": [
+  {
+   "name": "WAN_DHCP6",
+   "address": "~",
+   "status": "none",
+   "loss": "~",
+   "delay": "~",
+   "stddev": "~",
+   "monitor": "~",
+   "status_translated": "Online"
+  },
+  {
+   "name": "WAN_DHCP",
+   "address": "192.168.1.1",
+   "status": "none",
+   "loss": "0.0 %",
+   "delay": "12.3 ms",
+   "stddev": "0.8 ms",
+   "monitor": "8.8.8.8",
+   "status_translated": "Online"
+  }
+ ],
+ "status": "ok"
+}

@@ -96,6 +96,13 @@ SOURCES: tuple[Source, ...] = (
         ("opnsense",),
     ),
     Source(
+        "opnsense_api",
+        "OPNsense API: bramy z pomiarem, wersja i aktualizacje, usługi, DHCP i ARP",
+        "verified",
+        "OPNsense 26.7.9 w VirtualBox (dnsmasq DHCP, brama monitorowana przez dpinger); VPN bez sesji",
+        ("opnsense",),
+    ),
+    Source(
         "agent",
         "Agent UplinkView (Linux): CPU, RAM, dyski, Docker, usługi, SMART",
         "verified",

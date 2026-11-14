@@ -658,6 +658,31 @@ class Agent(Base):
     inventory: Mapped[dict | None] = mapped_column(JSONB)
 
 
+class OpnsenseApi(Base):
+    """Klucz REST API OPNsense przy urządzeniu (od 0.81.0): bramy z pomiarem, wersja, usługi, DHCP i ARP.
+
+    Urządzenie zostaje odpytywane przez SNMP (driver `opnsense`), API tylko dokłada dane. Adres = `devices.host`.
+    Klucz i sekret są zaszyfrowane; `snapshot` = ostatni odczyt do panelu (opnsense.Snapshot.as_dict)."""
+
+    __tablename__ = "opnsense_apis"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), unique=True)
+    port: Mapped[int] = mapped_column(Integer, default=443)
+    api_key: Mapped[str] = mapped_column(EncryptedText)
+    api_secret: Mapped[str] = mapped_column(EncryptedText)
+    verify_tls: Mapped[bool] = mapped_column(Boolean, default=False)  # OPNsense ma zwykle certyfikat samopodpisany
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String(16), default="unknown")  # up | down | unknown
+    version: Mapped[str | None] = mapped_column(String(32))
+    latest_version: Mapped[str | None] = mapped_column(String(32))
+    snapshot: Mapped[dict | None] = mapped_column(JSONB)
+    last_polled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Metric(Base):
     """Ogólna metryka: nazwa (np. `container_up`), klucz (np. nazwa kontenera, "" gdy jedna wartość) i wartość."""
 
