@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+# Zmienna dopisana z dawną wartością domyślną dostaje nową (wartość ustawiona ręcznie na inną zostaje).
+# Ta sama lista w scripts/netpulse (`uplinkview update`).
+OLD_DEFAULTS = {"NETPULSE_WAN_SAMPLE_INTERVAL": ("0.5", "0.25")}  # 0.85.2: odczyt co 0,25 s
 
 
 def _keys(text: str) -> set[str]:
@@ -21,6 +26,8 @@ def topup_env(install_dir: Path) -> list[str]:
     if not example.is_file() or not env.is_file():
         return []
     current = env.read_text(encoding="utf-8")
+    for key, (old, new) in OLD_DEFAULTS.items():
+        current = re.sub(rf"(?m)^{re.escape(key)}={re.escape(old)}[ \t]*$", f"{key}={new}", current)
     have = _keys(current)
     added: list[str] = []
     lines: list[str] = []
@@ -37,5 +44,7 @@ def topup_env(install_dir: Path) -> list[str]:
         added.append(key)
     if lines:
         sep = "" if current.endswith("\n") or not current else "\n"
-        env.write_text(current + sep + "\n".join(lines) + "\n", encoding="utf-8")
+        current = current + sep + "\n".join(lines) + "\n"
+    if current != env.read_text(encoding="utf-8"):
+        env.write_text(current, encoding="utf-8")
     return added

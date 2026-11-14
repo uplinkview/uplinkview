@@ -309,6 +309,8 @@ cmd_update() {
     [ "$key" = "NETPULSE_DIR" ] && value="$INSTALL_DIR"
     echo "${key}=${value}" >>"$ENV_FILE"
   done <"$INSTALL_DIR/deploy/.env.example"
+  # Dawna wartość domyślna → nowa (ręcznie ustawiona inna zostaje); ta sama lista: updater/netpulse_updater/envfile.py
+  sed -i 's/^NETPULSE_WAN_SAMPLE_INTERVAL=0\.5[[:space:]]*$/NETPULSE_WAN_SAMPLE_INTERVAL=0.25/' "$ENV_FILE"
   np_fill_tls_names "$ENV_FILE"
   c_info "Buduję i uruchamiam nową wersję..."
   if ! compose up -d --build --remove-orphans; then

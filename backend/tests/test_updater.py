@@ -187,6 +187,16 @@ def test_topup_env_adds_missing_keys_only(repo):
     assert topup_env(repo.install) == []  # drugi raz nic do dopisania
 
 
+def test_topup_env_replaces_old_default_only(repo):
+    env_file = repo.install / "deploy" / ".env"
+    env_file.write_text(env_file.read_text() + "NETPULSE_WAN_SAMPLE_INTERVAL=0.5\n")
+    topup_env(repo.install)
+    assert "NETPULSE_WAN_SAMPLE_INTERVAL=0.25\n" in env_file.read_text()
+    env_file.write_text(env_file.read_text().replace("=0.25", "=1"))
+    topup_env(repo.install)
+    assert "NETPULSE_WAN_SAMPLE_INTERVAL=1\n" in env_file.read_text()  # wartość ustawiona ręcznie zostaje
+
+
 # --- serwer ------------------------------------------------------------------------
 
 

@@ -122,4 +122,6 @@ przedziały pokazywały do 984 Mb/s (UniFi: najwyżej 848). Przyczyna: przy odcz
 z dokładnością do 0,5 s, więc część bajtów trafiała do sąsiedniego przedziału (symulacja: ±8 % przy stałych 850 Mb/s).
 Od 0.85.2 chwila zmiany = środek między odczytami (`MAX_READ_GAP_S`), odczyt co 0,25 s (±4 %). Widget „Na żywo” (odczyt co
 1,5 s) zgadza się z licznikami jądra bramy (`/sys/class/net/eth4/statistics`) z opóźnieniem ok. 0,5 s, średnio 15,8 / 14,9 Mb/s
-w 45 s – skala bez kalibracji; pojedyncze odczyty skaczą przy ruchu w porywach, bo licznik bramy zmienia się co ok. 1 s.
+w 45 s – skala bez kalibracji; pojedyncze odczyty skaczą przy ruchu w porywach, bo licznik bramy zmienia się co ok. 1 s. Instalacje sprzed 0.85.2 mają w `.env` dopisane `NETPULSE_WAN_SAMPLE_INTERVAL=0.5` (`uplinkview update`
+i updater dopisują brakujące zmienne, nie zmieniają istniejących), więc od 0.85.3 dawna wartość domyślna zamienia się na 0.25
+(`OLD_DEFAULTS` w `updater/netpulse_updater/envfile.py` i ta sama linia w `scripts/netpulse`); inna wartość ustawiona ręcznie zostaje.
