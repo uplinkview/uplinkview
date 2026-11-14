@@ -90,6 +90,7 @@ class DeviceData(BaseModel):
     last_ok_at: datetime | None = None
     last_error: str | None = None
     dhcp: str | None = None
+    traffic: str | None = None  # odczyt ruchu urządzeń: "ok", błąd albo None (nie mierzono)
     gateways: list[dict] = []
     interfaces: list[dict] = []
     services: list[dict] = []
@@ -236,6 +237,7 @@ async def device_data(device_id: int):
         last_ok_at=api.last_ok_at,
         last_error=api.last_error,
         dhcp=snap.get("dhcp"),
+        traffic=snap.get("traffic"),
         gateways=snap.get("gateways") or [],
         # przypisane interfejsy bez pętli zwrotnej (lo0 OPNsense pokazuje jako przypisany „Loopback”)
         interfaces=[i for i in snap.get("interfaces") or [] if i.get("identifier") and not str(i.get("device", "")).startswith("lo")],

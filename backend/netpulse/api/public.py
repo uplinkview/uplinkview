@@ -306,6 +306,8 @@ async def resolve(layout: DashboardLayout, opts: PublicOptions, raw: str) -> Any
             break
         if source.kind == "vpn" and not mods.get("unifi", True):
             break
+        if source.kind == "lan_client" and not mods.get("opnsense", False):
+            break
         return await _chart(source, minutes(), offset)
     raise HTTPException(403, "Tych danych nie ma na tym pulpicie")
 

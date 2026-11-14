@@ -57,6 +57,7 @@ import { Dialog } from "../Dialog";
 import { refreshLabel } from "../RefreshControl";
 import { Button, Field, Select } from "../ui";
 import { ChartWidget } from "./ChartWidget";
+import { hostLabel, useOpnsenseDevice } from "../../lib/opnsense";
 
 interface InterfaceItem {
   id: number;
@@ -90,6 +91,7 @@ export const SOURCE_LABEL: Record<SourceKind, TextKey> = {
   wan_ping: "ce.source.wan_ping",
   speedtest: "ce.source.speedtest",
   vpn: "ce.source.vpn",
+  lan_client: "ce.source.lan_client",
 };
 /** Lista do wyboru w edytorze dla źródła z tabeli `metrics` (odpowiedź /api/devices/{id}/agent-keys). */
 type AgentKeys = Record<Exclude<AgentSourceKind, "agent_cpu">, string[]>;
@@ -106,6 +108,7 @@ const AGENT_KEY_LABEL: Record<keyof AgentKeys, TextKey> = {
   wan_ping: "ce.agent.key.wanTarget",
   speedtest: "ce.agent.key.wan",
   vpn: "ce.agent.key.vpn",
+  lan_client: "ce.agent.key.lan_client",
 };
 const KIND_OPTIONS: ChartKind[] = ["area", "line", "bar"];
 const LEGEND_MODES: LegendMode[] = ["list", "table", "hidden"];
@@ -185,13 +188,17 @@ export function SourcePicker({ prefix, source, error, onChange }: { prefix: stri
   // Pingi łączy WAN mierzy brama (od 0.55.0) – do wyboru tylko bramy, klucze opisane nazwami łączy
   // Klienci VPN (od 0.57.0) też są na bramie
   // Testy prędkości (od 0.70.0) też robi brama, klucz = łącze
-  const wanPing = agentKind != null && (isWanPingSource(agentKind) || isSpeedtestSource(agentKind) || agentKind === "vpn");
+  // Urządzenia w sieci za OPNsense (od 0.83.0) też są na bramie, klucz = MAC (opis z DHCP/ARP)
+  const lanClient = agentKind === "lan_client";
+  const wanPing = agentKind != null && (isWanPingSource(agentKind) || isSpeedtestSource(agentKind) || agentKind === "vpn" || lanClient);
   const wantedDriver = agentKind === "pve_guest" ? "proxmox" : agentKind && !snmpSensor && !wanPing ? "agent" : null;
   const deviceOptions = (devices.data ?? []).filter((d: Device) =>
     wanPing ? d.kind === "gateway" : snmpSensor ? d.driver !== "agent" && d.driver !== "proxmox" : !wantedDriver || d.driver === wantedDriver,
   );
   const wanLinks = useQuery({ queryKey: WAN_LINKS_KEY, queryFn: () => get<WanLink[]>("/api/wan/links"), enabled: wanPing });
+  const opnHosts = useOpnsenseDevice(lanClient && deviceId ? deviceId : null);
   const keyLabel = (key: string): string => {
+    if (lanClient) return hostLabel(opnHosts.data?.hosts ?? [], key);
     if (!wanPing || agentKind === "vpn") return key;
     const [ifname, ...target] = key.split(WAN_PING_SEP);
     const link = (wanLinks.data ?? []).find((l) => l.device_id === deviceId && l.interface_name === ifname);

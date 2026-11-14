@@ -377,7 +377,7 @@ createServer(async (req, res) => {
   if (req.method === "GET" && opn) {
     if (Number(opn[1]) !== 8) return send(res, 200, { configured: false });
     return send(res, 200, {
-      configured: true, status: "up", stale: false, version: "26.7.9_1", latest_version: "26.7.10", update_available: true, last_ok_at: ago(12), last_error: null, dhcp: "dnsmasq",
+      configured: true, status: "up", stale: false, version: "26.7.9_1", latest_version: "26.7.10", update_available: true, last_ok_at: ago(12), last_error: null, dhcp: "dnsmasq", traffic: "ok",
       gateways: [
         { name: "WAN_DHCP", address: "192.168.1.1", monitor: "8.8.8.8", status: "none", up: true, delay_ms: 12.3, jitter_ms: 0.8, loss_percent: 0, interface: "em1", default: true },
         { name: "WAN_GSM", address: "10.64.64.1", monitor: "1.1.1.1", status: "down", up: false, delay_ms: null, jitter_ms: null, loss_percent: 100, interface: "em2", default: false },
@@ -393,8 +393,8 @@ createServer(async (req, res) => {
         .concat([{ name: "suricata", description: "Intrusion Detection", running: false }]),
       hosts: [
         { mac: "02:00:00:00:00:04", ip: "192.168.1.1", hostname: null, interface: "WAN", manufacturer: null, source: "arp", expires: null },
-        { mac: "02:00:00:00:00:02", ip: "192.168.10.126", hostname: "laptop", interface: "LAN", manufacturer: "PCS Systemtechnik GmbH", source: "dhcp", expires: 1794699248 },
-        { mac: "02:00:00:00:00:07", ip: "192.168.10.140", hostname: "nas", interface: "LAN", manufacturer: "Synology Incorporated", source: "dhcp", expires: 1794699248 },
+        { mac: "02:00:00:00:00:02", ip: "192.168.10.126", hostname: "laptop", interface: "LAN", manufacturer: "PCS Systemtechnik GmbH", source: "dhcp", expires: 1794699248, down_bps: 23_400_000, up_bps: 1_250_000 },
+        { mac: "02:00:00:00:00:07", ip: "192.168.10.140", hostname: "nas", interface: "LAN", manufacturer: "Synology Incorporated", source: "dhcp", expires: 1794699248, down_bps: 0, up_bps: 0 },
       ],
     });
   }
@@ -452,6 +452,17 @@ createServer(async (req, res) => {
     for (let i = Math.floor((minutes * 60) / stride); i >= 0; i--) {
       const on = url.searchParams.get("key") === "iPhone" && i * stride <= 840;
       points.push({ time: new Date(Date.now() - i * stride * 1000).toISOString(), values: on ? { down_bps: wave(i, 2) * 2e6, up_bps: wave(i, 3) * 5e5, connected: 1 } : { connected: 0 } });
+    }
+    return send(res, 200, points);
+  }
+  // Ruch urządzeń w sieci za OPNsense (od 0.83.0): klucz = MAC
+  if (req.method === "GET" && /^\/api\/devices\/\d+\/agent-metrics$/.test(url.pathname) && url.searchParams.get("source") === "lan_client") {
+    const minutes = Number(url.searchParams.get("minutes") ?? 60);
+    const stride = bucketS(minutes);
+    const k = url.searchParams.get("key")?.endsWith("02") ? 0 : 1;
+    const points = [];
+    for (let i = Math.floor((minutes * 60) / stride); i >= 0; i--) {
+      points.push({ time: new Date(Date.now() - i * stride * 1000).toISOString(), values: { down_bps: wave(i, k) * 6e5, up_bps: wave(i, k + 1) * 4e4 } });
     }
     return send(res, 200, points);
   }

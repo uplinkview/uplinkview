@@ -1,0 +1,147 @@
+{
+ "lan": {
+  "records": [
+   {
+    "address": "192.168.10.126",
+    "rate_bits_in": 1160000,
+    "rate_bits_out": 1160000,
+    "rate_bits": 2320000,
+    "cumulative_bytes_in": 297000,
+    "cumulative_bytes_out": 297000,
+    "cumulative_bytes": 594000,
+    "tags": [
+     "private"
+    ],
+    "details": [
+     {
+      "address": "192.168.10.1",
+      "rate": "1.16Mb",
+      "rate_bits": 1160000,
+      "cumulative": "297KB",
+      "cumulative_bytes": 297000,
+      "tags": [
+       "local",
+       "private"
+      ]
+     }
+    ],
+    "rname": "",
+    "rate_in": "1.16 Mb",
+    "rate_out": "1.16 Mb",
+    "rate": "2.32 Mb",
+    "cumulative_in": "297.0 kb",
+    "cumulative_out": "297.0 kb",
+    "cumulative": "594.0 kb"
+   }
+  ],
+  "status": "ok"
+ },
+ "wan": {
+  "records": [
+   {
+    "address": "192.168.1.1",
+    "rate_bits_in": 768,
+    "rate_bits_out": 848,
+    "rate_bits": 1616,
+    "cumulative_bytes_in": 192,
+    "cumulative_bytes_out": 212,
+    "cumulative_bytes": 404,
+    "tags": [
+     "private"
+    ],
+    "details": [
+     {
+      "address": "192.168.1.135",
+      "rate": "768b",
+      "rate_bits": 768,
+      "cumulative": "192B",
+      "cumulative_bytes": 192,
+      "tags": [
+       "local",
+       "private"
+      ]
+     },
+     {
+      "address": "255.255.255.255",
+      "rate": "0b",
+      "rate_bits": 0,
+      "cumulative": "0B",
+      "cumulative_bytes": 0,
+      "tags": [
+       "private"
+      ]
+     }
+    ],
+    "rname": "",
+    "rate_in": "768.0 b",
+    "rate_out": "848.0 b",
+    "rate": "1.62 kb",
+    "cumulative_in": "192.0 b",
+    "cumulative_out": "212.0 b",
+    "cumulative": "404.0 b"
+   },
+   {
+    "address": "192.168.1.7",
+    "rate_bits_in": 0,
+    "rate_bits_out": 252,
+    "rate_bits": 252,
+    "cumulative_bytes_in": 0,
+    "cumulative_bytes_out": 63,
+    "cumulative_bytes": 63,
+    "tags": [
+     "private"
+    ],
+    "details": [
+     {
+      "address": "192.168.1.255",
+      "rate": "0b",
+      "rate_bits": 0,
+      "cumulative": "0B",
+      "cumulative_bytes": 0,
+      "tags": [
+       "private"
+      ]
+     }
+    ],
+    "rname": "",
+    "rate_in": "0.0 b",
+    "rate_out": "252.0 b",
+    "rate": "252.0 b",
+    "cumulative_in": "0.0 b",
+    "cumulative_out": "63.0 b",
+    "cumulative": "63.0 b"
+   },
+   {
+    "address": "8.8.8.8",
+    "rate_bits_in": 116,
+    "rate_bits_out": 116,
+    "rate_bits": 232,
+    "cumulative_bytes_in": 29,
+    "cumulative_bytes_out": 29,
+    "cumulative_bytes": 58,
+    "tags": [],
+    "details": [
+     {
+      "address": "192.168.1.135",
+      "rate": "116b",
+      "rate_bits": 116,
+      "cumulative": "29B",
+      "cumulative_bytes": 29,
+      "tags": [
+       "local",
+       "private"
+      ]
+     }
+    ],
+    "rname": "dns.google.",
+    "rate_in": "116.0 b",
+    "rate_out": "116.0 b",
+    "rate": "232.0 b",
+    "cumulative_in": "29.0 b",
+    "cumulative_out": "29.0 b",
+    "cumulative": "58.0 b"
+   }
+  ],
+  "status": "ok"
+ }
+}

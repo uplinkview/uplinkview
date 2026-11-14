@@ -75,6 +75,9 @@ export interface OpnsenseHost {
   manufacturer: string | null;
   source: "dhcp" | "arp" | string;
   expires: number | null;
+  /** Ruch z próbki OPNsense (od 0.83.0), b/s; null = nie mierzono (sieć WAN albo brak odczytu) */
+  down_bps?: number | null;
+  up_bps?: number | null;
 }
 
 export interface OpnsenseDeviceData {
@@ -87,6 +90,8 @@ export interface OpnsenseDeviceData {
   last_ok_at: string | null;
   last_error: string | null;
   dhcp: string | null;
+  /** Odczyt ruchu urządzeń (od 0.83.0): "ok", tekst błędu albo null (nie mierzono) */
+  traffic?: string | null;
   gateways: OpnsenseGateway[];
   interfaces: OpnsenseIface[];
   services: OpnsenseService[];
@@ -111,3 +116,9 @@ export function useOpnsenseDevice(deviceId: number | null) {
 
 /** Urządzenie OPNsense: driver ustawiony albo wykryty przez kolektor SNMP. */
 export const isOpnsense = (d: { driver: string; detected_driver: string | null }) => d.driver === "opnsense" || d.detected_driver === "opnsense";
+
+/** Opis urządzenia po MAC: nazwa z DHCP, inaczej adres IP, inaczej sam MAC. */
+export function hostLabel(hosts: OpnsenseHost[], mac: string): string {
+  const h = hosts.find((x) => x.mac === mac);
+  return h?.hostname || h?.ip || mac;
+}

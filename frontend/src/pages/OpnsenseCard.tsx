@@ -1,16 +1,19 @@
 /** Dane z API OPNsense na stronie urządzenia (od 0.81.0): wersja, bramy, interfejsy, usługi, urządzenia z DHCP i ARP. */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Card, ErrorNote } from "../components/ui";
+import { ChartWidget } from "../components/widgets/ChartWidget";
 import { t } from "../i18n";
-import { relativeTime } from "../lib/format";
+import { formatBps, relativeTime } from "../lib/format";
 import { formatNumber } from "../lib/intl";
-import { useOpnsenseDevice, type OpnsenseGateway } from "../lib/opnsense";
+import { COLOR_INDEXES, newChartConfig, newQuery, type ChartConfig } from "../lib/layout";
+import { useOpnsenseDevice, type OpnsenseGateway, type OpnsenseHost } from "../lib/opnsense";
 
 const TH = "px-4 py-2 font-medium";
 const TH_NUM = "px-4 py-2 text-right font-medium";
 const TD_NUM = "px-4 py-2 text-right tabular-nums";
 const HOSTS_SHOWN = 25;
+const CHART_HOSTS = 5;
 
 const ms = (v: number | null) => (v == null ? "–" : `${formatNumber(v, { maximumFractionDigits: 1 })} ms`);
 const pct = (v: number | null) => (v == null ? "–" : `${formatNumber(v, { maximumFractionDigits: 1 })} %`);
@@ -24,13 +27,48 @@ function GatewayState({ g }: { g: OpnsenseGateway }) {
   );
 }
 
+const total = (h: OpnsenseHost) => (h.down_bps ?? 0) + (h.up_bps ?? 0);
+
+/** Pobieranie najaktywniejszych teraz urządzeń (historia z próbek co 30 s; zestaw urządzeń z ostatniego odczytu). */
+function TrafficChart({ deviceId, hosts }: { deviceId: number; hosts: OpnsenseHost[] }) {
+  const macs = hosts
+    .filter((h) => total(h) > 0)
+    .sort((a, b) => total(b) - total(a))
+    .slice(0, CHART_HOSTS)
+    .map((h) => h.mac)
+    .sort()
+    .join(",");
+  const config = useMemo((): ChartConfig | null => {
+    if (!macs) return null;
+    const list = macs.split(",");
+    const label = (mac: string) => {
+      const h = hosts.find((x) => x.mac === mac);
+      return h?.hostname || h?.ip || mac;
+    };
+    const base = newChartConfig({ kind: "lan_client", id: deviceId, key: list[0] });
+    return {
+      ...base,
+      title: t("opn.hosts.chart"),
+      chart: "line",
+      queries: list.map((mac, n) =>
+        newQuery("ABCDE"[n], { kind: "lan_client", id: deviceId, key: mac }, [{ key: "down_bps", color: COLOR_INDEXES[n], label: label(mac) }]),
+      ),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nazwy z odczytu, w którym zmienił się zestaw urządzeń
+  }, [deviceId, macs]);
+  return config ? <ChartWidget config={config} /> : null;
+}
+
 export function OpnsenseCard({ deviceId }: { deviceId: number }) {
   const { data } = useOpnsenseDevice(deviceId);
   const [allHosts, setAllHosts] = useState(false);
   if (!data?.configured) return null;
 
   const stopped = data.services.filter((s) => !s.running);
-  const hosts = allHosts ? data.hosts : data.hosts.slice(0, HOSTS_SHOWN);
+  const measured = data.hosts.some((h) => h.down_bps != null);
+  // Z pomiarem: najpierw urządzenia z ruchem (najwięcej na górze), potem reszta po adresie
+  const sorted = measured ? [...data.hosts].sort((a, b) => total(b) - total(a)) : data.hosts;
+  const hosts = allHosts ? sorted : sorted.slice(0, HOSTS_SHOWN);
   const dhcpCount = data.hosts.filter((h) => h.source === "dhcp").length;
 
   return (
@@ -153,7 +191,9 @@ export function OpnsenseCard({ deviceId }: { deviceId: number }) {
               {data.dhcp ? t("opn.hosts.dhcp", { n: dhcpCount, server: data.dhcp }) : t("opn.hosts.arpOnly")}
             </span>
           </h2>
-          <table className="mt-2 w-full min-w-[40rem] text-left text-sm">
+          {measured && <p className="px-4 text-xs text-text-2">{t("opn.hosts.trafficNote")}</p>}
+          {data.traffic && data.traffic !== "ok" && <p className="px-4 text-xs text-danger">{t("opn.hosts.trafficError", { error: data.traffic })}</p>}
+          <table className="mt-2 w-full min-w-[46rem] text-left text-sm">
             <thead className="text-xs text-text-2">
               <tr>
                 <th scope="col" className={TH}>{t("opn.hosts.ip")}</th>
@@ -162,6 +202,8 @@ export function OpnsenseCard({ deviceId }: { deviceId: number }) {
                 <th scope="col" className={TH}>{t("opn.hosts.vendor")}</th>
                 <th scope="col" className={TH}>{t("opn.hosts.iface")}</th>
                 <th scope="col" className={TH}>{t("opn.hosts.source")}</th>
+                {measured && <th scope="col" className={TH_NUM}>{t("opn.hosts.down")}</th>}
+                {measured && <th scope="col" className={TH_NUM}>{t("opn.hosts.up")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -173,6 +215,8 @@ export function OpnsenseCard({ deviceId }: { deviceId: number }) {
                   <td className="max-w-48 truncate px-4 py-2 text-text-2">{h.manufacturer ?? "–"}</td>
                   <td className="px-4 py-2 text-text-2">{h.interface ?? "–"}</td>
                   <td className="px-4 py-2 text-text-2">{h.source === "dhcp" ? "DHCP" : "ARP"}</td>
+                  {measured && <td className={TD_NUM}>{h.down_bps == null ? "–" : formatBps(h.down_bps)}</td>}
+                  {measured && <td className={TD_NUM}>{h.up_bps == null ? "–" : formatBps(h.up_bps)}</td>}
                 </tr>
               ))}
             </tbody>
@@ -184,6 +228,7 @@ export function OpnsenseCard({ deviceId }: { deviceId: number }) {
           )}
         </Card>
       )}
+      {measured && <TrafficChart deviceId={deviceId} hosts={data.hosts} />}
     </div>
   );
 }

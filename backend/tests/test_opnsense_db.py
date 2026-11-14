@@ -121,12 +121,14 @@ def test_collector_writes_metrics_and_device_data(client):
     assert rows[("wan_latency_ms", "em1")] == 12.3
     assert rows[("gateway_up", "WAN_DHCP")] == 1.0
     assert rows[("opnsense_service_up", "dpinger/WAN_DHCP")] == 1.0
+    assert [v for (n, _k), v in rows.items() if n == "client_down_bps"] == [2_376_000]  # ruch urządzenia w LAN
 
     data = client.get(f"/api/opnsense/devices/{dev}").json()
     assert data["configured"] and data["status"] == "up" and not data["stale"]
     assert data["version"] == "26.7.9_1" and data["update_available"] is False and data["dhcp"] == "dnsmasq"
     assert {i["device"] for i in data["interfaces"]} == {"em0", "em1"}  # tylko przypisane interfejsy
     assert len(data["services"]) == 17 and len(data["hosts"]) == 4
+    assert data["traffic"] == "ok" and next(h for h in data["hosts"] if h["ip"] == "192.168.10.126")["down_bps"] == 2_376_000
     assert client.get("/api/opnsense/apis").json()[0]["status"] == "up"
 
 

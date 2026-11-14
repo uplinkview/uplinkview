@@ -24,6 +24,7 @@ export function sourceModule(kind: string): ModuleId | null {
   if (kind === "wan_ping") return "unifi"; // pingi bramy z kontrolera UniFi; wan_latency – UniFi albo OPNsense (od 0.81.0)
   if (kind === "speedtest") return "unifi"; // testy prędkości bramy z kontrolera UniFi (od 0.70.0)
   if (kind === "vpn") return "unifi"; // klienci VPN bramy z kontrolera UniFi (od 0.57.0)
+  if (kind === "lan_client") return "opnsense"; // ruch urządzeń w sieci za OPNsense (od 0.83.0)
   return null;
 }
 

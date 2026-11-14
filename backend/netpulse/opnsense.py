@@ -24,7 +24,7 @@ SERVICES = "core/service/search"
 ARP = "diagnostics/interface/get_arp"
 # DHCP: od 25.1 domyślnie dnsmasq, do wyboru Kea; ISC DHCP (wtyczka) ma własny punkt
 LEASES = ("dnsmasq/leases/search", "kea/leases4/search", "dhcpv4/leases/search_lease")
-# Ruch na adres (od 0.82.0): OPNsense próbkuje ruch interfejsu przez kilka sekund; lista identyfikatorów po przecinku
+# Ruch na adres (od 0.83.0): OPNsense próbkuje ruch interfejsu przez kilka sekund; lista identyfikatorów po przecinku
 TRAFFIC_TOP = "diagnostics/traffic/top/{}"
 TRAFFIC_TIMEOUT_S = 30.0  # odpowiedź trwa 3–11 s (bez ruchu – ok. 11 s i status „timeout”)
 
@@ -79,7 +79,7 @@ class Host:
     manufacturer: str | None
     source: str  # dhcp | arp
     expires: int | None = None  # koniec dzierżawy (unix), tylko DHCP
-    # Ruch z próbki OPNsense (od 0.82.0), b/s; None = nie mierzono (adres spoza sieci LAN albo brak odczytu)
+    # Ruch z próbki OPNsense (od 0.83.0), b/s; None = nie mierzono (adres spoza sieci LAN albo brak odczytu)
     down_bps: float | None = None
     up_bps: float | None = None
 
@@ -93,7 +93,7 @@ class Snapshot:
     services: list[Service] = field(default_factory=list)
     hosts: list[Host] = field(default_factory=list)
     dhcp: str | None = None  # z którego serwera DHCP są dzierżawy (dnsmasq | kea | isc); None = brak
-    # Odczyt ruchu urządzeń (od 0.82.0): "ok", tekst błędu albo None (nie mierzono – brak sieci LAN albo uprawnień)
+    # Odczyt ruchu urządzeń (od 0.83.0): "ok", tekst błędu albo None (nie mierzono – brak sieci LAN albo uprawnień)
     traffic: str | None = None
 
     @property
@@ -272,14 +272,24 @@ def lan_interfaces(interfaces: list[Iface]) -> list[Iface]:
     ]
 
 
-def parse_top(body: Any) -> dict[str, list[tuple[str, float, float]]]:
-    """Próbka ruchu na adres: {identyfikator: [(adres, pobieranie b/s, wysyłanie b/s)]}.
+@dataclass
+class TopRecord:
+    """Wiersz próbki ruchu: adres, ruch DO niego i OD niego (b/s) oraz adresy po drugiej stronie z ich bajtami."""
+
+    address: str
+    down_bps: float
+    up_bps: float
+    peers: list[tuple[str, float]] = field(default_factory=list)
+
+
+def parse_top(body: Any) -> dict[str, list[TopRecord]]:
+    """Próbka ruchu na adres: {identyfikator interfejsu: [TopRecord]}.
 
     Sprawdzone na 26.7.9 (ruch w jedną stronę z licznikiem interfejsu obok): `*_in` = ruch DO adresu (pobieranie),
     `*_out` = ruch OD adresu. `cumulative_bytes_*` to bajty z jednej sekundy próbki – zgodne z licznikiem interfejsu
     w 98–100 %; `rate_bits_*` jest stale o połowę niższe (średnia z 2 s z jedną sekundą danych), więc go nie używamy.
     Status „timeout” = w czasie próbki nie było ruchu."""
-    out: dict[str, list[tuple[str, float, float]]] = {}
+    out: dict[str, list[TopRecord]] = {}
     if not isinstance(body, dict):
         return out
     for ident, part in body.items():
@@ -290,33 +300,67 @@ def parse_top(body: Any) -> dict[str, list[tuple[str, float, float]]]:
             if not isinstance(r, dict) or not _text(r.get("address")):
                 continue
             down, up = r.get("cumulative_bytes_in"), r.get("cumulative_bytes_out")
-            if isinstance(down, int | float) and isinstance(up, int | float):
-                rows.append((str(r["address"]).strip(), float(down) * 8, float(up) * 8))
+            if not (isinstance(down, int | float) and isinstance(up, int | float)):
+                continue
+            peers = [
+                (str(d["address"]).strip(), float(d.get("cumulative_bytes") or 0))
+                for d in r.get("details") or []
+                if isinstance(d, dict) and _text(d.get("address"))
+            ]
+            rows.append(TopRecord(str(r["address"]).strip(), float(down) * 8, float(up) * 8, peers))
         out[str(ident)] = rows
     return out
 
 
-def apply_traffic(hosts: list[Host], lans: list[Iface], top: dict[str, list[tuple[str, float, float]]]) -> None:
-    """Wpisuje ruch urządzeniom z sieci LAN, które OPNsense zmierzył; urządzenie z tej sieci bez wpisu = 0 b/s.
-    Adresy spoza sieci LAN (serwery w internecie, po drugiej stronie) są pomijane."""
-    nets = []
+def _ip(value: str | None):
+    try:
+        return ipaddress.ip_address(value or "")
+    except ValueError:
+        return None
+
+
+def apply_traffic(hosts: list[Host], lans: list[Iface], top: dict[str, list[TopRecord]]) -> None:
+    """Wpisuje ruch urządzeniom z mierzonych sieci LAN; urządzenie z tej sieci bez wpisu = 0 b/s.
+
+    Rekord z adresem z sieci LAN = ruch tego urządzenia wprost. Rekord z adresem spoza sieci (serwer w internecie,
+    po drugiej stronie routingu) – ruch przypisujemy urządzeniom z sieci LAN wśród jego rozmówców, odwrotnie
+    (ruch DO serwera = wysyłanie urządzenia), a przy kilku – proporcjonalnie do ich bajtów. Własne adresy OPNsense
+    (adres interfejsu) się nie liczą."""
+    nets, own = [], set()
     for i in lans:
-        if i.identifier in top:
-            try:
-                nets.append(ipaddress.ip_interface(i.addr4 or "").network)
-            except ValueError:
-                continue
-    rates: dict[str, tuple[float, float]] = {}
-    for ident in top:
-        for addr, down, up in top[ident]:
-            prev = rates.get(addr, (0.0, 0.0))
-            rates[addr] = (prev[0] + down, prev[1] + up)
-    for h in hosts:
+        if i.identifier not in top:
+            continue
         try:
-            ip = ipaddress.ip_address(h.ip or "")
+            iface = ipaddress.ip_interface(i.addr4 or "")
         except ValueError:
             continue
-        if any(ip in n for n in nets):
+        nets.append(iface.network)
+        own.add(iface.ip)
+
+    def local(ip) -> bool:
+        return ip is not None and ip not in own and any(ip in n for n in nets)
+
+    rates: dict[str, list[float]] = {}
+
+    def add(ip, down: float, up: float) -> None:
+        r = rates.setdefault(str(ip), [0.0, 0.0])
+        r[0] += down
+        r[1] += up
+
+    for records in top.values():
+        for rec in records:
+            ip = _ip(rec.address)
+            if local(ip):
+                add(ip, rec.down_bps, rec.up_bps)
+                continue
+            mine = [(p, b) for a, b in rec.peers if local(p := _ip(a))]
+            total = sum(b for _, b in mine)
+            for p, b in mine:
+                share = b / total if total > 0 else 1 / len(mine)
+                add(p, rec.up_bps * share, rec.down_bps * share)  # ruch OD serwera = pobieranie urządzenia
+    for h in hosts:
+        ip = _ip(h.ip)
+        if local(ip):
             h.down_bps, h.up_bps = rates.get(str(ip), (0.0, 0.0))
 
 

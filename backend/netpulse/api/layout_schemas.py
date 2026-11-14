@@ -79,6 +79,7 @@ class AgentSource(Strict):
         "wan_ping",
         "speedtest",
         "vpn",
+        "lan_client",
     ]
     id: int = Field(ge=1)  # urządzenie (serwer z agentem, węzeł Proxmox, urządzenie SNMP albo brama – `wan_*`)
     key: str = Field("", max_length=255)  # interfejs, dysk, czujnik, kontener, port albo łącze WAN; dla agent_cpu puste
@@ -119,6 +120,7 @@ ALLOWED_METRICS: dict[str, tuple[str, ...]] = {
     "speedtest": ("down_bps", "up_bps", "ping_ms"),
     "wan_ping": ("latency_ms",),
     "vpn": ("down_bps", "up_bps", "connected"),
+    "lan_client": ("down_bps", "up_bps"),
     "check": ("latency_ms", "loss_percent", "jitter_ms", "availability_percent", "cert_days"),
 }
 

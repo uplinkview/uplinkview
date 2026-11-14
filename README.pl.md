@@ -59,7 +59,7 @@ robi kopię zapasową bazy. Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`
 | Serwery Linux     | ✅ | SNMP (`snmpd`) albo agent UplinkView |
 | Proxmox VE        | ✅ sprawdzone na PVE 9.1 / 9.2 (jeden węzeł) | API Proxmox (token, rola PVEAuditor) |
 | MikroTik          | ✅ sprawdzone na RouterOS 7.18 (CHR); czujniki, PoE i SFP z oficjalnego MIB | SNMP (IF-MIB, MIKROTIK-MIB, HOST-RESOURCES-MIB) |
-| OPNsense          | ✅ sprawdzone na OPNsense 26.7 (VirtualBox): router, WAN z trasy domyślnej; bramy (opóźnienie, utrata), usługi, urządzenia z DHCP/ARP, wersja | SNMP (wtyczka `os-net-snmp`) + API OPNsense (klucz) |
+| OPNsense          | ✅ sprawdzone na OPNsense 26.7 (VirtualBox): router, WAN z trasy domyślnej; bramy (opóźnienie, utrata), usługi, urządzenia z DHCP/ARP i ich ruch, wersja | SNMP (wtyczka `os-net-snmp`) + API OPNsense (klucz) |
 | TP-Link Omada     | driver SNMP z oficjalnych MIB-ów, czeka na prawdziwy sprzęt | SNMP |
 | Inne              | ✅ podstawowo | generyczny driver SNMP (IF-MIB) |
 

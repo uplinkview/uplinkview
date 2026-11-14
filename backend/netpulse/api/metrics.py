@@ -196,6 +196,8 @@ AGENT_SOURCES: dict[str, dict[str, tuple[str, float]]] = {
     "speedtest": {"down_bps": ("speedtest_down_bps", 1.0), "up_bps": ("speedtest_up_bps", 1.0), "ping_ms": ("speedtest_ping_ms", 1.0)},
     # Klienci VPN bramy UniFi (od 0.57.0): klucz = nazwa klienta; pobieranie = ruch do klienta
     "vpn": {"down_bps": ("vpn_down_bps", 1.0), "up_bps": ("vpn_up_bps", 1.0), "connected": ("vpn_connected", 1.0)},
+    # Urządzenia w sieci LAN za OPNsense (od 0.83.0): próbka ruchu co 30 s; klucz = MAC urządzenia
+    "lan_client": {"down_bps": ("client_down_bps", 1.0), "up_bps": ("client_up_bps", 1.0)},
     "snmp_sfp": {
         "sfp_rx_dbm": ("sfp_rx_dbm", 1.0),
         "sfp_tx_dbm": ("sfp_tx_dbm", 1.0),
@@ -217,6 +219,7 @@ AgentSourceKind = Literal[
     "wan_ping",
     "speedtest",
     "vpn",
+    "lan_client",
 ]
 # Lista kluczy do edytora wykresu: źródło → nazwy metryk, z których bierzemy klucze
 AGENT_KEY_NAMES: dict[str, tuple[str, ...]] = {
@@ -232,6 +235,7 @@ AGENT_KEY_NAMES: dict[str, tuple[str, ...]] = {
     "wan_ping": ("wan_ping_ms",),
     "speedtest": ("speedtest_down_bps",),
     "vpn": ("vpn_connected",),
+    "lan_client": ("client_down_bps",),
 }
 
 

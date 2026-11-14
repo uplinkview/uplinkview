@@ -17,8 +17,13 @@ from netpulse.opnsense import (
     INTERFACES,
     LEASES,
     SERVICES,
+    TRAFFIC_TOP,
+    Host,
+    Iface,
     OpnsenseApi,
     OpnsenseError,
+    apply_traffic,
+    lan_interfaces,
     parse_arp,
     parse_firmware,
     parse_gateways,
@@ -26,6 +31,7 @@ from netpulse.opnsense import (
     parse_leases,
     parse_number,
     parse_services,
+    parse_top,
     update_available,
 )
 from netpulse.opnsense_collector import metric_rows, wan_states
@@ -39,6 +45,7 @@ FILES = {
     ARP: "diagnostics_interface_get_arp.json",
     LEASES[0]: "dnsmasq_leases_search.json",
     LEASES[1]: "kea_leases4_search.json",
+    TRAFFIC_TOP.format("lan"): "diagnostics_traffic_top.json",
 }
 
 
@@ -198,3 +205,76 @@ def test_basic_auth_and_base_url():
 
     asyncio.run(go())
     assert seen and seen[0][0] == FIRMWARE and seen[0][1].startswith("Basic ")
+
+
+# --- ruch urządzeń (0.83.0) ---------------------------------------------------------------------
+
+
+def test_parse_top_direction_and_scale():
+    top = parse_top(load(TRAFFIC_TOP.format("lan")))
+    (lan,) = top["lan"]
+    # bajty z 1 s próbki × 8 – zgodne z licznikiem em0 (2,3 Mb/s); rate_bits (1,16 Mb/s) jest o połowę za niskie
+    assert (lan.address, lan.down_bps, lan.up_bps) == ("192.168.10.126", 2_376_000, 2_376_000)
+    gw = next(r for r in top["wan"] if r.address == "192.168.1.1")
+    assert gw.peers[0] == ("192.168.1.135", 192.0)
+
+
+def test_lan_interfaces_skip_wan_and_unassigned():
+    ifaces = parse_interfaces(load(INTERFACES))
+    assert [i.identifier for i in lan_interfaces(ifaces)] == ["lan"]
+
+
+def test_read_traffic_from_real_sample():
+    snap = snapshot()
+
+    async def go():
+        api = OpnsenseApi("192.168.1.135", "klucz-api-123", "sekret-api-456", transport=transport())
+        try:
+            await api.read_traffic(snap)
+        finally:
+            await api.close()
+
+    asyncio.run(go())
+    assert snap.traffic == "ok"
+    hosts = {h.ip: h for h in snap.hosts}
+    assert (hosts["192.168.10.126"].down_bps, hosts["192.168.10.126"].up_bps) == (2_376_000, 2_376_000)
+    assert hosts["192.168.1.1"].down_bps is None  # sieć WAN nie jest mierzona
+    rows = {(r["name"], r["key"]): r["value"] for r in metric_rows(7, snap, datetime(2026, 11, 14, tzinfo=UTC))}
+    mac = hosts["192.168.10.126"].mac
+    assert rows[("client_down_bps", mac)] == 2_376_000 and rows[("client_up_bps", mac)] == 2_376_000
+    assert not any(n == "client_down_bps" and k != mac for n, k in rows)
+
+
+def test_traffic_through_router_counts_for_lan_device():
+    """Ruch urządzenia z LAN do internetu: rekord ma adres serwera, urządzenie jest wśród rozmówców (kierunek odwrócony)."""
+    lans = [Iface("em0", "lan", "LAN", "up", "static", "192.168.10.1/24")]
+    a = Host("02:00:00:00:00:0a", "192.168.10.20", "laptop", "LAN", None, "dhcp")
+    b = Host("02:00:00:00:00:0b", "192.168.10.30", "tv", "LAN", None, "dhcp")
+    idle = Host("02:00:00:00:00:0c", "192.168.10.40", "nas", "LAN", None, "dhcp")
+    top = parse_top({"lan": {"status": "ok", "records": [
+        {"address": "1.1.1.1", "cumulative_bytes_in": 1000, "cumulative_bytes_out": 300000,
+         "details": [{"address": "192.168.10.20", "cumulative_bytes": 3000}, {"address": "192.168.10.30", "cumulative_bytes": 1000}]},
+        {"address": "192.168.10.1", "cumulative_bytes_in": 50, "cumulative_bytes_out": 50, "details": []},  # sam OPNsense
+    ]}})
+    apply_traffic([a, b, idle], lans, top)
+    assert (a.down_bps, a.up_bps) == (1_800_000, 6_000)  # 3/4 ruchu: OD serwera = pobieranie
+    assert (b.down_bps, b.up_bps) == (600_000, 2_000)
+    assert (idle.down_bps, idle.up_bps) == (0.0, 0.0)
+
+
+def test_traffic_idle_timeout_and_no_privileges():
+    idle = {"lan": {"records": [], "status": "timeout"}}
+    snap = snapshot(override={TRAFFIC_TOP.format("lan"): idle})
+
+    async def go(**kw):
+        api = OpnsenseApi("192.168.1.135", "klucz-api-123", "sekret-api-456", transport=transport(**kw))
+        try:
+            await api.read_traffic(snap)
+        finally:
+            await api.close()
+
+    asyncio.run(go(override={TRAFFIC_TOP.format("lan"): idle}))
+    assert snap.traffic == "ok" and {h.ip: h.down_bps for h in snap.hosts}["192.168.10.126"] == 0.0
+    snap = snapshot()
+    asyncio.run(go(status={TRAFFIC_TOP.format("lan"): 403}))
+    assert snap.traffic is None and all(h.down_bps is None for h in snap.hosts)

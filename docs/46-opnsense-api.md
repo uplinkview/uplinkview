@@ -38,6 +38,29 @@ albo brak usługi (404) = pusta sekcja, nie błąd.
 Klucz usługi = `id` z API, nie `name`: dpinger występuje raz na bramę (`dpinger/WAN_DHCP`, `dpinger/:watcher:`)
 z tym samym `name`.
 
+### Ruch urządzeń w sieci (0.83.0)
+
+Punkt `diagnostics/traffic/top/<id,id>` (identyfikatory sieci LAN: interfejsy z adresem, bez bramy i trasy domyślnej,
+bez `lo*`) – OPNsense sam próbkuje ruch przez kilka sekund: 3–4 s przy ruchu, ok. 11 s bez ruchu (`status: "timeout"`,
+puste rekordy), stąd limit czasu 30 s. Sprawdzone 14.11.2026 na 26.7.9 kontra licznik interfejsu
+(`diagnostics/traffic/interface`):
+
+- `cumulative_bytes_in|out` = bajty z **jednej sekundy** próbki → b/s = bajty × 8 (zgodność 98–100 %).
+  `rate_bits_*` wychodzi stale o połowę za mało – nieużywane.
+- `*_in` = ruch **do** adresu (urządzenie pobiera), `*_out` = **od** adresu (wysyła) – sprawdzone jednostronnym
+  pobieraniem.
+- Rekord z adresem z sieci LAN = ruch tego urządzenia. Rekord z adresem spoza sieci (internet) ma w `details`
+  rozmówców z LAN – UplinkView odwraca kierunek i dzieli ruch proporcjonalnie do ich bajtów (`apply_traffic`).
+  **Nie sprawdzone na prawdziwym ruchu do internetu** (testowa maszyna w LAN nie miała dostępu do sieci).
+  Własny adres OPNsense jest pomijany.
+- Każde znane urządzenie (DHCP/ARP) w mierzonej sieci dostaje wartość, także 0 – średnie na wykresie są uczciwe.
+
+Zapis: metryki `client_down_bps` / `client_up_bps` w `metrics` na urządzeniu OPNsense, klucz = MAC. Panel: kolumny
+„Pobiera” / „Wysyła” w „Urządzeniach w sieci” (sortowanie po ruchu), wykres pobierania 5 najaktywniejszych urządzeń
+i źródło wykresu „Urządzenie w sieci (OPNsense)” (`lan_client`, serie `down_bps`/`up_bps`). To chwilowa próbka
+co 30 s (bieżące obciążenie), nie suma bajtów. Brak uprawnień (403/404) = brak kolumn; błąd odczytu – komunikat
+nad tabelą (`traffic` w `GET /api/opnsense/devices/{id}`).
+
 ## Alerty
 
 Nowy zestaw reguł domyślnych (`DEFAULT_RULE_SETS` w `alerts.py`) – każda instalacja dostaje go sam po aktualizacji
@@ -84,8 +107,9 @@ Lista z wiedzy o API OPNsense – **przed budową każdego punktu sprawdzić go 
 (tylko GET, dane logowania nie są wypisywane) i zapisać zanonimizowaną odpowiedź w `tests/fixtures/opnsense_api/`.
 Kolejność według wartości dla użytkownika:
 
-1. **Ruch na urządzenie w sieci** (`diagnostics/traffic/top`): kto ile pobiera i wysyła na żywo – strona Klienci
-   z ruchem dla użytkowników bez UniFi; historia w `client_metrics` / `known_clients`, nazwy z DHCP.
+1. **Ruch na urządzenie w sieci** (`diagnostics/traffic/top`): ✅ część A (0.83.0, opis wyżej) – ruch na stronie
+   urządzenia, historia, wykres. Część B: strona Klienci z danymi OPNsense dla użytkowników bez UniFi (`known_clients`)
+   i sprawdzenie podziału ruchu do internetu, gdy maszyna w LAN będzie miała dostęp do sieci.
 2. **DNS – Unbound**: zapytania, zablokowane przez listy blokad, najczęstsze domeny i klienci (jak Pi-hole);
    wykresy, alert przy nagłym skoku zapytań.
 3. **IDS – Suricata** (`ids/service/query_alerts`): wykryte zdarzenia (sygnatura, źródło, cel, waga), alert przy

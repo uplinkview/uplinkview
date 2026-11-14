@@ -64,6 +64,7 @@ def test_every_source_accepts_its_own_metrics():
         "speedtest": {"kind": "speedtest", "id": 1, "key": "eth4"},
         "wan_ping": {"kind": "wan_ping", "id": 1, "key": "eth3 · google.com"},
         "vpn": {"kind": "vpn", "id": 1, "key": "iPhone"},
+        "lan_client": {"kind": "lan_client", "id": 11, "key": "02:00:00:00:00:02"},
         "check": {"kind": "check", "id": 4},
     }
     assert set(sources) == set(ALLOWED_METRICS)

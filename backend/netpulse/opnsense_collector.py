@@ -5,7 +5,7 @@ Zapisuje w ogólnej tabeli `metrics` na urządzeniu OPNsense:
   więc działa to samo źródło wykresu „Opóźnienie WAN” i te same reguły alertów,
 - `gateway_up` (1/0) – klucz = nazwa bramy (WAN_DHCP), tylko bramy z monitorowaniem,
 - `opnsense_service_up` (1/0) – klucz = id usługi,
-- `client_down_bps`, `client_up_bps` (od 0.82.0) – ruch urządzenia w sieci LAN z próbki OPNsense, klucz = MAC;
+- `client_down_bps`, `client_up_bps` (od 0.83.0) – ruch urządzenia w sieci LAN z próbki OPNsense, klucz = MAC;
   wiersz dla każdego znanego urządzenia (DHCP/ARP) z mierzonej sieci, także 0 – średnia na wykresie jest wtedy uczciwa.
 Stan bram trafia też do łączy WAN (`wan_links.apply_controller`): brama działa/nie działa i która ma trasę domyślną –
 kolektor SNMP użyje tego w następnym cyklu (aktywne łącze, alert przełączenia WAN).

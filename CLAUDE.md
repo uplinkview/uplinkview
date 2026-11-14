@@ -228,6 +228,10 @@ wersja, interfejsy, DHCP (dnsmasq → Kea → ISC) i ARP w `opnsense_apis.snapsh
 na stronie urządzenia. Alerty `gateway_down`, `opnsense_service_failed`, metryka `wan_loss_percent`. Bramy mierzą tylko z monitorowaniem
 włączonym w OPNsense. Fixtures: `tests/fixtures/opnsense_api/` (prawdziwe odpowiedzi 26.7.9, zanonimizowane). Etap 2 (minimalne uprawnienia
 zamiast `admins`, klienci, VPN, DNS, zapora, etykiety WAN/LAN): `docs/46-opnsense-api.md`.
+Od 0.83.0 ruch urządzeń w LAN za OPNsense: `diagnostics/traffic/top` (próbka 3–11 s, `TRAFFIC_TIMEOUT_S`; b/s = `cumulative_bytes_*` × 8,
+`*_in` = pobiera; `rate_bits_*` zaniżone o połowę – nie używać), rekordy z internetu dzielone na rozmówców z LAN (`apply_traffic`, niesprawdzone
+na prawdziwym ruchu do internetu), metryki `client_down_bps|client_up_bps` (klucz = MAC, zera też), źródło wykresu `lan_client`, kolumny i wykres
+w `OpnsenseCard.tsx`. Strona Klienci z danymi OPNsense (część B) – do zrobienia.
 
 ## Język angielski (0.74.0–0.76.0)
 
@@ -429,7 +433,7 @@ Od 0.58.1 menu w grupach Monitoring / Zdarzenia / Integracje / System – pole `
   MIKROTIK-MIB 7.25.1** (tabela `metrics`, `GET /api/devices/{id}/sensors`, źródła wykresów `snmp_sensor|snmp_poe|snmp_sfp`,
   alerty `temp_c` i `sfp_rx_dbm`; opis w `docs/12-mikrotik-omada-snmp.md`). Fizyczny routerboard (kilka rdzeni, PPPoE,
   czujniki, PoE, SFP) dalej tylko na syntetycznym `mikrotik-hex.snmprec`.
-- **OPNsense API – dalsze etapy** – lista w `docs/46-opnsense-api.md` („Do zrobienia”, 14.11.2026): 1 ruch na urządzenie,
+- **OPNsense API – dalsze etapy** – lista w `docs/46-opnsense-api.md` („Do zrobienia”, 14.11.2026): 1 ruch na urządzenie (A ✅ 0.83.0, B – strona Klienci),
   2 DNS (Unbound), 3 IDS (Suricata), 4 VPN, 5 zapora, 6 zdrowie systemu, 7 Insight/NetFlow, 8 akcje (zapis, osobna decyzja).
   Każdy punkt API najpierw sprawdzić sondą na prawdziwym OPNsense.
 - **API RouterOS i API kontrolera Omada** – robić dopiero z prawdziwym sprzętem (razem z weryfikacją MikroTika).

@@ -54,6 +54,7 @@ const AGENT_TITLE = {
   wan_ping: "ce.source.wan_ping",
   speedtest: "ce.source.speedtest",
   vpn: "ce.source.vpn",
+  lan_client: "ce.source.lan_client",
 } as const;
 
 /** Endpointy pulpitu zwracają `{interval_s, points}`, pozostałe samą listę punktów.

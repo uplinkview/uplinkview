@@ -53,7 +53,8 @@ export type AgentSourceKind =
   | "wan_latency"
   | "wan_ping"
   | "speedtest"
-  | "vpn";
+  | "vpn"
+  | "lan_client";
 export const AGENT_SOURCE_KINDS: AgentSourceKind[] = [
   "agent_cpu",
   "agent_net",
@@ -68,6 +69,7 @@ export const AGENT_SOURCE_KINDS: AgentSourceKind[] = [
   "wan_ping",
   "speedtest",
   "vpn",
+  "lan_client",
 ];
 /** Pingi łączy WAN mierzone przez bramę UniFi (od 0.55.0): urządzenie = brama, klucz = interfejs łącza (`eth3`)
  * albo interfejs i serwer (`eth3 · google.com`). */
@@ -483,6 +485,7 @@ export const SOURCE_METRICS: Record<SourceKind, string[]> = {
   wan_ping: ["latency_ms"],
   speedtest: ["down_bps", "up_bps", "ping_ms"],
   vpn: ["down_bps", "up_bps", "connected"],
+  lan_client: ["down_bps", "up_bps"], // urządzenie w sieci za OPNsense (od 0.83.0), klucz = MAC
   check: ["latency_ms", "loss_percent", "jitter_ms", "availability_percent", "cert_days"],
 };
 
@@ -544,6 +547,7 @@ export function defaultSeries(kind: SourceKind): SeriesConfig[] {
       return [{ key: "latency_ms", color: 1 }];
     case "vpn":
     case "speedtest":
+    case "lan_client":
       return [
         { key: "down_bps", color: 1 },
         { key: "up_bps", color: 8 },

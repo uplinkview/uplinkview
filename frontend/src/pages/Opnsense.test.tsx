@@ -16,6 +16,7 @@ const DATA: OpnsenseDeviceData = {
   last_ok_at: new Date().toISOString(),
   last_error: null,
   dhcp: "dnsmasq",
+  traffic: "ok",
   gateways: [
     { name: "WAN_DHCP", address: "192.168.1.1", monitor: "8.8.8.8", status: "none", up: true, delay_ms: 12.3, jitter_ms: 0.8, loss_percent: 0, interface: "em1", default: true },
     { name: "WAN_DHCP6", address: null, monitor: null, status: "none", up: null, delay_ms: null, jitter_ms: null, loss_percent: null, interface: null, default: false },
@@ -29,7 +30,7 @@ const DATA: OpnsenseDeviceData = {
     { name: "suricata", description: "Intrusion Detection", running: false },
   ],
   hosts: [
-    { mac: "02:00:00:00:00:02", ip: "192.168.10.126", hostname: "host-1", interface: "LAN", manufacturer: "PCS Systemtechnik GmbH", source: "dhcp", expires: 1794699248 },
+    { mac: "02:00:00:00:00:02", ip: "192.168.10.126", hostname: "host-1", interface: "LAN", manufacturer: "PCS Systemtechnik GmbH", source: "dhcp", expires: 1794699248, down_bps: 2_376_000, up_bps: 120_000 },
     { mac: "02:00:00:00:00:04", ip: "192.168.1.1", hostname: null, interface: "WAN", manufacturer: null, source: "arp", expires: null },
   ],
 };
@@ -71,7 +72,7 @@ describe("Ustawienia → OPNsense", () => {
 
 describe("Strona urządzenia OPNsense", () => {
   it("pokazuje wersję z aktualizacją, bramy, interfejsy, usługi i urządzenia w sieci", async () => {
-    mockApi({ devices: [OPN], opnDevice: DATA });
+    const { calls } = mockApi({ devices: [OPN], opnDevice: DATA });
     renderApp("/devices/5");
     expect(await screen.findByText("OPNsense (API)")).toBeInTheDocument();
     expect(screen.getByText("aktualizacja 26.7.10")).toBeInTheDocument();
@@ -84,6 +85,14 @@ describe("Strona urządzenia OPNsense", () => {
     expect(screen.getByText(/Intrusion Detection – zatrzymana/)).toBeInTheDocument();
     expect(screen.getByText("host-1")).toBeInTheDocument();
     expect(screen.getByText(/z DHCP \(dnsmasq\): 1/)).toBeInTheDocument();
+    // ruch urządzeń (0.83.0): kolumny tylko dla mierzonej sieci, najaktywniejsze na górze, wykres z ich historią
+    const hosts = screen.getByRole("heading", { name: /Urządzenia w sieci/ }).closest("div")!;
+    const rows = within(hosts).getAllByRole("row");
+    expect(within(rows[1]).getByText("host-1")).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/2,38 Mb\/s/)).toBeInTheDocument();
+    expect(within(rows[2]).getAllByText("–").length).toBeGreaterThan(0); // adres z sieci WAN – nie mierzony
+    expect(await screen.findByText("Pobieranie – najaktywniejsze urządzenia")).toBeInTheDocument();
+    await waitFor(() => expect(calls.some((c) => c.path.includes("agent-metrics?source=lan_client&key=02%3A00%3A00%3A00%3A00%3A02"))).toBe(true));
   });
 
   it("urządzenie bez klucza nie ma sekcji OPNsense", async () => {
