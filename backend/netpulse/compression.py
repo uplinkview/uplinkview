@@ -37,6 +37,7 @@ SEGMENT_BY: dict[str, tuple[str, ...]] = {
     "wan_link_metrics": ("wan_link_id",),
     "client_metrics": ("mac",),
     "check_metrics": ("check_id",),
+    "wan_rate_metrics": ("interface_id",),
 }
 
 

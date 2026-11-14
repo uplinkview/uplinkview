@@ -15,7 +15,7 @@ from ..db import Session, timescale_available
 from ..db.models import Device, Interface, InterfaceMetric, WifiNetwork
 from ..freshness import status_sql
 from ..modules import hidden_drivers, read_modules
-from .metrics import MinutesQuery, OffsetQuery, _bucket_seconds, window
+from .metrics import MinutesQuery, OffsetQuery, _bucket_seconds, fine_series, merge_fine, window
 from .schemas import Point
 from .security import require_user
 
@@ -166,8 +166,8 @@ _WIFI_1H_SQL = text(
 )
 
 
-async def _aggregate(sql, sql_1h, minutes: int, columns: list[str], offset: int = 0) -> SeriesOut:
-    stride = _bucket_seconds(minutes)
+async def _aggregate(sql, sql_1h, minutes: int, columns: list[str], offset: int = 0, stride: int | None = None) -> SeriesOut:
+    stride = stride or _bucket_seconds(minutes)
     since, until = window(minutes, offset)
     timescale = await timescale_available()
     if aggregates.use_aggregate(minutes, timescale):
@@ -183,8 +183,12 @@ async def _aggregate(sql, sql_1h, minutes: int, columns: list[str], offset: int 
 
 @router.get("/traffic", response_model=SeriesOut)
 async def traffic(minutes: int = MinutesQuery, offset: int = OffsetQuery):
-    """Ruch WAN (suma po wszystkich routerach): pobieranie `in_bps` i wysyłanie `out_bps` – średnie z kubełka."""
-    return await _aggregate(_TRAFFIC_SQL, _TRAFFIC_1H_SQL, minutes, ["in_bps", "out_bps"], offset)
+    """Ruch WAN (suma po wszystkich routerach): pobieranie `in_bps` i wysyłanie `out_bps`.
+    Od 0.85.0 jedna linia z prawdziwej prędkości: najwyższa wartość z pomiaru co 5 s w kubełku (`wanrate.py`), a gdzie
+    pomiaru nie ma – średnia z 30 s. `interval_s` nie mniej niż 30 s (panel rysuje lukę dopiero po 2,5 odstępu)."""
+    stride = _bucket_seconds(minutes, fine=True)
+    out = await _aggregate(_TRAFFIC_SQL, _TRAFFIC_1H_SQL, minutes, ["in_bps", "out_bps"], offset, stride)
+    return SeriesOut(interval_s=max(stride, 30), points=merge_fine(out.points, await fine_series(minutes, offset, stride)))
 
 
 @router.get("/wifi", response_model=SeriesOut)

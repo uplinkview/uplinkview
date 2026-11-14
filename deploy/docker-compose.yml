@@ -25,6 +25,8 @@ x-backend: &backend
     NETPULSE_RETENTION_DAYS: ${NETPULSE_RETENTION_DAYS:-30}
     # Kompresja metryk starszych niż tyle dni (od 0.67.0); 0 = bez kompresji
     NETPULSE_COMPRESS_AFTER_DAYS: ${NETPULSE_COMPRESS_AFTER_DAYS:-7}
+    # Wykres ruchu WAN z prawdziwej prędkości co 5 s (od 0.85.0): odczyt liczników portów WAN co tyle sekund; 0 = bez pomiaru
+    NETPULSE_WAN_SAMPLE_INTERVAL: ${NETPULSE_WAN_SAMPLE_INTERVAL:-0.5}
     NETPULSE_LOG_LEVEL: ${NETPULSE_LOG_LEVEL:-INFO}
     # Klucz szyfrowania sekretów w bazie: plik w wolumenie keys (powstaje sam); zmienna z .env ma pierwszeństwo
     NETPULSE_SECRET_KEY: ${NETPULSE_SECRET_KEY:-}

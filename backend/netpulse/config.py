@@ -19,6 +19,8 @@ class Settings:
     poll_interval: int = int(_env("POLL_INTERVAL", "30"))
     # Ile urządzeń odpytywać równolegle
     poll_concurrency: int = int(_env("POLL_CONCURRENCY", "16"))
+    # Co ile sekund czytać liczniki portów WAN do wykresu prawdziwej prędkości co 5 s (wanrate.py, od 0.85.0); 0 = bez pomiaru
+    wan_sample_interval: float = float(_env("WAN_SAMPLE_INTERVAL", "0.5"))
     snmp_timeout: float = float(_env("SNMP_TIMEOUT", "2"))
     snmp_retries: int = int(_env("SNMP_RETRIES", "1"))
     # Limit czasu całego odczytu jednego urządzenia w s (od 0.77.0); puste = max(20, interwał − 5), 0 = bez limitu

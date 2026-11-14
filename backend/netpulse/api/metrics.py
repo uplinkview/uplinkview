@@ -41,9 +41,62 @@ def window(minutes: int, offset: int = 0) -> tuple[datetime, datetime]:
     return until - timedelta(minutes=minutes) if offset else now - timedelta(minutes=minutes), until
 
 
-def _bucket_seconds(minutes: int) -> int:
-    """Rozmiar kubełka tak, żeby wykres miał ~300 punktów, nie mniej niż 30 s (długie zakresy: pełne godziny)."""
-    return aggregates.bucket_seconds(minutes)
+def _bucket_seconds(minutes: int, fine: bool = False) -> int:
+    """Rozmiar kubełka tak, żeby wykres miał ~300 punktów, nie mniej niż 30 s (ruch WAN z `fine`: 5 s; długie zakresy:
+    pełne godziny)."""
+    return aggregates.bucket_seconds(minutes, fine)
+
+
+# Prędkość WAN co 5 s (od 0.85.0, wanrate.py): w kubełku najwyższa wartość sumy portów z jednej chwili
+_FINE_SQL = """
+    SELECT date_bin(CAST(:stride AS interval), t, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS bucket,
+           MAX(in_s) AS in_bps, MAX(out_s) AS out_bps FROM (
+        SELECT f.{time} AS t, SUM(f.in_bps) AS in_s, SUM(f.out_bps) AS out_s
+        FROM {table} f
+        JOIN interfaces p ON p.id = f.interface_id
+        JOIN devices d ON d.id = p.device_id
+        WHERE f.{time} >= :since AND f.{time} < :until AND {where}
+        GROUP BY f.{time}
+    ) per_time
+    GROUP BY 1 ORDER BY 1
+"""
+_FINE_WHERE = {"wan": "p.role = 'wan' AND d.enabled", "interface": "f.interface_id = :iface"}
+
+
+async def fine_series(minutes: int, offset: int, stride: int, interface_id: int | None = None) -> dict[datetime, tuple[float | None, float | None]]:
+    """Najwyższa prędkość z 5 s w każdym kubełku: wszystkie porty WAN razem (`interface_id=None`) albo jeden port.
+    Powyżej 7 dni z agregatu godzinowych maksimów. Kubełek bez pomiaru nie ma wpisu – wykres zostaje przy średniej."""
+    since, until = window(minutes, offset)
+    long = aggregates.use_aggregate(minutes, await timescale_available())
+    # Nazwy tabel i warunki to stałe z tego modułu, nie dane od użytkownika
+    sql = _FINE_SQL.format(
+        table="wan_rate_metrics_1h" if long else "wan_rate_metrics",
+        time="bucket" if long else "time",
+        where=_FINE_WHERE["wan" if interface_id is None else "interface"],
+    )
+    params = {"stride": timedelta(seconds=stride), "since": since, "until": until}
+    if interface_id is not None:
+        params["iface"] = interface_id
+    async with Session() as session:
+        rows = (await session.execute(text(sql), params)).all()
+    return {r[0]: (r[1], r[2]) for r in rows if r[1] is not None or r[2] is not None}
+
+
+def merge_fine(points: list[Point], fine: dict[datetime, tuple[float | None, float | None]]) -> list[Point]:
+    """Pobieranie i wysyłanie z pomiaru co 5 s tam, gdzie jest; gdzie go nie ma – średnia z 30 s (jedna linia)."""
+    if not fine:
+        return points
+    columns = list(points[0].values) if points else ["in_bps", "out_bps"]
+    by_time = {p.time: p for p in points}
+    for at, (down, up) in fine.items():
+        point = by_time.get(at)
+        if point is None:
+            point = by_time[at] = Point(time=at, values=dict.fromkeys(columns))
+        if down is not None:
+            point.values["in_bps"] = float(down)
+        if up is not None:
+            point.values["out_bps"] = float(up)
+    return [by_time[t] for t in sorted(by_time)]
 
 
 async def _aggregate_series(agg: aggregates.Aggregate, obj_id: int, columns: list[str], minutes: int, offset: int = 0) -> list[Point]:
@@ -73,7 +126,7 @@ async def _aggregate_series(agg: aggregates.Aggregate, obj_id: int, columns: lis
 
 
 async def _series(
-    model, id_col, obj_id: int | None, columns: list[str], minutes: int, extra_where: tuple = (), offset: int = 0
+    model, id_col, obj_id: int | None, columns: list[str], minutes: int, extra_where: tuple = (), offset: int = 0, bucket_s: int | None = None
 ) -> list[Point]:
     """Szereg czasowy; `id_col=None` dla tabel bez klucza obiektu (np. stan serwera)."""
     since, until = window(minutes, offset)
@@ -85,7 +138,7 @@ async def _series(
         cols = [getattr(model, c) for c in columns]
         where = [model.time >= since, model.time < until, *extra_where] + ([id_col == obj_id] if id_col is not None else [])
         if timescale:
-            bucket = func.time_bucket(text(f"INTERVAL '{_bucket_seconds(minutes)} seconds'"), model.time)
+            bucket = func.time_bucket(text(f"INTERVAL '{bucket_s or _bucket_seconds(minutes)} seconds'"), model.time)
             stmt = (
                 select(bucket.label("bucket"), *[func.avg(c).label(c.key) for c in cols])
                 .where(*where)
@@ -126,15 +179,19 @@ async def device_metrics(device_id: int, minutes: int = MinutesQuery, offset: in
 
 @router.get("/interfaces/{interface_id}/metrics", response_model=list[Point])
 async def interface_metrics(interface_id: int, minutes: int = MinutesQuery, offset: int = OffsetQuery):
+    """Ruch portu: średnia z 30 s, a na porcie WAN od 0.85.0 najwyższa prędkość z 5 s w kubełku (`fine_series`)."""
     await _exists(Interface, interface_id, "port")
-    return await _series(
+    stride = _bucket_seconds(minutes, fine=True)
+    points = await _series(
         InterfaceMetric,
         InterfaceMetric.interface_id,
         interface_id,
         ["in_bps", "out_bps", "in_errors", "out_errors", "in_discards", "out_discards"],
         minutes,
         offset=offset,
+        bucket_s=stride,
     )
+    return merge_fine(points, await fine_series(minutes, offset, stride, interface_id))
 
 
 @router.get("/interfaces/{interface_id}/poe-metrics", response_model=list[Point])

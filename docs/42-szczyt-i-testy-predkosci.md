@@ -1,4 +1,4 @@
-# Zgodność z UniFi i testy prędkości bramy (od 0.70.0, 0.71.0; szczyt ruchu usunięty w 0.84.0)
+# Zgodność z UniFi, prawdziwa prędkość WAN i testy prędkości bramy (od 0.70.0, 0.71.0, 0.85.0)
 
 ## Po co
 
@@ -38,7 +38,7 @@ Od 0.71.0:
    (60–120 s) dzieli się na części po 30 s, przyrosty błędów idą do ostatniej części (`collector.spread`).
 3. **Kubełki wykresów z równej drabinki** – 30 s, 1, 2, 5, 10, 15, 30 min, 1 h (`aggregates.RAW_BUCKETS_S`, w panelu
    `bucketSeconds`): zakres 24 h = 5 minut, 7 dni = godzina, jak w UniFi.
-4. **Linia = średnia z kubełka**, jak w UniFi (do 0.83.0 w dymku była też najwyższa prędkość – usunięta, niżej).
+4. **Linia = średnia z kubełka**, jak w UniFi – od 0.85.0 dla ruchu WAN zastąpiona prawdziwą prędkością z 5 s (niżej).
 5. **Niemożliwa szybkość w jednym kierunku odrzuca całą próbkę** – router „dogania” zatrzymane liczniki, drugi kierunek
    z tego odczytu też jest zawyżony (12.11.2026: wysyłanie 75,9 Mb/s na łączu 50 Mb/s podniosło 5 minut z 1,6 do 9,2 Mb/s).
 
@@ -62,19 +62,36 @@ ponownie trafia w ten sam wiersz (klucz główny), więc nie ma powtórek.
   Kafelek „ostatni test” to zwykły widget „Liczba” z tym źródłem, wartością „ostatnia” i własnym zakresem (np. 7 dni).
 - Wymaga modułu UniFi i kontrolera z kluczem API. Bez zmian w bazie.
 
-## Szczyt ruchu WAN – usunięty w 0.84.0
+## Prawdziwa prędkość WAN – jedna linia (0.85.0)
 
-Od 0.70.0 do 0.83.0 osobny próbnik (`peaks.py`) czytał liczniki portów WAN co 0,5–1 s i zapisywał najwyższą średnią z ok. 5 s
-w `interface_metrics.in_bps_max` / `out_bps_max`; panel pokazywał go w dymku („· maks.”) i jako serie „Pobieranie – szczyt”,
-„Wysyłanie – szczyt”. Na prośbę użytkownika (14.11.2026) całość usunięta: wykres ruchu ma tylko **Pobieranie** i **Wysyłanie**
-(średnie z kubełka, zgodne z UniFi), migracja 0021 usuwa kolumny, zmienna `NETPULSE_PEAK_INTERVAL` nic już nie robi.
-Zapisane wykresy, liczby i mapy cieplne z serią szczytu wczytują się dalej – seria zamienia się w średnią
-(`RENAMED_METRICS` w `api/layout_schemas.py`). Dokładną prędkość krótkiego testu dają **testy prędkości bramy** (wyżej).
-Kafelki „Pobieranie WAN” / „Wysyłanie WAN” dalej podają najwyższą wartość średniej w zakresie („szczyt … o 15:18”) – to inna rzecz.
+Historia: 0.70.0–0.83.0 miały obok średniej osobne serie „Pobieranie – szczyt” / „Wysyłanie – szczyt” i „maks.” w dymku;
+0.84.0 usunęła je razem z pomiarem (nieporozumienie). Użytkownik chciał **jednej linii na kierunek, która pokazuje
+prawdziwy ruch**: pobieranie gry 100 GB albo krótki test prędkości ma być widać z prawdziwą prędkością i w czasie, kiedy szło.
+
+Od 0.85.0:
+
+- **Próbnik** `netpulse/wanrate.py` (pętla w kolektorze, `NETPULSE_WAN_SAMPLE_INTERVAL`, domyślnie 0,5 s, 0 = wyłączony)
+  czyta same liczniki portów WAN (jedno małe zapytanie SNMP na router, limit czasu 0,8 s, milczący router pomijany 30 s).
+- **Przedziały 5 s równo z zegarem** (`SlotTracker`): przyrost licznika między dwiema jego *zmianami* dzielony na przedziały
+  proporcjonalnie do czasu – suma bajtów się zgadza przy każdym tempie odświeżania licznika (UCG Ultra ok. 1 s). Przedział
+  zapisany, gdy w całości pokryty; luka ponad 60 s, reset licznika i prędkość ponad 1,1× portu zostawiają go pustym.
+- **Tabela** `wan_rate_metrics` (migracja 0022, hypertable z kompresją i retencją jak inne metryki; `time` = początek
+  przedziału) i agregat `wan_rate_metrics_1h` z **maksimum** godzinowym (`Aggregate(fn="max")`).
+- **Wykres** (`/api/dashboard/traffic`, `/api/interfaces/{id}/metrics`): w każdym kubełku najwyższa prędkość z 5 s
+  (`api/metrics.fine_series` – suma portów WAN z jednej chwili), a gdzie pomiaru nie ma (dane sprzed 0.85.0, port bez
+  roli WAN, przerwa) – średnia z 30 s (`merge_fine`). Kubełki ruchu WAN mają drobniejszą drabinkę
+  (`aggregates.FINE_BUCKETS_S`: 5, 10, 15 s): 15 min = 5 s, 1 h = 15 s, 24 h = 5 min, 7 dni = 1 h. Na krótkim zakresie
+  i po przybliżeniu zaznaczeniem widać prędkość i czas trwania; na długim punkt to najwyższa prędkość w swoim przedziale
+  (krótki skok nie znika, ale zajmuje cały kubełek – szczegóły po przybliżeniu). `interval_s` w odpowiedzi ≥ 30 s,
+  żeby panel nie rysował luk między punktami średniej.
+- Bajty (licznik zużycia transferu, raport) dalej z `interface_metrics` – maksima nie zawyżają sum.
+- To świadome odejście od „wykres 1:1 jak UniFi” (UniFi rysuje średnią kubełka) – na prośbę użytkownika (14.11.2026).
+- Zapisane wykresy z seriami `in_bps_max` / `out_bps_max` wczytują się jako Pobieranie / Wysyłanie (`RENAMED_METRICS`).
 
 ## API
 
-- `GET /api/dashboard/traffic` – `in_bps`, `out_bps` (średnia z kubełka, suma po łączach WAN).
+- `GET /api/dashboard/traffic` – `in_bps`, `out_bps`: najwyższa prędkość z 5 s w kubełku (suma łączy WAN), bez pomiaru – średnia.
+- `GET /api/interfaces/{id}/metrics` – to samo dla jednego portu WAN; inne porty – średnia.
 - `GET /api/devices/{id}/agent-metrics?source=speedtest&key=<łącze>` – testy prędkości (`down_bps`, `up_bps`, `ping_ms`).
 - `GET /api/devices/{id}/agent-keys` – łącza z testem z ostatnich 30 dni w polu `speedtest` (inne źródła: ostatnia godzina).
 
@@ -92,4 +109,4 @@ krótki limit czasu (0,8 s, bez ponowień), a router, który nie odpowiada, jest
 
 Test prędkości: pola sprawdzone 12.11.2026 na prawdziwej bramie (UCG Ultra, wynik 455 / 51 Mb/s, ping 6 ms, 17 s) –
 z tej odpowiedzi jest test `test_speedtest_from_real_controller_answer`. Szczyt: logika i zapis w testach; odświeżanie
-liczników zmierzone na UCG Ultra (ok. 1 s). Pomiar szczytu usunięty w 0.84.0.
+liczników zmierzone na UCG Ultra (ok. 1 s). Od 0.85.0 do sprawdzenia na serwerze: pobieranie dużego pliku i test prędkości na wykresie 1 h i 24 h kontra brama.

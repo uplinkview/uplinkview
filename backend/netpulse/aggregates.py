@@ -24,6 +24,8 @@ RAW_MAX_MINUTES = 7 * 24 * 60
 LONG_BUCKETS_H = (1, 2, 3, 6, 12, 24, 48)
 # Kubełki z surowych danych: wielokrotności 30 s (cyklu kolektora), dzielniki godziny
 RAW_BUCKETS_S = (30, 60, 120, 300, 600, 900, 1800, 3600)
+# Ruch WAN ma też prędkość co 5 s (wanrate.py, od 0.85.0): krótkie zakresy i przybliżenie dostają drobniejsze kubełki
+FINE_BUCKETS_S = (5, 10, 15)
 LOCK_KEY = 0x4E50_4341  # "NPCA" – jedno zakładanie agregatów naraz (kolektor i CLI)
 
 
@@ -34,9 +36,10 @@ class Aggregate:
     key: str  # kolumna obiektu (interfejs, urządzenie, sieć WiFi)
     columns: tuple[str, ...]  # średnie godzinowe pod tą samą nazwą co w tabeli
     extra: tuple[tuple[str, str], ...] = ()  # (nazwa, wyrażenie SQL), np. liczba próbek
+    fn: str = "avg"  # funkcja godzinowa kolumn (`max` – najwyższa prędkość WAN z 5 s)
 
     def create_sql(self) -> str:
-        cols = [f"avg({c}) AS {c}" for c in self.columns] + [f"{expr} AS {name}" for name, expr in self.extra]
+        cols = [f"{self.fn}({c}) AS {c}" for c in self.columns] + [f"{expr} AS {name}" for name, expr in self.extra]
         return (
             f"CREATE MATERIALIZED VIEW IF NOT EXISTS {self.view} "
             "WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS "
@@ -62,17 +65,20 @@ AGGREGATES = (
         (("samples", "count(*)"), ("up_samples", "count(*) FILTER (WHERE reachable)")),
     ),
     Aggregate("wifi_metrics_1h", "wifi_metrics", "wifi_id", ("clients", "rx_bps", "tx_bps")),
+    # Najwyższa prędkość WAN z 5 s w każdej godzinie (od 0.85.0) – wykres ruchu powyżej 7 dni
+    Aggregate("wan_rate_metrics_1h", "wan_rate_metrics", "interface_id", ("in_bps", "out_bps"), fn="max"),
 )
 BY_SOURCE = {a.source: a for a in AGGREGATES}
 
 
-def bucket_seconds(minutes: int) -> int:
+def bucket_seconds(minutes: int, fine: bool = False) -> int:
     """Kubełek wykresu: najwyżej ~300 punktów, z równej drabinki (od 0.71.0) – 24 h to kubełki 5-minutowe, 7 dni godzinowe,
     jak w statystykach UniFi, i zawsze o pełnych minutach. Wcześniej kubełek był „ile wyjdzie” (24 h = 288 s) i średnie
     obejmowały inne okna niż na bramie. Dla długich zakresów pełne godziny (agregat)."""
     raw = (minutes * 60) // 300
     if minutes <= RAW_MAX_MINUTES:
-        return next((s for s in RAW_BUCKETS_S if s >= raw), RAW_BUCKETS_S[-1])
+        ladder = (FINE_BUCKETS_S + RAW_BUCKETS_S) if fine else RAW_BUCKETS_S
+        return next((s for s in ladder if s >= raw), ladder[-1])
     return next((h * 3600 for h in LONG_BUCKETS_H if h * 3600 >= raw), LONG_BUCKETS_H[-1] * 3600)
 
 

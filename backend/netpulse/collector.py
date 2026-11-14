@@ -490,10 +490,11 @@ async def run() -> None:
     from .proxmox_collector import ProxmoxCollector
     from .sysinfo import SystemCollector
     from .unifi_collector import UnifiCollector
+    from .wanrate import WanSampler
 
     await init_db()
     await ensure_modules()
     engine = AlertEngine(notifier=Notifier())
     await engine.ensure_default_rules()
-    await asyncio.gather(Collector(alert_engine=engine).run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(), ProxmoxCollector().run_forever(),
+    await asyncio.gather(Collector(alert_engine=engine).run_forever(), WanSampler().run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(), ProxmoxCollector().run_forever(),
                          OpnsenseCollector().run_forever(), ChecksCollector().run_forever())

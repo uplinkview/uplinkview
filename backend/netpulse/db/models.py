@@ -731,6 +731,19 @@ class WanLinkMetric(Base):
     out_bps: Mapped[float | None] = mapped_column(Float)
 
 
+class WanRateMetric(Base):
+    """Prędkość portu WAN w 5-sekundowym przedziale (od 0.85.0, `wanrate.py`): `time` = początek przedziału.
+    Wykres ruchu WAN rysuje z niej najwyższą prędkość w kubełku; bajty transferu dalej z `interface_metrics`."""
+
+    __tablename__ = "wan_rate_metrics"
+    __table_args__ = (Index("ix_wan_rate_metrics_interface_time", "interface_id", "time"),)
+
+    time: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    interface_id: Mapped[int] = mapped_column(ForeignKey("interfaces.id", ondelete="CASCADE"), primary_key=True)
+    in_bps: Mapped[float | None] = mapped_column(Float)
+    out_bps: Mapped[float | None] = mapped_column(Float)
+
+
 class Check(Base):
     """Sprawdzenie dostępności (od 0.30.0): ping (opóźnienie, utrata pakietów, jitter), HTTP(S) (kod odpowiedzi,
     słowo w treści, ważność certyfikatu) albo port TCP. Wykonuje je checks_collector co `interval_s`."""
@@ -788,7 +801,7 @@ class CheckMetric(Base):
     cert_days: Mapped[float | None] = mapped_column(Float)
 
 
-HYPERTABLES = ("interface_metrics", "device_metrics", "wifi_metrics", "poe_port_metrics", "poe_budget_metrics", "system_metrics", "disk_metrics", "server_metrics", "metrics", "wan_link_metrics", "client_metrics", "check_metrics")
+HYPERTABLES = ("interface_metrics", "device_metrics", "wifi_metrics", "poe_port_metrics", "poe_budget_metrics", "system_metrics", "disk_metrics", "server_metrics", "metrics", "wan_link_metrics", "client_metrics", "check_metrics", "wan_rate_metrics")
 
 
 class MaintenanceWindow(Base):

@@ -158,14 +158,17 @@ są zapasem (`source = "priority"`), dopóki WAN 1 działa (`decide(..., outrank
 (`wan_links.save_detected`, `GET /api/wan/suggestions`). Od 0.55.0 pingi każdego łącza (też zapasowego) z bramy UniFi (`wan1.latency`, `uptime_stats.WAN*.monitors`) w `metrics` (`wan_latency_ms`, `wan_ping_ms`, źródła wykresu `wan_latency`/`wan_ping`) i opcja wykresu `wan_backup` – ruch przez łącze zapasowe innym kolorem (`backupSpans`, visualMap). Opis: `docs/19-dual-wan.md`. **Sprawdzone 11.11.2026 na prawdziwym sprzęcie** (UCG Ultra, GSM na `eth3`: awaria WAN 1, praca na GSM, powrót;
 zrzut kontrolera `unifi_gateway_dual_wan.json`). Krótkie mignięcia łącza (< 30 s) instancje łapią zależnie od chwili odczytu.
 
-## Testy prędkości bramy (0.70.0)
+## Testy prędkości bramy (0.70.0) i prawdziwa prędkość WAN (0.85.0)
 
 Wykres to średnia z 30 s, więc krótki test prędkości wyglądał na kilka razy wolniejszy niż na bramie. Od 0.70.0: (1) wynik testu
 prędkości bramy UniFi z kontrolera (`speedtest-status` → `unifi.parse_speedtest`, zapis każdego nowego testu do `metrics` z czasem testu:
 `speedtest_down_bps|up_bps|ping_ms`, źródło wykresu `speedtest`, szablon „Testy prędkości bramy”) – zgodność 1:1 z bramą;
-(2) szczyt portów WAN (`peaks.py`, `in_bps_max|out_bps_max`) – **usunięty w 0.84.0** na prośbę użytkownika: wykres ruchu ma tylko
-Pobieranie i Wysyłanie, migracja 0021 usuwa kolumny, zapisane serie szczytu zamienia na średnie `RENAMED_METRICS` (`layout_schemas.py`).
-Opis: `docs/42-szczyt-i-testy-predkosci.md`.
+(2) osobne serie szczytu (0.70.0–0.83.0) usunięte w 0.84.0 (migracja 0021, `RENAMED_METRICS` w `layout_schemas.py`). **Od 0.85.0 jedna linia
+na kierunek = prawdziwa prędkość** (wymaganie użytkownika, ważniejsze niż 1:1 z UniFi dla ruchu WAN): `netpulse/wanrate.py` czyta liczniki
+portów WAN co 0,5 s (`NETPULSE_WAN_SAMPLE_INTERVAL`), bajty między zmianami licznika rozkłada na przedziały 5 s → `wan_rate_metrics`
+(migracja 0022, agregat `wan_rate_metrics_1h` z `max`); `/api/dashboard/traffic` i `/api/interfaces/{id}/metrics` dają w kubełku najwyższą
+prędkość z 5 s, bez pomiaru – średnią (`fine_series` + `merge_fine` w `api/metrics.py`), kubełki ruchu WAN od 5 s (`FINE_BUCKETS_S`).
+Bajty transferu dalej z `interface_metrics`. Opis: `docs/42-szczyt-i-testy-predkosci.md`.
 
 ## Zgodność z UniFi (0.71.0)
 
