@@ -115,11 +115,13 @@ def test_rows_wait_for_both_directions():
 
 
 class _Client:
-    def __init__(self, alive: bool = True, late: set[int] | None = None) -> None:
-        self.alive, self.reads, self.octets, self.late = alive, 0, 0, late or set()
+    def __init__(self, alive: bool = True, late: set[int] | None = None, delay: float = 0.0) -> None:
+        self.alive, self.reads, self.octets, self.late, self.delay = alive, 0, 0, late or set(), delay
 
     async def get(self, oids):
         self.reads += 1
+        if self.delay:
+            await asyncio.sleep(self.delay)
         if not self.alive or self.reads in self.late:
             raise SnmpError("timeout")
         self.octets += 1000
@@ -142,25 +144,25 @@ def _sampler(clients: dict) -> WanSampler:
     return sampler
 
 
-def test_silent_router_does_not_slow_down_sampling_of_others():
+def test_silent_router_pauses_after_window_without_answer():
     clients = {1: _Client(), 2: _Client(alive=False)}
     sampler = _sampler(clients)
-    n = wanrate.FAILS_BEFORE_BACKOFF
+    sampler.fail_window_s = 0  # od razu – w kolektorze 10 s bez odpowiedzi
 
     async def go() -> None:
-        for _ in range(n + 5):
+        for _ in range(6):
             await sampler.sample()
 
     asyncio.run(go())
-    assert clients[1].reads == n + 5
-    assert clients[2].reads == n  # kilka prób z rzędu, potem przerwa
-    assert wanrate.READ_TIMEOUT_S < 1 and wanrate.BACKOFF_S >= 10 and n * wanrate.READ_TIMEOUT_S < 5
+    assert clients[1].reads == 6
+    assert clients[2].reads == 1  # potem przerwa
+    assert wanrate.READ_TIMEOUT_S < 1 and wanrate.BACKOFF_S >= 10 and wanrate.FAIL_WINDOW_S >= 5
 
 
-def test_single_late_answer_does_not_pause_sampling():
-    """Brama pod obciążeniem spóźnia się z pojedynczą odpowiedzią: odczyt idzie dalej bez półminutowej przerwy
-    (pobieranie 850 Mb/s, VPS 14.11.2026 – płaska linia przez 25 s)."""
-    clients = {1: _Client(late={3, 7, 8})}
+def test_series_of_late_answers_does_not_pause_sampling():
+    """Brama pod obciążeniem nie odpowiada kilka razy z rzędu: odczyt idzie dalej bez półminutowej przerwy
+    (pobieranie 850 Mb/s, VPS 14.11.2026 – płaska linia przez 25 s, w 0.85.4 już po 5 brakach z rzędu)."""
+    clients = {1: _Client(late={3, 4, 5, 6, 7, 8, 9, 12})}
     sampler = _sampler(clients)
 
     async def go() -> None:
@@ -170,6 +172,19 @@ def test_single_late_answer_does_not_pause_sampling():
     asyncio.run(go())
     assert clients[1].reads == 20
     assert sampler._skip_until.get(1, 0.0) == 0.0
+
+
+def test_slow_answer_is_skipped_and_reading_dated_in_the_middle():
+    """Odpowiedź po dłuższym czasie – licznik z nieznanej chwili, odczyt pominięty; szybka – datowana środkiem."""
+    slow = _sampler({1: _Client(delay=0.05)})
+    slow.max_rtt_s = 0.01
+    asyncio.run(slow.sample())
+    assert slow.tracker._counters == {}
+    fast = _sampler({1: _Client(delay=0.05)})
+    before = time.time()
+    asyncio.run(fast.sample())
+    read_at = fast.tracker._counters[(50, "in")].read_at
+    assert before + 0.02 < read_at < time.time() - 0.02
 
 
 def test_fine_buckets_only_for_wan_traffic():
@@ -196,3 +211,21 @@ def test_constant_full_speed_gives_flat_line():
     slots = feed(SlotTracker(), "wan", [850.0] * 120)
     values = [v for v in mbps(slots)[1:-1] if v is not None]
     assert len(values) >= 20 and all(800 <= v <= 900 for v in values)
+
+
+def test_each_router_has_own_loop_so_silent_one_does_not_slow_others():
+    clients = {1: _Client(), 2: _Client(alive=False, delay=0.3)}  # drugi czeka 0,3 s i nie odpowiada
+    sampler = _sampler(clients)
+    sampler.interval = 0.02
+
+    async def go() -> None:
+        task = asyncio.create_task(sampler.run_forever())
+        await asyncio.sleep(0.5)
+        task.cancel()
+        for loop in [task, *sampler._loops.values()]:
+            loop.cancel()
+        await asyncio.gather(task, *sampler._loops.values(), return_exceptions=True)
+
+    asyncio.run(go())
+    assert clients[1].reads >= 10  # co 0,02 s, nie co 0,3 s
+    assert clients[2].reads <= 2

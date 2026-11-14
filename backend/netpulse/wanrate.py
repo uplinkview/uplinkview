@@ -1,7 +1,7 @@
 """Prawdziwa prędkość łączy WAN co 5 sekund (od 0.85.0): wykres ruchu WAN rysuje ją jedną linią.
 
 Kolektor czyta liczniki co 30 s, a wykres 24 h uśrednia je do 5 minut – pobieranie z prędkością 800 Mb/s przez 20 s
-wyglądało jak ~55 Mb/s. Ten moduł czyta same liczniki portów WAN co `interval` (domyślnie 0,5 s; jedno małe zapytanie
+wyglądało jak ~55 Mb/s. Ten moduł czyta same liczniki portów WAN co `interval` (domyślnie 0,25 s; jedno małe zapytanie
 SNMP na router) i zapisuje prędkość w każdym 5-sekundowym przedziale (`wan_rate_metrics`, przedziały równo z zegarem:
 :00, :05, :10 …). Wykres bierze z tej tabeli najwyższą prędkość w kubełku (`api/metrics.fine_series`) – na krótkim
 zakresie i po przybliżeniu kubełek ma 5–15 s, więc widać i prędkość, i czas trwania pobierania.
@@ -41,17 +41,24 @@ SLOT_S = 5  # długość przedziału zapisu
 # co 0,5 s – dwie zmiany mogą wyglądać na 0,5 s od siebie, choć bajty szły przez sekundę (prędkość ×2). Bez zapasu
 # test prędkości 900 Mb/s na porcie 1 Gb/s gubił przedziały (VPS 14.11.2026: 600 MB zamiast 1645 MB w 5 minutach).
 JITTER_S = 1.5
-MAX_GAP_S = 60.0  # dłuższa przerwa między zmianami licznika = nie wiemy, kiedy szły bajty – przedziały zostają puste
+# Dłuższa przerwa między zmianami licznika = nie wiemy, kiedy szły bajty – przedziały zostają puste (wykres ma tam średnią
+# z 30 s). Do 0.85.5 – 60 s: bajty z półminutowej przerwy rozkładały się równo i linia była płaska.
+MAX_GAP_S = 15.0
 KEEP_SLOTS_S = 300.0  # niedokończone przedziały starsze niż to zapominamy
 WRITE_AFTER_S = 20.0  # przedział z jednym kierunkiem (drugi nieznany) zapisujemy po tym czasie
 TARGETS_TTL = 60.0  # jak często odświeżać listę portów WAN z bazy
 # Odczyt co pół sekundy nie może czekać jak zwykłe odpytywanie (2 s i ponowienie): zgubiony pakiet nadrobi następny odczyt
 READ_TIMEOUT_S = 0.8
-# Router, który nie odpowiada, pomijamy na pół minuty – inaczej jego limit czasu wstrzymywałby odczyt pozostałych.
-# Dopiero po `FAILS_BEFORE_BACKOFF` nieudanych odczytach z rzędu: brama pod pełnym obciążeniem czasem spóźnia się z jedną
-# odpowiedzią, a pół minuty przerwy spłaszczało wykres (pobieranie 850 Mb/s, VPS 14.11.2026, 0.85.3).
+# Router, który nie odpowiada od `FAIL_WINDOW_S`, pomijamy na `BACKOFF_S` (mniej zapytań w próżnię). Każdy router ma
+# własną pętlę (`run_forever`), więc ten, który milczy, i tak nie spowalnia pozostałych. Brama pod pełnym obciążeniem
+# potrafi nie odpowiedzieć kilka razy z rzędu – 5 braków (0.85.4) przy odczycie co 0,25 s to ledwie ponad sekunda
+# i półminutowa płaska linia (pobieranie 850 Mb/s, VPS 14.11.2026 23:30).
 BACKOFF_S = 30.0
-FAILS_BEFORE_BACKOFF = 5
+FAIL_WINDOW_S = 10.0
+# Odpowiedź po dłuższym czasie: licznik jest z nieznanej chwili między pytaniem a odpowiedzią – odczyt pomijamy (bajty
+# przejdą na następny). VPS czyta bramę przez tunel na tym samym łączu, które pobieranie zapełnia; datowanie chwilą
+# pytania dawało przedziały do 1020 Mb/s przy maksimum bramy 841 Mb/s (14.11.2026). Odczyt datujemy środkiem tego czasu.
+MAX_RTT_S = 0.5
 
 
 def make_client(target) -> SnmpClient:
@@ -145,7 +152,10 @@ class WanSampler:
         self.interval = settings.wan_sample_interval if interval is None else interval
         self.tracker = SlotTracker()
         self._skip_until: dict[int, float] = {}  # urządzenie → kiedy spróbować ponownie po braku odpowiedzi
-        self._fails: dict[int, int] = {}  # urządzenie → nieudane odczyty z rzędu
+        self._last_ok: dict[int, float] = {}  # urządzenie → ostatnia odpowiedź (albo pierwsza próba)
+        self.fail_window_s = FAIL_WINDOW_S
+        self.max_rtt_s = MAX_RTT_S
+        self._loops: dict[int, asyncio.Task] = {}
         self._clients: dict[int, tuple[object, SnmpClient]] = {}
         self._targets: dict[int, tuple[object, tuple[WanPort, ...]]] = {}  # urządzenie → (cel SNMP, porty WAN)
         self._targets_at = 0.0
@@ -192,22 +202,30 @@ class WanSampler:
             with contextlib.suppress(Exception):
                 await cached[1].close()
 
-    async def sample_device(self, target, ports: tuple[WanPort, ...], ts: float) -> None:
+    async def sample_device(self, target, ports: tuple[WanPort, ...], ts: float | None = None) -> None:
+        """Jeden odczyt liczników. `ts` podane (testy) = chwila odczytu; bez niego – środek między pytaniem a odpowiedzią."""
         oids = [f"{O.IF_HC_IN_OCTETS}.{p.if_index}" for p in ports] + [f"{O.IF_HC_OUT_OCTETS}.{p.if_index}" for p in ports]
+        self._last_ok.setdefault(target.id, time.monotonic())
+        sent, sent_mono = time.time(), time.monotonic()
         try:
             client = await self._client(target)
             values = await client.get(oids)
         except (SnmpError, TimeoutError, OSError) as exc:
-            fails = self._fails[target.id] = self._fails.get(target.id, 0) + 1
-            if fails < FAILS_BEFORE_BACKOFF:
-                log.debug("%s: brak odpowiedzi przy pomiarze prędkości WAN (%s z rzędu) – %s", target.name, fails, exc)
-                return  # pojedyncze spóźnienie nadrobi następny odczyt
-            log.info("%s: brak odpowiedzi przy pomiarze prędkości WAN – przerwa %s s (%s)", target.name, int(BACKOFF_S), exc)
-            self._fails[target.id] = 0
+            silent = time.monotonic() - self._last_ok[target.id]
+            if silent < self.fail_window_s:
+                log.debug("%s: brak odpowiedzi przy pomiarze prędkości WAN – %s", target.name, exc)
+                return  # pojedyncze braki nadrobi następny odczyt
+            log.info("%s: brak odpowiedzi przy pomiarze prędkości WAN od %s s – przerwa %s s (%s)", target.name, int(silent), int(BACKOFF_S), exc)
+            self._last_ok.pop(target.id, None)
             await self._drop(target.id)
             self._skip_until[target.id] = time.monotonic() + BACKOFF_S
             return
-        self._fails.pop(target.id, None)
+        rtt = time.monotonic() - sent_mono
+        self._last_ok[target.id] = time.monotonic()
+        if ts is None:
+            if rtt > self.max_rtt_s:
+                return  # nie wiadomo, z jakiej chwili jest licznik
+            ts = sent + rtt / 2
         for p in ports:
             limit = p.speed_mbps * 1_000_000 * rate_factor(p.if_type) if p.speed_mbps else None
             for direction, oid in (("in", O.IF_HC_IN_OCTETS), ("out", O.IF_HC_OUT_OCTETS)):
@@ -234,17 +252,36 @@ class WanSampler:
             await session.execute(insert(WanRateMetric).values(rows).on_conflict_do_nothing())
 
     async def sample(self) -> None:
+        """Jeden odczyt wszystkich routerów naraz (testy; w kolektorze każdy router ma własną pętlę)."""
+        await self._refresh_targets()
         now = time.monotonic()
-        if now - self._targets_at > TARGETS_TTL or not self._targets_at:
-            self._targets = await self.load_targets()
-            self._targets_at = now
-            for dev_id in [d for d in self._clients if d not in self._targets]:
-                await self._drop(dev_id)
-            ifaces = {p.interface_id for _, ports in self._targets.values() for p in ports}
-            self.tracker.forget(lambda k: k[0] not in ifaces)
         due = [(t, ports) for dev_id, (t, ports) in self._targets.items() if self._skip_until.get(dev_id, 0.0) <= now]
-        await asyncio.gather(*(self.sample_device(t, ports, time.time()) for t, ports in due))
+        await asyncio.gather(*(self.sample_device(t, ports) for t, ports in due))
         await self.write(self.take_rows(time.time()))
+
+    async def _refresh_targets(self) -> None:
+        now = time.monotonic()
+        if self._targets_at and now - self._targets_at <= TARGETS_TTL:
+            return
+        self._targets = await self.load_targets()
+        self._targets_at = now
+        for dev_id in [d for d in self._clients if d not in self._targets]:
+            await self._drop(dev_id)
+        ifaces = {p.interface_id for _, ports in self._targets.values() for p in ports}
+        self.tracker.forget(lambda k: k[0] not in ifaces)
+
+    async def _device_loop(self, dev_id: int) -> None:
+        """Odczyt jednego routera co `interval` – własne tempo, niezależne od pozostałych (od 0.85.6)."""
+        while dev_id in self._targets:
+            started = time.monotonic()
+            try:
+                if self._skip_until.get(dev_id, 0.0) <= started:
+                    target, ports = self._targets[dev_id]
+                    await self.sample_device(target, ports)
+                    await self.write(self.take_rows(time.time()))
+            except Exception:
+                log.exception("Błąd pomiaru prędkości WAN")
+            await asyncio.sleep(max(0.05, self.interval - (time.monotonic() - started)))
 
     async def run_forever(self) -> None:
         if self.interval <= 0:
@@ -252,9 +289,13 @@ class WanSampler:
             return
         log.info("Pomiar prędkości WAN: odczyt co %ss, zapis co %ss", self.interval, SLOT_S)
         while True:
-            started = time.monotonic()
             try:
-                await self.sample()
+                await self._refresh_targets()
+                for dev_id in self._targets:
+                    if dev_id not in self._loops or self._loops[dev_id].done():
+                        self._loops[dev_id] = asyncio.create_task(self._device_loop(dev_id))
+                for dev_id in [d for d in self._loops if d not in self._targets]:
+                    self._loops.pop(dev_id)  # pętla kończy się sama, gdy routera nie ma na liście
             except Exception:
                 log.exception("Błąd pomiaru prędkości WAN")
-            await asyncio.sleep(max(0.2, self.interval - (time.monotonic() - started)))
+            await asyncio.sleep(5)

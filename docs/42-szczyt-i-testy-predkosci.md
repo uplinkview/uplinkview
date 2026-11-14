@@ -131,3 +131,12 @@ i updater dopisują brakujące zmienne, nie zmieniają istniejących), więc od 
 (5 przedziałów po 651,4 Mb/s): brama pod pełnym obciążeniem raz nie odpowiedziała w 0,8 s, a próbnik od razu robił
 przerwę 30 s i rozkładał bajty z niej równo. Od 0.85.4 przerwa dopiero po `FAILS_BEFORE_BACKOFF` (5) nieudanych odczytach
 z rzędu (router, który nie odpowiada wcale, dalej nie spowalnia pozostałych), a sama przerwa trafia do logu kolektora.
+
+**Pobieranie 23:24–23:31 (VPS, 14.11.2026, 0.85.5, odczyt co 0,25 s):** bajty w trzech kubełkach razem +0,05 % (UCG 37 725 MB,
+UplinkView 37 743 MB), ale w kubełku 23:25 przedziały 5 s do 1020 Mb/s przy maksimum bramy (z 1 s!) 841 Mb/s, a 23:30:40–23:31:05
+płaska linia 473,7 Mb/s. VPS czyta bramę przez tunel WireGuard na tym samym łączu, które pobieranie zapełnia – odpowiedzi
+spóźniały się, a odczyt był datowany chwilą pytania; 5 braków z rzędu przy 0,25 s to nieco ponad sekunda. Od 0.85.6:
+odczyt datowany środkiem między pytaniem a odpowiedzią, odpowiedź po ponad 0,5 s pomijana (`MAX_RTT_S`; bajty przechodzą na
+następny odczyt), każdy router ma własną pętlę (`_device_loop`), przerwa 30 s dopiero po 10 s bez żadnej odpowiedzi
+(`FAIL_WINDOW_S`), a przerwa między zmianami licznika dłuższa niż 15 s (`MAX_GAP_S`, wcześniej 60 s) zostawia przedziały puste –
+wykres ma tam średnią z 30 s zamiast płaskiej linii.
