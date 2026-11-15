@@ -219,7 +219,7 @@ async def resolve(layout: DashboardLayout, opts: PublicOptions, raw: str) -> Any
             raise HTTPException(403, "Tych danych nie ma na tym pulpicie")
         status = await servers.device_server(device_id)
         if status is not None:
-            status = status.model_copy(update={"agent": None, "proxmox": None})  # bez adresów i nazw hostów
+            status = status.model_copy(update={"agent": None})  # bez adresów i nazw hostów
         return status
     if (m := re.fullmatch(r"/api/devices/(\d+)/poe", path)) and mods.get("unifi", True):
         device_id = int(m.group(1))
@@ -300,8 +300,6 @@ async def resolve(layout: DashboardLayout, opts: PublicOptions, raw: str) -> Any
         # Przesunięcie w czasie tylko takie, jakie ma zapytanie wykresu na tym pulpicie
         if path != chart_path or any(query.get(k) != v for k, v in fixed.items()) or offset != query_offset:
             continue
-        if source.kind == "pve_guest" and not mods.get("proxmox", True):
-            break
         if source.kind.startswith("agent_") and not mods.get("agents", True):
             break
         if source.kind == "vpn" and not mods.get("unifi", True):

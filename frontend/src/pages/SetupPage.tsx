@@ -147,9 +147,8 @@ function Modules({ onNext, onBack }: { onNext: () => void; onBack: () => void })
   );
 }
 
-const NEXT_STEPS: { to: string; label: TextKey; module?: "unifi" | "proxmox" | "agents" }[] = [
+const NEXT_STEPS: { to: string; label: TextKey; module?: "unifi" | "agents" }[] = [
   { to: "/settings/controllers", label: "setup.done.unifi", module: "unifi" },
-  { to: "/settings/proxmox", label: "setup.done.proxmox", module: "proxmox" },
   { to: "/settings/agents", label: "setup.done.agents", module: "agents" },
   { to: "/settings/alert-rules", label: "setup.done.alerts" },
   { to: "/settings/notifications", label: "setup.done.notifications" },

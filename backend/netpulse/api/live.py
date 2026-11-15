@@ -5,8 +5,7 @@ portu, CPU i RAM (od 0.41.0) oraz dyski serwera Linux. Odczyt tym samym driverem
 Dopóki ktoś jest połączony, jedno wspólne odpytywanie urządzeń, które ktoś właśnie ogląda – niezależnie od liczby
 wykresów. Gdy ostatni widz odejdzie, odpytywanie się kończy i klienty SNMP są zamykane.
 
-Agenci (wysyłają dane co 30 s) i Proxmox (liczy statystyki co ~10 s) nie mają tu nic szybszego – panel bierze
-dla nich odczyty z bazy."""
+Agenci (wysyłają dane co 30 s) nie mają tu nic szybszego – panel bierze dla nich odczyty z bazy."""
 
 from __future__ import annotations
 

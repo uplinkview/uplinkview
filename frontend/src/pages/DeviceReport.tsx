@@ -9,7 +9,7 @@ import { useCan } from "../lib/roles";
 
 /** Drugi odczyt po tylu sekundach – widać, które wartości to liczniki. */
 const INTERVAL_S = 30;
-const NON_SNMP = new Set(["agent", "proxmox", "unifi_api"]);
+const NON_SNMP = new Set(["agent", "unifi_api"]);
 
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));

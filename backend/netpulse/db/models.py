@@ -38,9 +38,9 @@ class Base(DeclarativeBase):
 
 # Fabryczne community SNMP – panel ostrzega, że trzeba je zmienić (od 0.31.1)
 DEFAULT_COMMUNITIES = frozenset({"public", "private"})
-# Urządzenia bez SNMP: serwer z agentem, węzeł Proxmox, urządzenie UniFi z oficjalnego API (od 0.52.0).
+# Urządzenia bez SNMP: serwer z agentem, urządzenie UniFi z oficjalnego API (od 0.52.0).
 # Kolektor SNMP ich nie odpytuje, a w panelu nie mają ustawień SNMP.
-NON_SNMP_DRIVERS = ("agent", "proxmox", "unifi_api")
+NON_SNMP_DRIVERS = ("agent", "unifi_api")
 
 
 class Device(Base):
@@ -555,85 +555,6 @@ class PoeBudgetMetric(Base):
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), primary_key=True)
     used_w: Mapped[float | None] = mapped_column(Float)
     max_w: Mapped[float | None] = mapped_column(Float)
-
-
-class ProxmoxServer(Base):
-    """Proxmox VE (pojedynczy węzeł albo klaster) z tokenem API tylko do odczytu. Sekret tokenu jest zaszyfrowany."""
-
-    __tablename__ = "proxmox_servers"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(128))
-    host: Mapped[str] = mapped_column(String(255), unique=True)
-    port: Mapped[int] = mapped_column(Integer, default=8006)
-    token_id: Mapped[str] = mapped_column(String(255))  # np. netpulse@pve!monitor
-    token_secret: Mapped[str] = mapped_column(EncryptedText)
-    verify_tls: Mapped[bool] = mapped_column(Boolean, default=False)  # Proxmox ma zwykle certyfikat samopodpisany
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    status: Mapped[str] = mapped_column(String(16), default="unknown")  # up | down | unknown
-    version: Mapped[str | None] = mapped_column(String(32))
-    cluster_name: Mapped[str | None] = mapped_column(String(128))
-    last_polled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_error: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-
-class ProxmoxNode(Base):
-    """Węzeł Proxmox = urządzenie UplinkView (`devices.driver = "proxmox"`, rodzaj „Serwer”): karta, alerty, wykresy."""
-
-    __tablename__ = "proxmox_nodes"
-
-    server_id: Mapped[int] = mapped_column(ForeignKey("proxmox_servers.id", ondelete="CASCADE"), primary_key=True)
-    node: Mapped[str] = mapped_column(String(64), primary_key=True)
-    device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), unique=True)
-    ip: Mapped[str | None] = mapped_column(String(64))
-    online: Mapped[bool] = mapped_column(Boolean, default=True)
-    # Ostatnie zakończone zadanie kopii (vzdump) na węźle
-    backup_status: Mapped[str | None] = mapped_column(String(255))  # "OK" albo opis błędu
-    backup_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
-class ProxmoxGuest(Base):
-    """Maszyna wirtualna (qemu) albo kontener (lxc) – zdjęcie stanu z ostatniego odczytu."""
-
-    __tablename__ = "proxmox_guests"
-
-    server_id: Mapped[int] = mapped_column(ForeignKey("proxmox_servers.id", ondelete="CASCADE"), primary_key=True)
-    vmid: Mapped[int] = mapped_column(Integer, primary_key=True)
-    node: Mapped[str] = mapped_column(String(64))
-    type: Mapped[str] = mapped_column(String(8))  # qemu | lxc
-    name: Mapped[str] = mapped_column(String(255))
-    status: Mapped[str] = mapped_column(String(16))
-    template: Mapped[bool] = mapped_column(Boolean, default=False)
-    tags: Mapped[str | None] = mapped_column(String(255))
-    cpus: Mapped[int | None] = mapped_column(Integer)
-    cpu_percent: Mapped[float | None] = mapped_column(Float)
-    mem_used: Mapped[int | None] = mapped_column(BigInteger)
-    mem_total: Mapped[int | None] = mapped_column(BigInteger)
-    disk_used: Mapped[int | None] = mapped_column(BigInteger)
-    disk_total: Mapped[int | None] = mapped_column(BigInteger)
-    uptime_s: Mapped[int | None] = mapped_column(BigInteger)
-    last_backup_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
-class ProxmoxStorage(Base):
-    """Magazyn (storage) na węźle; współdzielony (NFS, Ceph…) zapisujemy raz – przy pierwszym węźle."""
-
-    __tablename__ = "proxmox_storages"
-
-    server_id: Mapped[int] = mapped_column(ForeignKey("proxmox_servers.id", ondelete="CASCADE"), primary_key=True)
-    node: Mapped[str] = mapped_column(String(64), primary_key=True)
-    storage: Mapped[str] = mapped_column(String(128), primary_key=True)
-    type: Mapped[str | None] = mapped_column(String(32))
-    shared: Mapped[bool] = mapped_column(Boolean, default=False)
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
-    content: Mapped[str | None] = mapped_column(String(255))
-    used_bytes: Mapped[int | None] = mapped_column(BigInteger)
-    total_bytes: Mapped[int | None] = mapped_column(BigInteger)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class Agent(Base):

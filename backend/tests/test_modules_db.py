@@ -15,7 +15,6 @@ if os.environ.get("NETPULSE_TEST_DB") != "1":
     pytest.skip("brak testowej bazy (NETPULSE_TEST_DB=1)", allow_module_level=True)
 
 from fastapi.testclient import TestClient  # noqa: E402
-from pve_fake import FakePve  # noqa: E402
 from sqlalchemy import delete, insert, select  # noqa: E402
 
 from netpulse.alerts import AlertEngine  # noqa: E402
@@ -29,12 +28,9 @@ from netpulse.db.models import (  # noqa: E402
     Controller,
     Device,
     Metric,
-    ProxmoxServer,
     User,
 )
 from netpulse.modules import SETTINGS_KEY, ensure_modules, get_modules  # noqa: E402
-from netpulse.proxmox import ProxmoxApi  # noqa: E402
-from netpulse.proxmox_collector import ProxmoxCollector  # noqa: E402
 
 ADMIN = {"username": "admin", "password": "haslo-testowe-1"}
 
@@ -56,7 +52,6 @@ async def reset():
         await s.execute(delete(AppSetting).where(AppSetting.key == SETTINGS_KEY))
         await s.execute(delete(Alert))
         await s.execute(delete(AlertRule))
-        await s.execute(delete(ProxmoxServer))
         await s.execute(delete(Controller))
         await s.execute(delete(Device))
         await s.execute(delete(User))
@@ -73,12 +68,12 @@ def client():
 
 
 def test_defaults_without_entry_are_all_on_and_fresh_install_starts_with_integrations_off(client):
-    assert client.get("/api/modules").json() == {"proxmox": True, "unifi": True, "opnsense": True, "agents": True, "backups": True}
-    assert run(ensure_modules) == {"proxmox": False, "unifi": False, "opnsense": False, "agents": False, "backups": True}
-    assert client.get("/api/modules").json()["proxmox"] is False
+    assert client.get("/api/modules").json() == {"unifi": True, "opnsense": True, "agents": True, "backups": True}
+    assert run(ensure_modules) == {"unifi": False, "opnsense": False, "agents": False, "backups": True}
+    assert client.get("/api/modules").json()["agents"] is False
     # Drugi start niczego nie zmienia
-    client.put("/api/modules", json={"proxmox": True})
-    assert run(ensure_modules)["proxmox"] is True
+    client.put("/api/modules", json={"agents": True})
+    assert run(ensure_modules)["agents"] is True
 
 
 def test_existing_install_keeps_configured_integrations(client):
@@ -87,7 +82,7 @@ def test_existing_install_keeps_configured_integrations(client):
             s.add(Controller(name="UniFi", host="10.7.0.1", api_key="klucz-api-1234"))
 
     run(configured)
-    assert run(ensure_modules) == {"proxmox": False, "unifi": True, "opnsense": False, "agents": False, "backups": True}
+    assert run(ensure_modules) == {"unifi": True, "opnsense": False, "agents": False, "backups": True}
 
 
 def test_only_admin_changes_modules(client):
@@ -98,11 +93,8 @@ def test_only_admin_changes_modules(client):
 
 
 def test_disabled_module_blocks_setup_and_hides_devices(client):
-    client.put("/api/modules", json={"proxmox": False, "agents": False, "unifi": False})
-    assert client.post("/api/agents", json={"name": "NAS"}).status_code == 409
-    msg = client.post("/api/proxmox/servers", params={"probe": "false"}, json={
-        "name": "Lab", "host": "10.7.0.2", "token_id": "netpulse@pve!monitor", "token_secret": "secret-uuid-1234",
-    })  # fmt: skip
+    client.put("/api/modules", json={"agents": False, "unifi": False})
+    msg = client.post("/api/agents", json={"name": "NAS"})
     assert msg.status_code == 409 and "Ustawienia → Moduły" in msg.json()["detail"]
     assert client.post("/api/controllers", params={"probe": "false"}, json={"name": "U", "host": "10.7.0.3", "api_key": "klucz-api-1234"}).status_code == 409
 
@@ -111,7 +103,6 @@ def test_disabled_module_blocks_setup_and_hides_devices(client):
             s.add_all(
                 [
                     Device(name="SW", host="10.7.0.10", community="public", status="up"),
-                    Device(name="pve1", host="10.7.0.11", driver="proxmox", kind="server", status="up", community=None),
                     Device(name="NAS", host="nas-mod", driver="agent", kind="server", status="up", community=None),
                 ]
             )
@@ -119,19 +110,18 @@ def test_disabled_module_blocks_setup_and_hides_devices(client):
     run(devices)
     assert [d["name"] for d in client.get("/api/devices").json()] == ["SW"]
     assert client.get("/api/dashboard/summary").json()["devices"]["total"] == 1
-    client.put("/api/modules", json={"proxmox": True})
-    assert sorted(d["name"] for d in client.get("/api/devices").json()) == ["SW", "pve1"]
+    client.put("/api/modules", json={"agents": True})
+    assert sorted(d["name"] for d in client.get("/api/devices").json()) == ["NAS", "SW"]
 
 
-def test_disabled_module_rules_resolve_and_collector_stays_idle(client):
+def test_disabled_module_rules_resolve(client):
     async def setup():
         async with Session() as s, s.begin():
-            s.add(ProxmoxServer(name="Lab", host="10.7.0.2", token_id="netpulse@pve!monitor", token_secret="secret-uuid-1234"))
-            dev = Device(name="pve1", host="10.7.0.11", driver="proxmox", kind="server", status="up", community=None)
+            dev = Device(name="nas1", host="nas-rules", driver="agent", kind="server", status="up", community=None)
             s.add(dev)
             await s.flush()
-            s.add(AlertRule(name="Kopia", kind="backup_failed", duration_s=0, severity="critical"))
-            await s.execute(insert(Metric), [{"time": datetime.now(UTC), "device_id": dev.id, "name": "backup_task_ok", "key": "vzdump", "value": 0.0}])
+            s.add(AlertRule(name="SMART", kind="smart_failed", duration_s=0, severity="critical"))
+            await s.execute(insert(Metric), [{"time": datetime.now(UTC), "device_id": dev.id, "name": "smart_ok", "key": "sda", "value": 0.0}])
 
     run(setup)
 
@@ -140,19 +130,10 @@ def test_disabled_module_rules_resolve_and_collector_stays_idle(client):
         async with Session() as s:
             return [a.title for a in (await s.scalars(select(Alert).where(Alert.state == "firing"))).all()]
 
-    assert firing_titles(firing) == ["pve1: kopia zapasowa vzdump zakończyła się błędem"]
-    client.put("/api/modules", json={"proxmox": False})
+    assert firing_titles(firing) == ["nas1: dysk sda zgłasza błąd SMART"]
+    client.put("/api/modules", json={"agents": False})
     assert firing_titles(firing) == []  # alert zakończony, bo moduł wyłączony
-
-    fake = FakePve()
-    collector = ProxmoxCollector(api_factory=lambda t: ProxmoxApi(t.host, t.token_id, t.token_secret, transport=fake.transport()))
-
-    async def poll():
-        await collector.poll_all()
-
-    run(poll)
-    assert fake.calls == []  # wyłączony moduł nie łączy się z Proxmoxem
-    assert run(get_modules)["proxmox"] is False
+    assert run(get_modules)["agents"] is False
 
 
 def firing_titles(fn) -> list[str]:

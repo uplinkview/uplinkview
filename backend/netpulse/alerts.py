@@ -42,9 +42,9 @@ from .timeline import restarts, wan_switches
 log = logging.getLogger("netpulse.alerts")
 
 SEVERITIES = ("info", "warning", "critical")
-# Rodzaje na ogólnej tabeli `metrics`: z agenta (kontener, usługa systemd, SMART) i z Proxmoxa (maszyna, kopia)
-# … i z OPNsense API (od 0.81.0): brama nie działa, usługa OPNsense zatrzymana
-AGENT_KINDS = ("container_stopped", "service_failed", "smart_failed", "guest_stopped", "backup_failed", "gateway_down", "opnsense_service_failed")
+# Rodzaje na ogólnej tabeli `metrics`: z agenta (kontener, usługa systemd, SMART)
+# i z OPNsense API (od 0.81.0): brama nie działa, usługa OPNsense zatrzymana
+AGENT_KINDS = ("container_stopped", "service_failed", "smart_failed", "gateway_down", "opnsense_service_failed")
 # Zdarzenia chwilowe (od 0.49.0): alert trwa EVENT_HOLD od zdarzenia i kończy się bez powiadomienia o końcu
 EVENT_KINDS = ("wan_switch", "device_restart", "vpn_connect")
 EVENT_HOLD = timedelta(minutes=10)
@@ -66,7 +66,6 @@ METRICS: dict[str, tuple[str, str]] = {
     "temp_c": ("Temperatura (każdy czujnik: serwer z agentem, MikroTik)", "°C"),
     "sfp_rx_dbm": ("SFP: moc odbierana (każdy moduł SFP: MikroTik, switche TP-Link)", " dBm"),
     "smart_reallocated": ("SMART: realokowane sektory (każdy dysk serwera z agentem)", ""),
-    "backup_age_h": ("Proxmox: godziny od ostatniej kopii (każda VM i LXC)", " h"),
     "check_latency_ms": ("Sprawdzenie dostępności: opóźnienie", " ms"),
     "check_loss_percent": ("Sprawdzenie dostępności: utrata pakietów (ping)", "%"),
     "check_cert_days": ("Sprawdzenie dostępności: dni do wygaśnięcia certyfikatu", " dni"),
@@ -82,17 +81,16 @@ SYSTEM_METRICS = {
     "system_mem_used_percent": "mem_used_percent",
     "system_disk_used_percent": "disk_used_percent",
 }
-# Metryki z ogólnej tabeli `metrics` (agent, Proxmox, czujniki SNMP): nazwa reguły → nazwa w tabeli
+# Metryki z ogólnej tabeli `metrics` (agent, czujniki SNMP, OPNsense): nazwa reguły → nazwa w tabeli
 # (jeden alert na klucz, np. czujnik, dysk albo port SFP)
 AGENT_METRICS = {
-    "temp_c": "temp_c", "smart_reallocated": "smart_reallocated", "backup_age_h": "backup_age_h", "sfp_rx_dbm": "sfp_rx_dbm",
+    "temp_c": "temp_c", "smart_reallocated": "smart_reallocated", "sfp_rx_dbm": "sfp_rx_dbm",
     "wan_latency_ms": "wan_latency_ms", "wan_loss_percent": "wan_loss_percent",
 }  # fmt: skip
 # Tytuł alertu progu: „<urządzenie>: <co> <klucz> <wartość>”
 AGENT_METRIC_WHAT = {
     "temp_c": "temperatura",
     "smart_reallocated": "realokowane sektory",
-    "backup_age_h": "ostatnia kopia",
     "sfp_rx_dbm": "SFP moc odbierana",
     "wan_latency_ms": "opóźnienie łącza",
     "wan_loss_percent": "utrata pakietów łącza",
@@ -110,15 +108,13 @@ AGENT_STATES = {
     "container_stopped": ("container_up", "kontener", "zatrzymany"),
     "service_failed": ("service_up", "usługa", "nie działa"),
     "smart_failed": ("smart_ok", "dysk", "zgłasza błąd SMART"),
-    "guest_stopped": ("guest_up", "maszyna", "zatrzymana"),
-    "backup_failed": ("backup_task_ok", "kopia zapasowa", "zakończyła się błędem"),
     "gateway_down": ("gateway_up", "brama", "nie działa"),
     "opnsense_service_failed": ("opnsense_service_up", "usługa", "nie działa"),
 }
 # Jak daleko wstecz szukać stanu portu sprzed przerwy w odczytach (restart switcha trwa minuty, nie godziny)
 BREAK_LOOKBACK = timedelta(hours=1)
 # Bez filtru nazwy alarm tylko dla tych, które przed chwilą działały (zatrzymane od dawna są zamierzone)
-WENT_DOWN_KINDS = ("container_stopped", "guest_stopped")
+WENT_DOWN_KINDS = ("container_stopped",)
 
 # Reguły domyślne w kolejnych wersjach. Instalacja dostaje każdy zestaw raz (znacznik w app_settings),
 # więc reguła usunięta przez użytkownika nie wraca po restarcie.
@@ -133,11 +129,7 @@ DEFAULT_RULE_SETS = (
         dict(name="SMART: dysk zgłasza błąd", kind="smart_failed", duration_s=0, severity="critical"),
         dict(name="Wysoka temperatura", kind="metric", metric="temp_c", op=">", threshold=85.0, duration_s=300, severity="warning"),
     ),
-    (
-        dict(name="Proxmox: maszyna zatrzymana", kind="guest_stopped", duration_s=60, severity="warning"),
-        dict(name="Proxmox: kopia zapasowa nie powiodła się", kind="backup_failed", duration_s=0, severity="critical"),
-        dict(name="Proxmox: brak świeżej kopii VM", kind="metric", metric="backup_age_h", op=">", threshold=36.0, duration_s=0, severity="warning"),
-    ),
+    (),  # zestaw usuniętej integracji (0.86.0) – pusty, żeby numery zestawów w znaczniku się nie przesunęły
     (
         dict(name="Sprawdzenie dostępności nie przechodzi", kind="check_down", duration_s=60, severity="warning"),
         dict(name="Certyfikat HTTPS wkrótce wygaśnie", kind="metric", metric="check_cert_days", op="<", threshold=14.0, duration_s=0, severity="warning"),
@@ -164,11 +156,11 @@ DEFAULT_COMMUNITY_HINT = (
 # Reguły zależne od modułu: rodzaj albo metryka → moduł (Ustawienia → Moduły)
 KIND_MODULE = {
     "container_stopped": "agents", "service_failed": "agents", "smart_failed": "agents",
-    "guest_stopped": "proxmox", "backup_failed": "proxmox", "vpn_connect": "unifi",
+    "vpn_connect": "unifi",
     "gateway_down": "opnsense", "opnsense_service_failed": "opnsense",
 }  # fmt: skip
 # Temperatura nie zależy od modułu: czujniki ma też MikroTik przez SNMP (od 0.50.0)
-METRIC_MODULE = {"smart_reallocated": "agents", "backup_age_h": "proxmox", "wan_loss_percent": "opnsense"}
+METRIC_MODULE = {"smart_reallocated": "agents", "wan_loss_percent": "opnsense"}
 
 
 def rule_module(rule) -> str | None:
@@ -786,8 +778,8 @@ class AlertEngine:
     async def _agent_state(self, session, rule: AlertRule, scope: list[Device], now: datetime) -> list[Hit]:
         """Kontener albo maszyna zatrzymana, usługa nie działa, SMART albo kopia zgłasza błąd (wartość 0 w `metrics`).
 
-        Kontener i maszyna bez filtru nazwy alarmują tylko, jeśli przed chwilą działały: zatrzymane od dawna
-        (np. jednorazowe zadania, zapasowe VM) nie dają alarmu. Z filtrem nazwy – zawsze, bo o nie chodzi."""
+        Kontener bez filtru nazwy alarmuje tylko, jeśli przed chwilą działał: zatrzymane od dawna
+        (np. jednorazowe zadania) nie dają alarmu. Z filtrem nazwy – zawsze, bo o nie chodzi."""
         name, what, state = AGENT_STATES[rule.kind]
         interval = float(settings.poll_interval)
         since = now - timedelta(seconds=rule.duration_s + interval * 3)

@@ -1,4 +1,4 @@
-import { IconDatabase, IconFlame, IconServerCog, IconTerminal2, IconWifi, type Icon } from "@tabler/icons-react";
+import { IconDatabase, IconFlame, IconTerminal2, IconWifi, type Icon } from "@tabler/icons-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../auth/AuthProvider";
 import { Card, ErrorNote, PageHeader, Toggle } from "../../components/ui";
@@ -7,7 +7,6 @@ import { ApiError, request } from "../../lib/api";
 import { MODULE_IDS, MODULES_KEY, useModules, type ModuleId, type Modules } from "../../lib/modules";
 
 const META: Record<ModuleId, { icon: Icon; label: TextKey; desc: TextKey }> = {
-  proxmox: { icon: IconServerCog, label: "mod.proxmox", desc: "mod.proxmox.desc" },
   unifi: { icon: IconWifi, label: "mod.unifi", desc: "mod.unifi.desc" },
   opnsense: { icon: IconFlame, label: "mod.opnsense", desc: "mod.opnsense.desc" },
   agents: { icon: IconTerminal2, label: "mod.agents", desc: "mod.agents.desc" },

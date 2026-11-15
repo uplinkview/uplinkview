@@ -44,7 +44,7 @@ metryki. Przerwa dłuższa niż 3 cykle kolektora to rozłączenie.
 - Osobne API tylko do odczytu `/api/public/dashboards/<token>` (`backend/netpulse/api/public.py`), bez ciasteczek
   sesji. Dane wychodzą wyłącznie przez `/data?path=…` i tylko te, których potrzebują widgety zapisane w tym pulpicie
   (biała lista budowana z układu w bazie, nie z żądania). Reszta API bez logowania zostaje zamknięta.
-- Domyślnie ukryte: adresy IP i komunikaty błędów urządzeń, dane SNMP, nazwy hostów agentów i Proxmoxa.
+- Domyślnie ukryte: adresy IP i komunikaty błędów urządzeń, dane SNMP, nazwy hostów agentów.
 - Odpowiedzi: `Cache-Control: no-store`, `X-Robots-Tag: noindex`, `Referrer-Policy: no-referrer`.
 - Odświeżanie nie częściej niż co 10 s, tryb „Na żywo” (WebSocket) wyłączony.
 - Nowy widget = jego ścieżki danych trzeba dopisać w `resolve()` w `api/public.py`, inaczej na pulpicie publicznym

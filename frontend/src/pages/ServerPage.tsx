@@ -319,7 +319,7 @@ export function ServerPage() {
             {agent?.net && agent.net.length > 0 && <NetworkCard net={agent.net} />}
             {agent && agent.temps.length > 0 && <TempsCard temps={agent.temps} />}
           </div>
-          {!agent && d.driver !== "agent" && d.driver !== "proxmox" && <p className="text-xs text-text-2">{t("srv.snmpOnly")}</p>}
+          {!agent && d.driver !== "agent" && <p className="text-xs text-text-2">{t("srv.snmpOnly")}</p>}
         </div>
       )}
     </>

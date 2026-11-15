@@ -18,7 +18,6 @@ from ..db.models import (
     InterfaceMetric,
     Metric,
     PoePortMetric,
-    ProxmoxNode,
     WifiMetric,
     WifiNetwork,
 )
@@ -220,15 +219,6 @@ AGENT_SOURCES: dict[str, dict[str, tuple[str, float]]] = {
     "agent_disk": {"read_bps": ("disk_read_bps", 8.0), "write_bps": ("disk_write_bps", 8.0)},
     "agent_temp": {"temp_c": ("temp_c", 1.0)},
     "agent_container": {"container_cpu_percent": ("container_cpu_percent", 1.0), "container_mem_bytes": ("container_mem_bytes", 1.0)},
-    # Maszyna Proxmox: kolektor zapisuje już bity/s (sieć) i bajty/s (dysk) – dysk przeliczamy na bity jak przy agencie
-    "pve_guest": {
-        "guest_cpu_percent": ("guest_cpu_percent", 1.0),
-        "guest_mem_bytes": ("guest_mem_bytes", 1.0),
-        "rx_bps": ("guest_net_rx_bps", 1.0),
-        "tx_bps": ("guest_net_tx_bps", 1.0),
-        "read_bps": ("guest_disk_read_bps", 8.0),
-        "write_bps": ("guest_disk_write_bps", 8.0),
-    },
     # Czujniki urządzeń SNMP (od 0.50.0, MikroTik): klucz = nazwa czujnika albo portu
     "snmp_sensor": {
         "temp_c": ("temp_c", 1.0),
@@ -267,7 +257,6 @@ AgentSourceKind = Literal[
     "agent_disk",
     "agent_temp",
     "agent_container",
-    "pve_guest",
     "snmp_sensor",
     "snmp_poe",
     "snmp_sfp",
@@ -283,7 +272,6 @@ AGENT_KEY_NAMES: dict[str, tuple[str, ...]] = {
     "agent_disk": ("disk_read_bps",),
     "agent_temp": ("temp_c",),
     "agent_container": ("container_up",),
-    "pve_guest": ("guest_up",),
     "snmp_sensor": ("temp_c", "fan_rpm", "voltage_v", "current_a", "power_w", "channel_util_percent"),
     "snmp_poe": ("poe_power_w",),
     "snmp_sfp": ("sfp_rx_dbm",),
@@ -297,14 +285,6 @@ AGENT_KEY_NAMES: dict[str, tuple[str, ...]] = {
 
 # Źródła z rzadkimi punktami (zdarzenia, nie pomiar co cykl): klucze szukane w ostatnich 30 dniach, nie w godzinie
 RARE_SOURCES = ("speedtest",)
-
-
-async def _same_server_devices(session, device_id: int) -> list[int]:
-    """Maszyna Proxmox może przejść na inny węzeł (migracja) – wykres bierze dane ze wszystkich węzłów serwera."""
-    server_id = await session.scalar(select(ProxmoxNode.server_id).where(ProxmoxNode.device_id == device_id))
-    if server_id is None:
-        return [device_id]
-    return list((await session.scalars(select(ProxmoxNode.device_id).where(ProxmoxNode.server_id == server_id))).all())
 
 
 def _bucket(minutes: int, timescale: bool):
@@ -321,8 +301,7 @@ async def agent_metrics(device_id: int, source: AgentSourceKind, key: str = "", 
     timescale = await timescale_available()
     bucket = _bucket(minutes, timescale).label("bucket")
     async with Session() as session:
-        devices = await _same_server_devices(session, device_id) if source == "pve_guest" else [device_id]
-        base = [Metric.device_id.in_(devices), Metric.time >= since, Metric.time < until]
+        base = [Metric.device_id == device_id, Metric.time >= since, Metric.time < until]
         if source == "agent_cpu":
             rows = (
                 await session.execute(
@@ -362,7 +341,7 @@ async def agent_keys(device_id: int) -> dict[str, list[str]]:
         if device is None:
             raise HTTPException(404, "Nie ma takiego obiektu: urządzenie")
         snmp = device.driver not in NON_SNMP_DRIVERS
-        devices = await _same_server_devices(session, device_id)
+        devices = [device_id]
         rows = (
             await session.execute(
                 select(Metric.name, Metric.key)

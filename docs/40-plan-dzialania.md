@@ -142,7 +142,7 @@ Kolejność do korekty według próśb użytkowników:
 1. Eksport metryk Prometheus i tokeny API.
 2. Integracja z Home Assistant.
 3. Test prędkości łącza według harmonogramu.
-4. Nowy sprzęt ze zrzutów od użytkowników: Synology (`docs/27`), OPNsense/pfSense, prawdziwy MikroTik i Omada.
+4. Nowy sprzęt ze zrzutów od użytkowników: NAS, OPNsense/pfSense, prawdziwy MikroTik i Omada.
 5. Własne OID-y i profile YAML (`docs/25-wlasne-oid-propozycja.md`).
 
 ## Etap 8 – dla małych firm (1.5–1.9)

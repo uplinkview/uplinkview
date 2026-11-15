@@ -158,7 +158,6 @@ def test_agent_report_flow(client):
         "agent_disk": [],
         "agent_temp": ["coretemp/Package id 0"],
         "agent_container": ["nextcloud"],
-        "pve_guest": [],
         # Czujniki SNMP tylko dla urządzeń SNMP – temperatura serwera z agentem nie trafia do „Czujnika urządzenia”
         "snmp_sensor": [],
         "snmp_poe": [],

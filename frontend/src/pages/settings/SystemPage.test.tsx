@@ -96,7 +96,7 @@ describe("Ustawienia → System", () => {
     const row = (await within(list).findByText("TP-Link Omada przez SNMP")).closest("li") as HTMLElement;
     expect(within(row).getByText("dane testowe")).toBeInTheDocument();
     expect(within(row).getByText(/czeka na prawdziwy sprzęt/)).toBeInTheDocument();
-    expect(within(within(list).getByText("Proxmox VE").closest("li") as HTMLElement).getByText("częściowo")).toBeInTheDocument();
+    expect(within(within(list).getByText("MikroTik przez SNMP").closest("li") as HTMLElement).getByText("częściowo")).toBeInTheDocument();
     expect(within(within(list).getByText("SNMP: porty, ruch, błędy").closest("li") as HTMLElement).getByText("potwierdzone")).toBeInTheDocument();
   });
 

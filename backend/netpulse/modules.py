@@ -18,16 +18,16 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 
 from .db import Session
-from .db.models import Agent, AppSetting, Controller, OpnsenseApi, ProxmoxServer
+from .db.models import Agent, AppSetting, Controller, OpnsenseApi
 
 log = logging.getLogger(__name__)
 
-ModuleId = Literal["proxmox", "unifi", "opnsense", "agents", "backups"]
-MODULES: tuple[ModuleId, ...] = ("proxmox", "unifi", "opnsense", "agents", "backups")
+ModuleId = Literal["unifi", "opnsense", "agents", "backups"]
+MODULES: tuple[ModuleId, ...] = ("unifi", "opnsense", "agents", "backups")
 SETTINGS_KEY = "modules"
-LABELS: dict[str, str] = {"proxmox": "Proxmox VE", "unifi": "UniFi", "opnsense": "OPNsense API", "agents": "Agenci serwerów", "backups": "Kopia zapasowa z panelu"}
+LABELS: dict[str, str] = {"unifi": "UniFi", "opnsense": "OPNsense API", "agents": "Agenci serwerów", "backups": "Kopia zapasowa z panelu"}
 # Urządzenia, które dostarcza moduł (devices.driver) – ukrywane, gdy moduł jest wyłączony
-DRIVER_MODULE: dict[str, str] = {"agent": "agents", "proxmox": "proxmox", "unifi_api": "unifi"}
+DRIVER_MODULE: dict[str, str] = {"agent": "agents", "unifi_api": "unifi"}
 
 
 # Moduły dodane po pierwszym zapisie stanu: w zapisanym stanie ich nie ma, a nie powinny włączać się same
@@ -67,7 +67,6 @@ async def detect(session) -> dict[str, bool]:
         return bool(await session.scalar(select(func.count()).select_from(model)))
 
     return {
-        "proxmox": await any_rows(ProxmoxServer),
         "unifi": await any_rows(Controller),
         "opnsense": await any_rows(OpnsenseApi),
         "agents": await any_rows(Agent),
@@ -99,7 +98,7 @@ async def save_modules(values: dict[str, bool]) -> dict[str, bool]:
 
 
 def require_module(module: ModuleId):
-    """Zależność FastAPI: 409, gdy moduł jest wyłączony (np. dodanie serwera Proxmox przy wyłączonym module)."""
+    """Zależność FastAPI: 409, gdy moduł jest wyłączony (np. dodanie kontrolera UniFi przy wyłączonym module)."""
 
     async def check() -> None:
         if not await is_enabled(module):

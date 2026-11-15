@@ -36,8 +36,6 @@ export const PIE_METRICS: Record<PieMetric, PieDef> = {
   containers_mem: { label: "pie.m.containers_mem", mode: "share", kind: "containers", key: "mem_bytes", scope: "device" },
   containers_cpu: { label: "pie.m.containers_cpu", mode: "share", kind: "containers", key: "cpu_percent", scope: "device" },
   services_state: { label: "pie.m.services_state", mode: "state", kind: "services", key: "up", scope: "device" },
-  guests_mem: { label: "pie.m.guests_mem", mode: "share", kind: "guests", key: "mem_bytes", scope: "optional" },
-  guests_state: { label: "pie.m.guests_state", mode: "state", kind: "guests", key: "up", scope: "optional" },
   devices_state: { label: "pie.m.devices_state", mode: "state", kind: "devices", key: "up", scope: "global" },
   checks_state: { label: "pie.m.checks_state", mode: "state", kind: "checks", key: "up", scope: "global" },
 };
@@ -46,7 +44,6 @@ export const PIE_METRICS: Record<PieMetric, PieDef> = {
 export function pieMetricsFor(device: Pick<Device, "driver" | "kind"> | null): PieMetric[] {
   if (!device) return ["devices_state", "checks_state", "wifi_clients"];
   if (device.driver === "agent") return ["cpu", "mem", "disk", "disks_share", "containers_mem", "containers_cpu", "services_state"];
-  if (device.driver === "proxmox") return ["cpu", "mem", "guests_mem", "guests_state"];
   return [
     "cpu",
     "mem",
@@ -60,12 +57,12 @@ export function pieMetricsFor(device: Pick<Device, "driver" | "kind"> | null): P
 
 /** Wykres jednego portu (wybór portu w edytorze) */
 export const isPortMetric = (m: PieMetric) => m === "port_load" || m === "port_dir";
-/** Wykresy z danymi na żywo (urządzenia SNMP): porty, CPU, RAM i dyski. Stany urządzeń i sprawdzeń, agenci i Proxmox –
- * odczyty z bazy (kolektor, agent co 30 s, Proxmox liczy co ~10 s). */
+/** Wykresy z danymi na żywo (urządzenia SNMP): porty, CPU, RAM i dyski. Stany urządzeń i sprawdzeń oraz agenci –
+ * odczyty z bazy (kolektor, agent co 30 s). */
 const LIVE_METRICS = new Set<PieMetric>(["cpu", "mem", "disk", "disks_share", "port_load", "port_dir", "ports_in", "ports_out", "ports_state"]);
 export const isLiveMetric = (m: PieMetric) => LIVE_METRICS.has(m);
 /** Urządzenia bez SNMP – bez danych na żywo */
-export const NON_SNMP_DRIVERS = new Set(["agent", "proxmox", "unifi_api"]);
+export const NON_SNMP_DRIVERS = new Set(["agent", "unifi_api"]);
 
 /** Wiersze kolekcji z wartościami z próbki na żywo; `applied` = próbka coś podmieniła (znacznik „Na żywo”).
  * Brak wartości w próbce (pierwszy odczyt prędkości, urządzenie nie podało) – zostaje odczyt z bazy. */

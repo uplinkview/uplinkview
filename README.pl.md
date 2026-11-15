@@ -1,7 +1,7 @@
 # UplinkView
 
 **Monitoring sieci w homelabie, instalowany u siebie.** Jeden panel z ruchem i stanem portów routera, switchy
-i access pointów, a do tego klienci WiFi, mapa sieci, dual WAN, serwery Linux, Proxmox VE i alerty.
+i access pointów, a do tego klienci WiFi, mapa sieci, dual WAN, serwery Linux i alerty.
 
 [English](README.md) · [Współtworzenie](CONTRIBUTING.md)
 
@@ -38,8 +38,7 @@ robi kopię zapasową bazy. Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`
 - **WiFi** – sieci i klienci z historią sygnału, obecności i przejść między AP (UniFi Network API).
 - **Mapa sieci** – topologia z LLDP z obciążeniem i prędkością kabli.
 - **Dual WAN** – stan łączy, przełączenia, SLA, opóźnienie każdego łącza, testy prędkości bramy, zużycie transferu dzienne i miesięczne (opcjonalnie z pakietem).
-- **Serwery** – Linux przez SNMP albo lekki agent UplinkView (kontenery Docker, usługi systemd, SMART, temperatury)
-  i Proxmox VE (maszyny VM i LXC, magazyny, kopie vzdump).
+- **Serwery** – Linux przez SNMP albo lekki agent UplinkView (kontenery Docker, usługi systemd, SMART, temperatury).
 - **Sprawdzanie dostępności** – ping (opóźnienie, utrata, jitter), HTTP(S) z ważnością certyfikatu, port TCP, DNS.
 - **Alerty** – urządzenie offline, port down, przeciążenie, CPU / RAM, dysk, błędy portów, dane z agenta; powiadomienia
   webhookiem (np. Telegram), przez ntfy i e-mail, ciche godziny z podsumowaniem, okna serwisowe, grupowanie po topologii.
@@ -57,7 +56,6 @@ robi kopię zapasową bazy. Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`
 |-------------------|------|---------------|
 | Ubiquiti UniFi    | ✅ sprawdzone na sprzęcie (UCG Ultra, USW Lite 8 PoE, U6+) | SNMP (IF-MIB, UBNT-UniFi-MIB) + UniFi Network API |
 | Serwery Linux     | ✅ | SNMP (`snmpd`) albo agent UplinkView |
-| Proxmox VE        | ✅ sprawdzone na PVE 9.1 / 9.2 (jeden węzeł) | API Proxmox (token, rola PVEAuditor) |
 | MikroTik          | ✅ sprawdzone na RouterOS 7.18 (CHR); czujniki, PoE i SFP z oficjalnego MIB | SNMP (IF-MIB, MIKROTIK-MIB, HOST-RESOURCES-MIB) |
 | OPNsense          | ✅ sprawdzone na OPNsense 26.7 (VirtualBox): router, WAN z trasy domyślnej; bramy (opóźnienie, utrata), usługi, urządzenia z DHCP/ARP i ich ruch, wersja | SNMP (wtyczka `os-net-snmp`) + API OPNsense (klucz) |
 | TP-Link Omada     | driver SNMP z oficjalnych MIB-ów, czeka na prawdziwy sprzęt | SNMP |
@@ -70,7 +68,7 @@ zanonimizowany zrzut SNMP, który można dołączyć do [zgłoszenia nowego urz�
 
 ```
  [Router] [Switch] [AP] ──SNMP/API──►  Kolektor (async, co 30 s)  ◄── raporty agenta (push)
- [Proxmox] [kontroler UniFi]                 │
+ [kontroler UniFi] [OPNsense]                │
                                              ▼
                                PostgreSQL + TimescaleDB  ◄──  API (FastAPI)
                                                                  │  REST + WebSocket
@@ -105,7 +103,7 @@ docs/           # dokumentacja
 ## Plany
 
 - Opcjonalna płatna chmura: dostęp spoza sieci domowej i powiadomienia push, a historia zostaje na Twoim serwerze.
-- API RouterOS i kontrolera Omada, Synology NAS – gdy będzie prawdziwy sprzęt do testów.
+- API RouterOS i kontrolera Omada – gdy będzie prawdziwy sprzęt do testów.
 
 Pełny plan: [`docs/40-plan-dzialania.md`](docs/40-plan-dzialania.md).
 

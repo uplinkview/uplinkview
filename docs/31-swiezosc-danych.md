@@ -2,7 +2,7 @@
 
 ## Problem
 
-Status urządzenia (`działa` / `brak odpowiedzi`) zapisuje w bazie kolektor: SNMP, UniFi, Proxmox albo raport
+Status urządzenia (`działa` / `brak odpowiedzi`) zapisuje w bazie kolektor: SNMP, UniFi, OPNsense albo raport
 agenta. Jeśli kolektor przestał działać (kontener stoi, pętla integracji się zawiesiła, baza była niedostępna),
 w bazie zostawał ostatni zapis i panel dalej pokazywał „działa” ze starym odczytem. Wymaganie ze specyfikacji
 (rozdz. 25 i 30): *jeśli kolektor nie działał od 10 minut, status urządzenia ma być nieznany, a nie „działa” ani „down”*.
@@ -24,7 +24,7 @@ starszy niż `max(120 s, 4 × NETPULSE_POLL_INTERVAL)` (przy 30 s to 2 minuty). 
 - `GET /api/devices` i `/api/devices/{id}`: `status` = stan do pokazania, `stale` = dane nieaktualne,
   `last_status` = ostatni zapisany werdykt (np. „down” sprzed 10 min).
 - `GET /api/dashboard/summary`: urządzenia z nieaktualnym werdyktem liczą się do `unknown`, nie do `up`/`down`.
-- Tabele i paski (`/api/collections/devices`), topologia, agenci, węzły Proxmox (maszyny bez bieżących wartości)
+- Tabele i paski (`/api/collections/devices`), topologia, agenci
   używają tej samej reguły (`Device.live_status`, w SQL `freshness.status_sql`).
 - `GET /api/checks`: sprawdzenie, które nie wykonało się od `max(120 s, 4 × interval_s)`, ma `status = "unknown"`
   i `stale = true`.

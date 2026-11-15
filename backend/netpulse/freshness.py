@@ -1,6 +1,6 @@
 """Świeżość danych: awaria urządzenia ≠ brak aktualnych danych.
 
-Status urządzenia (`up` / `down`) zapisuje kolektor (SNMP, UniFi, Proxmox) albo raport agenta, a razem z nim
+Status urządzenia (`up` / `down`) zapisuje kolektor (SNMP, UniFi, OPNsense) albo raport agenta, a razem z nim
 `last_polled_at` – czas ostatniego werdyktu. Gdy werdykt jest starszy niż kilka cykli odpytywania (kolektor stoi,
 pętla integracji się zawiesiła, baza była niedostępna), zapisany status jest nieaktualny: API pokazuje `unknown`
 i `stale = True`, a silnik alertów nie otwiera ani nie zamyka alertów takiego urządzenia (alerts.py).

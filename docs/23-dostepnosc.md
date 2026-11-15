@@ -18,7 +18,7 @@ Od 0.64.0 także **DNS** (rozwiązywanie nazwy, czas, zgodność odpowiedzi) –
 
 - **Sprawdzaj co** – 30 s … 1 godz. (API przyjmuje 10–3600 s); **limit czasu** 1–30 s, krótszy niż odstęp.
 - **HTTP**: oczekiwany kod (`200`, `200-399`, `2xx`, lista po przecinku), opcjonalny tekst na stronie (szukany
-  w pierwszym megabajcie), weryfikacja certyfikatu – wyłącz dla samopodpisanych (Proxmox, router); datę wygaśnięcia
+  w pierwszym megabajcie), weryfikacja certyfikatu – wyłącz dla samopodpisanych (NAS, router); datę wygaśnięcia
   UplinkView odczyta i tak (osobne połączenie TLS bez weryfikacji). Przekierowania są śledzone.
 - **Sprawdź teraz** w formularzu wykonuje sprawdzenie od razu, bez zapisu.
 - **Szybko dodaj** (od 0.30.3): ping do bramy każdego włączonego routera z listy urządzeń („Brama – UCG Ultra”:
@@ -63,5 +63,5 @@ sprawdzenia, więc sprawdzenie co 5 min nie „gubi” danych w regule „przez 
 - Panel: `frontend/src/pages/ChecksPage.tsx`, `lib/checks.ts`; źródło `check` w `lib/layout.ts` i `chartSource.ts`.
 
 Sprawdzone na serwerze 27–28.10.2026 w kontenerze kolektora: ping 8.8.8.8 i google.com (~15 ms, 0% utraty),
-brama 192.168.1.1 (~1 ms), HTTPS github.com (certyfikat 33 dni), panel Proxmoxa `https://192.168.1.86:8006`
-bez weryfikacji certyfikatu, port TCP 8006, zamknięty port, nieistniejący host, wygasły certyfikat.
+brama 192.168.1.1 (~1 ms), HTTPS github.com (certyfikat 33 dni), panel serwera domowego `https://192.168.1.86:8006`
+z certyfikatem samopodpisanym bez weryfikacji, port TCP 8006, zamknięty port, nieistniejący host, wygasły certyfikat.

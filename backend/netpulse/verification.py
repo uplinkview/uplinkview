@@ -110,13 +110,6 @@ SOURCES: tuple[Source, ...] = (
         ("agent",),
     ),
     Source(
-        "proxmox",
-        "Proxmox VE: węzły, maszyny VM i LXC, magazyny, kopie vzdump",
-        "partial",
-        "PVE 9.1 / 9.2 z jednym węzłem; klaster kilku węzłów tylko na atrapie API",
-        ("proxmox",),
-    ),
-    Source(
         "dual_wan",
         "Dual WAN: drugie łącze i przełączanie",
         "verified",

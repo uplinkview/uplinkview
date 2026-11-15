@@ -15,8 +15,6 @@ export type RuleKind =
   | "container_stopped"
   | "service_failed"
   | "smart_failed"
-  | "guest_stopped"
-  | "backup_failed"
   | "gateway_down"
   | "opnsense_service_failed"
   | "check_down"
@@ -24,13 +22,11 @@ export type RuleKind =
   | "wan_switch"
   | "device_restart"
   | "vpn_connect";
-/** Rodzaje ze stanu w agencie, Proxmoxie i OPNsense: kontener, usługa, SMART, maszyna, kopia, brama (bez progu, z filtrem nazwy). */
+/** Rodzaje ze stanu w agencie i OPNsense: kontener, usługa, SMART, brama (bez progu, z filtrem nazwy). */
 export const AGENT_KINDS: RuleKind[] = [
   "container_stopped",
   "service_failed",
   "smart_failed",
-  "guest_stopped",
-  "backup_failed",
   "gateway_down",
   "opnsense_service_failed",
 ];

@@ -56,7 +56,6 @@ def test_every_source_accepts_its_own_metrics():
         "agent_disk": {"kind": "agent_disk", "id": 2, "key": "sda"},
         "agent_temp": {"kind": "agent_temp", "id": 2, "key": "coretemp/Core 0"},
         "agent_container": {"kind": "agent_container", "id": 2, "key": "nextcloud"},
-        "pve_guest": {"kind": "pve_guest", "id": 3, "key": "nextcloud (105)"},
         "snmp_sensor": {"kind": "snmp_sensor", "id": 5, "key": "cpu-temperature"},
         "snmp_poe": {"kind": "snmp_poe", "id": 5, "key": "ether5"},
         "snmp_sfp": {"kind": "snmp_sfp", "id": 5, "key": "sfp1"},
@@ -342,7 +341,7 @@ def test_pie():
     assert (cpu.limit, cpu.item, cpu.collection()) == (8, None, ("devices", None))  # dysk tylko dla „disk”
     disk = DashboardLayout.model_validate(panel("pie", {"device_id": 4, "metric": "disk", "item": "/srv"})).widgets[0].config
     assert (disk.item, disk.collection()) == ("/srv", ("disks", 4))
-    # Cała sieć – bez urządzenia; WiFi i maszyny – urządzenie opcjonalne
+    # Cała sieć – bez urządzenia; WiFi – urządzenie opcjonalne
     whole = DashboardLayout.model_validate(panel("pie", {"device_id": 3, "metric": "devices_state"})).widgets[0].config
     assert (whole.device_id, whole.collection()) == (None, ("devices", None))
     assert DashboardLayout.model_validate(panel("pie", {"metric": "wifi_clients"})).widgets[0].config.collection() == ("wifi", None)
@@ -459,3 +458,29 @@ def test_removed_peak_series_become_averages():
     # sam szczyt (bez średniej) – zamienia się w średnią
     only = ChartConfig.model_validate({"queries": [{"id": "A", "source": {"kind": "wan"}, "series": [{"key": "out_bps_max", "color": 3}]}]})
     assert [(s.key, s.color) for s in only.queries[0].series] == [("out_bps", 3)]
+
+
+def test_saved_proxmox_widgets_are_dropped():
+    """Proxmox usunięty w 0.86.0: zapisane pulpity z jego danymi dalej się wczytują – te widgety i zapytania wypadają."""
+    guest = {"kind": "pve_guest", "id": 3, "key": "nextcloud (105)"}
+    mixed = chart(id="mix", config={})
+    mixed["config"] = {
+        "queries": [
+            {"id": "A", "source": guest, "series": [{"key": "rx_bps"}]},
+            {"id": "B", "source": {"kind": "wan"}, "series": [{"key": "in_bps"}]},
+        ]
+    }
+    parsed = DashboardLayout.model_validate(
+        layout(
+            chart(id="old", config={"source": guest, "series": [{"key": "guest_cpu_percent"}]}),
+            mixed,
+            {"id": "st", "type": "stat", "w": 3, "config": {"source": guest, "key": "guest_cpu_percent"}},
+            {"id": "hm", "type": "heatmap", "w": 6, "config": {"source": guest, "key": "rx_bps"}},
+            {"id": "tb", "type": "table", "w": 6, "config": {"collection": {"kind": "guests"}, "columns": ["up"]}},
+            {"id": "bg", "type": "bargauge", "w": 6, "config": {"collection": {"kind": "guests"}, "key": "cpu_percent"}},
+            {"id": "pi", "type": "pie", "w": 4, "config": {"metric": "guests_state"}},
+            {"id": "d", "type": "devices", "w": 12},
+        )
+    )
+    assert [w.id for w in parsed.widgets] == ["mix", "d"]
+    assert [q.source.kind for q in parsed.widgets[0].config.queries] == ["wan"]

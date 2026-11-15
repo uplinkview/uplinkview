@@ -72,7 +72,6 @@ def test_unknown_device_is_generic():
     client = SnmprecClient({"1.3.6.1.2.1.1.1.0": b"Printer 3000", "1.3.6.1.2.1.1.2.0": "1.3.6.1.4.1.99999.1", "1.3.6.1.2.1.1.5.0": b"drukarka"})
     f = discovery.describe("192.0.2.20", asyncio.run(read_system(client)))
     assert f.generic and f.driver == "generic" and f.vendor is None  # numer 99999 nieznany – bez „Generic”
-    assert discovery.vendor_of("1.3.6.1.4.1.6574.1") == "Synology"
     assert discovery.vendor_of(".1.3.6.1.4.1.11.2.3.9.1") == "HP"
     assert discovery.vendor_of("1.3.6.1.4.1.8072.3.2.10") is None
     assert discovery.default_name(f) == "drukarka"

@@ -46,7 +46,6 @@ export type AgentSourceKind =
   | "agent_disk"
   | "agent_temp"
   | "agent_container"
-  | "pve_guest"
   | "snmp_sensor"
   | "snmp_poe"
   | "snmp_sfp"
@@ -61,7 +60,6 @@ export const AGENT_SOURCE_KINDS: AgentSourceKind[] = [
   "agent_disk",
   "agent_temp",
   "agent_container",
-  "pve_guest",
   "snmp_sensor",
   "snmp_poe",
   "snmp_sfp",
@@ -229,7 +227,7 @@ export type WanUsageWidgetModel = WidgetBase & {
 };
 
 // --- panele od 0.27.0 (schemat: backend/netpulse/api/layout_schemas.py) ---------------------
-export type CollectionKind = "devices" | "ports" | "disks" | "wifi" | "containers" | "services" | "clients" | "checks" | "guests";
+export type CollectionKind = "devices" | "ports" | "disks" | "wifi" | "containers" | "services" | "clients" | "checks";
 /** Zestaw obiektów z bieżącymi wartościami (GET /api/collections/{kind}); porty, dyski i kontenery – jednego urządzenia. */
 export interface Collection {
   kind: CollectionKind;
@@ -315,8 +313,6 @@ export type PieMetric =
   | "containers_mem"
   | "containers_cpu"
   | "services_state"
-  | "guests_mem"
-  | "guests_state"
   | "devices_state"
   | "checks_state";
 /** Wykres kołowy (0.39.0): urządzenie (puste = cała sieć) i to, co na nim monitorować. */
@@ -433,8 +429,6 @@ export const METRICS: Record<string, { label: TextKey; unitClass: UnitClass }> =
   write_bps: { label: "metric.write_bps", unitClass: "rate" },
   container_cpu_percent: { label: "metric.container_cpu_percent", unitClass: "percent" },
   container_mem_bytes: { label: "metric.container_mem_bytes", unitClass: "size" },
-  guest_cpu_percent: { label: "metric.guest_cpu_percent", unitClass: "percent" },
-  guest_mem_bytes: { label: "metric.guest_mem_bytes", unitClass: "size" },
   // Sprawdzenia dostępności (ping, HTTP, TCP)
   latency_ms: { label: "metric.latency_ms", unitClass: "ms" },
   // Klient VPN (od 0.57.0): jego pobieranie i wysyłanie, połączony 1/0
@@ -455,7 +449,6 @@ export const METRICS: Record<string, { label: TextKey; unitClass: UnitClass }> =
   total_bytes: { label: "metric.total_bytes", unitClass: "size" },
   mem_bytes: { label: "metric.mem_bytes", unitClass: "size" },
   mem_percent: { label: "metric.mem_percent", unitClass: "percent" },
-  backup_age_h: { label: "metric.backup_age_h", unitClass: "hours" },
   signal_dbm: { label: "metric.signal_dbm", unitClass: "dbm" },
   rx_rate_kbps: { label: "metric.rx_rate_kbps", unitClass: "linkrate" },
   tx_rate_kbps: { label: "metric.tx_rate_kbps", unitClass: "linkrate" },
@@ -475,7 +468,6 @@ export const SOURCE_METRICS: Record<SourceKind, string[]> = {
   agent_disk: ["read_bps", "write_bps"],
   agent_temp: ["temp_c"],
   agent_container: ["container_cpu_percent", "container_mem_bytes"],
-  pve_guest: ["guest_cpu_percent", "guest_mem_bytes", "rx_bps", "tx_bps", "read_bps", "write_bps"],
   snmp_sensor: ["temp_c", "fan_rpm", "voltage_v", "current_a", "power_w", "channel_util_percent"],
   snmp_poe: ["poe_power_w", "poe_voltage_v"],
   snmp_sfp: ["sfp_rx_dbm", "sfp_tx_dbm", "sfp_temp_c", "sfp_voltage_v"],
@@ -528,8 +520,6 @@ export function defaultSeries(kind: SourceKind): SeriesConfig[] {
       return [{ key: "temp_c", color: 3 }];
     case "agent_container":
       return [{ key: "container_cpu_percent", color: 1 }];
-    case "pve_guest":
-      return [{ key: "guest_cpu_percent", color: 1 }];
     case "snmp_sensor":
       return [{ key: "temp_c", color: 3 }];
     case "snmp_poe":

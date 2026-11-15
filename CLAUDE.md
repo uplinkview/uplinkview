@@ -129,18 +129,9 @@ Od 0.15.0 community SNMP, klucze SNMPv3, klucz API kontrolera i adresy webhookó
 (tworzony sam) albo `NETPULSE_SECRET_KEY` w `.env`. Nowa kolumna z sekretem = `EncryptedText` + wpis w `SECRET_COLUMNS`.
 Opis: `docs/16-szyfrowanie-sekretow.md`.
 
-## Proxmox VE
-
-Od 0.17.0: Ustawienia → Proxmox (token API, rola PVEAuditor), strona Proxmox (VM/LXC, magazyny), węzły jako urządzenia
-`driver = "proxmox"` (karta, alerty, wykresy), alerty: maszyna zatrzymana, kopia vzdump z błędem, brak świeżej kopii.
-Kod: `backend/netpulse/proxmox.py`, `proxmox_collector.py`, `api/proxmox.py`; atrapa API do testów: `backend/tests/pve_fake.py`.
-Kolekcja `guests` do tabeli i pasków (0.31.0, `panels._guest_rows`): stan, CPU, RAM, ruch, czas pracy, wiek kopii w h.
-Opis: `docs/17-proxmox.md`. Sprawdzone 2026-10-27 na prawdziwym PVE 9.1.1/9.2.24 (jeden węzeł, VM i LXC, alert zatrzymanej maszyny, kopia vzdump) –
-parsery bez zmian; PVEAuditor nie widzi plików kopii, więc od 0.28.5 wiek kopii też z zadań vzdump i ich logów; klaster dalej tylko na atrapie.
-
 ## Moduły
 
-Od 0.18.0: Ustawienia → Moduły (Proxmox, UniFi, agenci, kopia zapasowa z panelu). Wyłączony moduł znika z panelu, kolektor
+Od 0.18.0: Ustawienia → Moduły (UniFi, OPNsense API, agenci, kopia zapasowa z panelu). Wyłączony moduł znika z panelu, kolektor
 go pomija, jego urządzenia i reguły alertów są pomijane; dane zostają. Nowa instalacja startuje z wyłączonymi integracjami.
 Backend: `netpulse/modules.py` (`require_module`, `hidden_drivers`), panel: pole `module` w rejestrze `frontend/src/modules.tsx`.
 Strony w rejestrze są ładowane na żądanie (od 0.36.1 – nowa strona przez `page()`, opis: `docs/06-projekt-panelu.md`).
@@ -415,9 +406,6 @@ Od 0.58.1 menu w grupach Monitoring / Zdarzenia / Integracje / System – pole `
   NAS, ARM), etapy 1–5. Etap 1 ✅ (0.77.0): `tests/test_robustness.py`, fixture `broken-agent.snmprec`; poprawione
   NUL i za długie teksty (wywracały zapis urządzenia), prędkość 2³²−1, zawinięcie Counter32 z dolnej połowy,
   limit czasu odczytu urządzenia (`NETPULSE_POLL_TIMEOUT`), polskie błędy pysnmp (`ERROR_HINTS`). Etapy 2–5 czekają na decyzję.
-- **Synology NAS** – propozycja w `docs/27-synology-propozycja.md` (4.11.2026, z przewodnika Synology SNMP MIB Guide –
-  PDF poza repo): driver `synology` (rozpoznanie sondą `modelName`, dyski, RAID, UPS, I/O, alerty), potem moduł DSM API
-  (Hyper Backup, pakiety, kontenery). Odłożone – brak prawdziwego Synology do zrzutu; nie wdrażać bez decyzji.
 - **Źródła producentów (MIB, OID, API)** – `docs/28-zrodla-producentow.md` (4.11.2026): oficjalne MIB-y i API
   UniFi, MikroTik (MIB per wersja), Omada (MIB EAP i switchy L2, Open API). Etap A ✅ (0.51.0): driver `omada` rozpoznaje
   bramy ER/DR/FR (też 4 cyfry), WAN `eth0.<VLAN>` i LAN `br-lan`, czyta CPU/RAM, PoE i SFP switchy z oficjalnego MIB
@@ -437,7 +425,5 @@ Od 0.58.1 menu w grupach Monitoring / Zdarzenia / Integracje / System – pole `
   2 DNS (Unbound), 3 IDS (Suricata), 4 VPN, 5 zapora, 6 zdrowie systemu, 7 Insight/NetFlow, 8 akcje (zapis, osobna decyzja).
   Każdy punkt API najpierw sprawdzić sondą na prawdziwym OPNsense.
 - **API RouterOS i API kontrolera Omada** – robić dopiero z prawdziwym sprzętem (razem z weryfikacją MikroTika).
-- **Proxmox – reszta na prawdziwym sprzęcie** – PVE 9.2.24 (192.168.1.86, VM 100 + LXC 101, kopia LXC 101) działa;
-  po 0.28.5 sprawdzić „ostatnia kopia” LXC 101 w panelu i alert „brak świeżej kopii” po 36 h bez nowej kopii.
 - **Wersja 0.9.0 na serwerze** – użytkownik jeszcze nie potwierdził `uplinkview update` i działania: karta serwera
   UplinkView, serwery Linux przez SNMP, reguły alertów dla dysku i błędów portów, powiadomienia webhookiem.

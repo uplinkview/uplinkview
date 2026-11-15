@@ -117,26 +117,6 @@ describe("panele na pulpicie", () => {
     expect(within(table).getByRole("link", { name: "UCG Ultra" })).toHaveAttribute("href", `/devices/${DEVICES.find((d) => d.label === "UCG Ultra")!.key}`);
   });
 
-  it("tabela maszyn Proxmox: wiek kopii w godzinach i dniach, stan jako plakietka", async () => {
-    const guests: CollectionRow[] = [
-      { key: "1:100", label: "ubuntu (100)", device_id: 5, values: { up: 1, cpu_percent: 3, mem_bytes: 1.7e9, mem_percent: 82, rx_bps: 2e3, tx_bps: 0, uptime_s: 3600, backup_age_h: 5.5 } },
-      { key: "1:101", label: "CT101 (101)", device_id: 5, values: { up: 0, cpu_percent: null, mem_bytes: null, mem_percent: null, rx_bps: null, tx_bps: null, uptime_s: null, backup_age_h: 73 } },
-      { key: "1:102", label: "nowa (102)", device_id: 5, values: { up: 1, cpu_percent: 1, mem_bytes: 5e8, mem_percent: 20, rx_bps: 0, tx_bps: 0, uptime_s: 60, backup_age_h: null } },
-    ];
-    const table = newWidget("table", "g1");
-    if (table.type !== "table") throw new Error("table");
-    table.config = { ...table.config, title: "Maszyny", collection: { kind: "guests" }, columns: ["up", "backup_age_h"], sort_by: "backup_age_h", sort_desc: true };
-    mockApi({ layout: layoutWith(table), collections: { guests } });
-    renderApp();
-    const t = await screen.findByRole("table", { name: "Maszyny" });
-    const rows = within(t).getAllByRole("row").slice(1).map((r) => Array.from((r as HTMLTableRowElement).cells).map((c) => c.textContent));
-    expect(rows).toEqual([
-      ["CT101 (101)", "nie działa", "3 dni"],
-      ["ubuntu (100)", "działa", "5,5 h"],
-      ["nowa (102)", "działa", "–"],
-    ]);
-  });
-
   it("oś stanów: pasy działania z opisem okresów", async () => {
     mockApi({
       layout: layoutWith(newWidget("state_timeline", "o1")),

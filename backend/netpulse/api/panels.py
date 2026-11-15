@@ -25,14 +25,10 @@ from ..db.models import (
     DeviceMetric,
     Interface,
     InterfaceMetric,
-    Metric,
     NetworkClient,
-    ProxmoxGuest,
-    ProxmoxNode,
     WifiMetric,
     WifiNetwork,
 )
-from ..freshness import status_sql
 from ..modules import hidden_drivers, read_modules
 from .metrics import MinutesQuery, _bucket_seconds
 from .security import require_user
@@ -40,7 +36,7 @@ from .servers import device_server
 
 router = APIRouter(prefix="/api", tags=["panele"], dependencies=[Depends(require_user)])
 
-CollectionKind = Literal["devices", "ports", "disks", "wifi", "containers", "services", "clients", "checks", "guests"]
+CollectionKind = Literal["devices", "ports", "disks", "wifi", "containers", "services", "clients", "checks"]
 MAX_ROWS = 200
 MAX_STATE_ITEMS = 20
 CURRENT = timedelta(minutes=5)
@@ -180,10 +176,6 @@ async def collection(kind: CollectionKind, device_id: int | None = Query(None, g
                 )
                 for w in networks
             ]
-        elif kind == "guests":
-            if not mods.get("proxmox", True):
-                raise HTTPException(404, "Moduł Proxmox jest wyłączony")
-            rows = await _guest_rows(session, None if device_id is None else (await _device(session, device_id)).id)
         elif kind == "checks":
             from .checks import list_checks
 
@@ -268,71 +260,6 @@ async def collection(kind: CollectionKind, device_id: int | None = Query(None, g
             for d in sorted(status.disks if status else [], key=lambda d: d.mount)
         ]
     return CollectionOut(kind=kind, rows=rows[:MAX_ROWS])
-
-
-async def _guest_rows(session, node_device: int | None) -> list[Row]:
-    """Maszyny VM i kontenery LXC (bez szablonów): stan, CPU, pamięć, bieżący ruch sieciowy i wiek ostatniej kopii.
-    Bez tagów i nazw węzłów w etykiecie – te same dane może dostać pulpit publiczny."""
-    now = datetime.now(UTC)
-    nodes = {(n.server_id, n.node): n.device_id for n in (await session.scalars(select(ProxmoxNode))).all()}
-    guests = [
-        g
-        for g in (await session.scalars(select(ProxmoxGuest).where(ProxmoxGuest.template.is_(False)).order_by(ProxmoxGuest.name, ProxmoxGuest.vmid))).all()
-        if node_device is None or nodes.get((g.server_id, g.node)) == node_device
-    ]
-    # Ruch z ostatniego odczytu kolektora (tabela `metrics`, klucz „nazwa (vmid)” na urządzeniu-węźle)
-    rates: dict[tuple[int | None, str, str], float] = {}
-    devices = {nodes.get((g.server_id, g.node)) for g in guests} - {None}
-    if devices:
-        for dev, name, key, value in (
-            await session.execute(
-                select(Metric.device_id, Metric.name, Metric.key, Metric.value)
-                .ext(distinct_on(Metric.device_id, Metric.name, Metric.key))
-                .where(
-                    Metric.device_id.in_(devices),
-                    Metric.name.in_(("guest_net_rx_bps", "guest_net_tx_bps")),
-                    Metric.time >= now - CURRENT,
-                )
-                .order_by(Metric.device_id, Metric.name, Metric.key, Metric.time.desc())
-            )
-        ).all():
-            rates[(dev, name, key)] = value
-    # Węzeł bez odpowiedzi: ostatni odczyt maszyn jest nieaktualny – stan i bieżące wartości jako brak danych
-    down = set((await session.scalars(select(Device.id).where(Device.id.in_(devices), status_sql(Device) != "up"))).all()) if devices else set()
-    rows = []
-    for g in guests:
-        dev, key = nodes.get((g.server_id, g.node)), f"{g.name} ({g.vmid})"
-        if dev in down:
-            rows.append(
-                Row(
-                    key=f"{g.server_id}:{g.vmid}",
-                    label=key,
-                    device_id=dev,
-                    values={
-                        "up": None, "cpu_percent": None, "mem_bytes": None, "mem_percent": None, "rx_bps": None, "tx_bps": None, "uptime_s": None,
-                        "backup_age_h": round((now - g.last_backup_at).total_seconds() / 3600, 1) if g.last_backup_at else None,
-                    },
-                )
-            )  # fmt: skip
-            continue
-        rows.append(
-            Row(
-                key=f"{g.server_id}:{g.vmid}",
-                label=key,
-                device_id=dev,
-                values={
-                    "up": 1.0 if g.status == "running" else 0.0 if g.status == "stopped" else None,
-                    "cpu_percent": _num(g.cpu_percent),
-                    "mem_bytes": _num(g.mem_used),
-                    "mem_percent": round(100.0 * g.mem_used / g.mem_total, 1) if g.mem_used is not None and g.mem_total else None,
-                    "rx_bps": _num(rates.get((dev, "guest_net_rx_bps", key))),
-                    "tx_bps": _num(rates.get((dev, "guest_net_tx_bps", key))),
-                    "uptime_s": _num(g.uptime_s),
-                    "backup_age_h": round((now - g.last_backup_at).total_seconds() / 3600, 1) if g.last_backup_at else None,
-                },
-            )
-        )
-    return rows
 
 
 # --- stany w czasie -------------------------------------------------------------------------

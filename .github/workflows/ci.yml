@@ -280,7 +280,7 @@ jobs:
           # świeża instalacja: integracje są wyłączone, dopóki nie włączy się ich w Ustawienia → Moduły
           MODS=$(api $API/api/modules)
           echo "$MODS" | tee agent.log
-          test "$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(d['agents'], d['proxmox'], d['backups'])" "$MODS")" = "False False True"
+          test "$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(d['agents'], d['unifi'], d['backups'])" "$MODS")" = "False False True"
           test "$(curl -s -o /dev/null -w '%{http_code}' -b cookies.txt -H 'Content-Type: application/json' -d '{"name":"x"}' $API/api/agents)" = 409
           api -X PUT -d '{"agents":true}' $API/api/modules
           OUT=$(api -X POST -d '{"name":"Runner CI"}' $API/api/agents)

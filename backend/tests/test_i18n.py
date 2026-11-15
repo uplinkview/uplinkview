@@ -130,10 +130,9 @@ def test_translate_titles_errors_and_details():
         "NXDOMAIN: nazwa nie istnieje": "NXDOMAIN: name does not exist",
         "Value error, Podaj nazwę okna": "Value error, Enter a window name",
         "UCG nie odpowiada\nZa nim nie odpowiada też: AP, Switch": "UCG is not responding\nAlso not responding behind it: AP, Switch",
-        "Brak połączenia z Proxmox: ConnectError: refused": "No connection to Proxmox: ConnectError: refused",
+        "Brak połączenia z OPNsense: ConnectError: refused": "No connection to OPNsense: ConnectError: refused",
         "Mój pulpit": "My dashboard",
-        # przedrostek źródła przed błędem (0.75.1: tak zapisują błąd kolektory Proxmox i UniFi)
-        "Proxmox: Brak połączenia z Proxmox: ConnectError: refused": "Proxmox: No connection to Proxmox: ConnectError: refused",
+        # przedrostek źródła przed błędem (0.75.1: tak zapisuje błąd kolektor UniFi)
         "Kontroler UniFi: Kontroler odpowiedział kodem 401": "UniFi controller: The controller responded with code 401",
         # spoza katalogu – bez zmian
         "Garaż": "Garaż",

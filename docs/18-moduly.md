@@ -4,7 +4,7 @@
 
 | Moduł | Co obejmuje |
 |-------|-------------|
-| Proxmox VE | strona Proxmox, Ustawienia → Proxmox, węzły na pulpicie, źródło wykresu „maszyna VM/LXC”, reguły „maszyna zatrzymana”, „kopia z błędem”, „brak świeżej kopii” |
+| OPNsense API | Ustawienia → OPNsense, karta OPNsense na stronie urządzenia, źródło wykresu „Urządzenie w sieci (OPNsense)”, reguły „brama nie działa”, „usługa nie działa”, „utrata pakietów na łączu WAN” |
 | UniFi | strony Klienci i Topologia, Ustawienia → Kontrolery UniFi, PoE na kartach switchy |
 | Agenci serwerów | Ustawienia → Agenci serwerów, serwery z agentem na pulpicie, źródła wykresu „Serwer z agentem: …”, reguły „kontener”, „usługa”, „SMART”, „temperatura” |
 | Kopia zapasowa z panelu | Ustawienia → Kopia zapasowa (kopie przed aktualizacją robione są zawsze) |
@@ -14,10 +14,10 @@
 - pozycje modułu znikają z menu, z edytora wykresów i z formularza reguł alertów (wejście na adres modułu
   przekierowuje na pulpit);
 - pętla modułu w kolektorze nie łączy się z niczym i niczego nie zapisuje;
-- urządzenia modułu (węzły Proxmox, serwery z agentem) nie pojawiają się na liście urządzeń, na pulpicie
+- urządzenia modułu (serwery z agentem, urządzenia UniFi bez SNMP) nie pojawiają się na liście urządzeń, na pulpicie
   ani w alertach. Alerty reguł modułu się kończą;
 - agent wysyłający raporty przy wyłączonym module dostaje odpowiedź „nie zapisano” i działa dalej po cichu;
-- dodanie serwera Proxmox, kontrolera UniFi czy agenta zwraca komunikat „Moduł … jest wyłączony”.
+- dodanie kontrolera UniFi, klucza OPNsense czy agenta zwraca komunikat „Moduł … jest wyłączony”.
 
 **Nic nie jest kasowane.** Konfiguracja, urządzenia i historia zostają w bazie. Po ponownym włączeniu wszystko
 wraca, a dane zbierają się od nowa.
@@ -32,7 +32,7 @@ odpytywania (`NETPULSE_POLL_INTERVAL`) i czas przechowywania metryk (`NETPULSE_R
 
 Stan jest w `app_settings` (klucz `modules`). Kolektor zapisuje go przy pierwszym starcie wersji 0.18:
 
-- **nowa instalacja**: Proxmox, UniFi i agenci wyłączeni, kopia zapasowa włączona;
+- **nowa instalacja**: UniFi, OPNsense API i agenci wyłączeni, kopia zapasowa włączona;
 - **aktualizacja**: włączone jest to, co ma już konfigurację (np. dodany kontroler UniFi), więc nic nie znika.
 
 Zmieniać moduły może tylko administrator. Ustawienie dotyczy całej instalacji.

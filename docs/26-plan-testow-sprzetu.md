@@ -5,7 +5,7 @@ Status: **propozycja** (4.11.2026). Etap 1 ✅ zrobiony w 0.77.0 (13.11.2026) �
 ## Cel
 
 UplinkView ma działać u ludzi z różnym sprzętem: inni producenci, różne wersje firmware, NAS-y, serwery. Dziś
-sprawdzony jest głównie sprzęt UniFi użytkownika, MikroTik CHR, Linux i Proxmox. Plan ma odpowiedzieć na
+sprawdzony jest głównie sprzęt UniFi użytkownika, MikroTik CHR, OPNsense i Linux. Plan ma odpowiedzieć na
 dwa pytania:
 
 1. Czy aplikacja **działa** (nie wysypuje się, kolektor nie staje) na nieznanym sprzęcie?
@@ -32,7 +32,7 @@ dwa pytania:
 | R5 | Duże lub wolne urządzenie (dużo interfejsów, słaby CPU) | przekroczenie czasu, urządzenie „offline” | snmpsim z opóźnieniem i fixture z kilkuset interfejsami |
 | R6 | Dziwne wartości: `ifSpeed` 0 albo 4294967295, puste `ifName`, liczniki zerowane bez restartu, teksty spoza UTF-8 | błędne prędkości, nazwy `ifN`, ujemne lub ogromne skoki ruchu | fixture „złośliwy” z takimi wartościami |
 | R7 | Urządzenie bez UCD-SNMP-MIB (większość switchy zarządzalnych) | brak CPU/RAM | sprawdzić, czy panel pokazuje „brak danych”, a nie 0 % |
-| R8 | NAS: brak RAID, SMART, temperatur (MIB-y producentów) | NAS wygląda jak zwykły Linux | zrzuty Synology / QNAP / TrueNAS |
+| R8 | NAS: brak RAID, SMART, temperatur (MIB-y producentów) | NAS wygląda jak zwykły Linux | zrzuty QNAP / TrueNAS |
 | R9 | SNMP v1, tylko v3, inne community, zły kontekst v3 | brak danych, mylące komunikaty | snmpsim w trybach v1 i v3 z różnymi ustawieniami |
 | R10 | Serwer inny niż Ubuntu x86-64 (Debian, ARM / Raspberry Pi) | instalacja się nie uda | maszyna wirtualna Debian, Raspberry Pi lub runner ARM w CI |
 
@@ -41,12 +41,11 @@ dwa pytania:
 **Maszyny wirtualne w VirtualBoxie** (jak MikroTik CHR):
 
 - routery: OpenWrt x86, pfSense, OPNsense, VyOS – różne `sysDescr`, VLAN-y, tunele, często bez UCD,
-- NAS: TrueNAS SCALE i OpenMediaVault (darmowe, SNMP w panelu). Synology DSM ma oficjalnie tylko Virtual DSM
-  na Synology – w VirtualBoxie nie testujemy (licencja),
+- NAS: TrueNAS SCALE i OpenMediaVault (darmowe, SNMP w panelu),
 - serwery: Debian 12/13, Rocky Linux – instalacja `install.sh` i SNMP przez `snmpd`.
 
 **Zrzuty od innych osób** – zanonimizowane `.snmprec` (`walk2snmprec.py`) od znajomych, z forów, z publicznych
-zgłoszeń. To jedyna droga do Cisco, HP/Aruba, Netgear, Zyxel, Synology, QNAP. Zanim powstanie raport urządzenia
+zgłoszeń. To jedyna droga do Cisco, HP/Aruba, Netgear, Zyxel, QNAP. Zanim powstanie raport urządzenia
 z `docs/24-wykrywanie-propozycja.md` (część B), wystarczy instrukcja w `docs/` z poleceniem `snmpwalk`.
 
 **Fixtures syntetyczne** – pisane ręcznie na podstawie MIB-ów i dokumentacji producenta, tylko do testów przypadków
@@ -113,7 +112,7 @@ Wynik: nowe fixtures z prawdziwych systemów + decyzje, czy potrzebne nowe drive
 - **R4** ✅ (0.65.7, po aktualizacji UCG Ultra do UniFi OS 6.0.17): dopasowanie portów po `ifName`, gdy `ifIndex`
   się zmienił (`netpulse/ifindex.py`, test `test_ifindex.py` i `test_collector_db.py`),
 - **R5**: `GETBULK` z większym `max-repetitions`, timeout i liczba ponowień ustawiane per urządzenie,
-- **R8**: drivery NAS (Synology, QNAP, TrueNAS) albo profile z `docs/25-wlasne-oid-propozycja.md` (warstwa 3),
+- **R8**: drivery NAS (QNAP, TrueNAS) albo profile z `docs/25-wlasne-oid-propozycja.md` (warstwa 3),
 - **R10**: oficjalnie wspierane systemy w `docs/04-instalacja-i-aktualizacja.md`, `install.sh` z jasnym
   komunikatem na niewspieranym systemie.
 

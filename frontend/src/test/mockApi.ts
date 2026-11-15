@@ -19,7 +19,6 @@ import type { Agent } from "../lib/agents";
 import type { CollectionRow, StatesResponse } from "../lib/panels";
 import type { BackupsResponse } from "../lib/backups";
 import type { Modules } from "../lib/modules";
-import type { ProxmoxGuest, ProxmoxServer, ProxmoxStorage } from "../lib/proxmox";
 import type { OpnsenseApiKey, OpnsenseDeviceData } from "../lib/opnsense";
 import type { Alert, AlertRule } from "../lib/alerts";
 import type { DashboardLayout } from "../lib/layout";
@@ -72,7 +71,7 @@ export const REPORT = {
 export const VERIFICATION = [
   { id: "snmp_ifmib", label: "SNMP: porty, ruch, błędy", level: "verified", note: "UniFi UCG Ultra, USW Lite 8 PoE, U6+", drivers: ["generic", "unifi"] },
   { id: "omada_snmp", label: "TP-Link Omada przez SNMP", level: "test", note: "zrzuty syntetyczne – czeka na prawdziwy sprzęt", drivers: ["omada"] },
-  { id: "proxmox", label: "Proxmox VE", level: "partial", note: "PVE 9 z jednym węzłem", drivers: ["proxmox"] },
+  { id: "mikrotik_snmp", label: "MikroTik przez SNMP", level: "partial", note: "RouterOS 7 w maszynie wirtualnej", drivers: ["mikrotik"] },
 ];
 
 export const TLS: TlsStatus = {
@@ -267,23 +266,6 @@ export const AGENT: Agent = {
   hostname: "nas",
 };
 
-export const PVE_SERVER: ProxmoxServer = {
-  id: 1,
-  name: "Homelab",
-  host: "192.168.1.10",
-  port: 8006,
-  token_id: "netpulse@pve!monitor",
-  verify_tls: false,
-  enabled: true,
-  status: "up",
-  version: "8.2.4",
-  cluster_name: "homelab",
-  last_polled_at: new Date().toISOString(),
-  last_ok_at: new Date().toISOString(),
-  last_error: null,
-  created_at: "2026-10-25T10:00:00Z",
-};
-
 export const AVAILABILITY: Availability = { days: 30, percent: 99.5, samples: 1000, down_s: 150, daily: [] };
 
 export const PORT: InterfaceDetail = {
@@ -349,9 +331,6 @@ interface MockState {
   agents: Agent[];
   backups: BackupsResponse;
   modules: Modules;
-  pveServers: ProxmoxServer[];
-  pveGuests: ProxmoxGuest[];
-  pveStorages: ProxmoxStorage[];
   /** OPNsense API (od 0.81.0): klucze i dane strony urządzenia (null = urządzenie bez klucza) */
   opnKeys: OpnsenseApiKey[];
   opnDevice: OpnsenseDeviceData | null;
@@ -424,10 +403,7 @@ export function mockApi(initial: Partial<MockState> = {}) {
     audit: [],
     agents: [],
     backups: { backups: [], restore: { state: "idle" } },
-    modules: { proxmox: true, unifi: true, opnsense: true, agents: true, backups: true },
-    pveServers: [],
-    pveGuests: [],
-    pveStorages: [],
+    modules: { unifi: true, opnsense: true, agents: true, backups: true },
     opnKeys: [],
     opnDevice: null,
     checks: [],
@@ -662,31 +638,6 @@ export function mockApi(initial: Partial<MockState> = {}) {
         Object.assign(c, body as CheckPayload);
         return json(200, c);
       }
-      if (key === "GET /api/proxmox/servers") return json(200, state.pveServers);
-      if (key === "GET /api/proxmox/guests") return json(200, state.pveGuests);
-      if (key === "GET /api/proxmox/storages") return json(200, state.pveStorages);
-      if (key === "POST /api/proxmox/probe" || /^POST \/api\/proxmox\/servers\/\d+\/probe$/.test(key)) {
-        return json(200, { version: "8.2.4", cluster: "homelab", nodes: 2, guests: 5, storages: 4 });
-      }
-      if (key === "POST /api/proxmox/servers") {
-        const b = body as Partial<ProxmoxServer> & { token_secret: string };
-        const { token_secret: _secret, ...fields } = b;
-        const created: ProxmoxServer = { ...PVE_SERVER, ...fields, id: state.pveServers.length + 1, status: "unknown", version: null, cluster_name: null } as ProxmoxServer;
-        state.pveServers.push(created);
-        return json(201, created);
-      }
-      const pve = /^(PATCH|DELETE) \/api\/proxmox\/servers\/(\d+)$/.exec(key);
-      if (pve) {
-        const s = state.pveServers.find((x) => x.id === Number(pve[2]));
-        if (!s) return json(404, { detail: "Nie ma takiego serwera Proxmox" });
-        if (pve[1] === "DELETE") {
-          state.pveServers = state.pveServers.filter((x) => x !== s);
-          return json(204);
-        }
-        const { token_secret: _secret, ...fields } = body as Record<string, unknown>;
-        Object.assign(s, fields);
-        return json(200, s);
-      }
       if (key === "GET /api/opnsense/apis") return json(200, state.opnKeys);
       if (/^GET \/api\/opnsense\/devices\/\d+$/.test(key)) return json(200, state.opnDevice ?? { configured: false });
       if (key === "POST /api/opnsense/probe" || /^POST \/api\/opnsense\/apis\/\d+\/probe$/.test(key)) {
@@ -883,7 +834,6 @@ export function mockApi(initial: Partial<MockState> = {}) {
           agent_disk: ["sda"],
           agent_temp: ["coretemp/Core 0"],
           agent_container: ["nextcloud", "db"],
-          pve_guest: ["homeassistant (100)", "nextcloud (105)"],
           snmp_sensor: ["cpu-temperature"],
           snmp_poe: ["ether5"],
           snmp_sfp: ["sfp1"],

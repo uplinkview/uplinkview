@@ -26,7 +26,7 @@ const devices = [
   { id: 3, name: "U6+", host: "192.168.1.3", kind: "ap", vendor: "Ubiquiti", model: "U6+", status: "up", polled: 12 },
   { id: 5, name: "hEX S", host: "192.168.1.5", kind: "gateway", vendor: "MikroTik", model: "RB760iGS", status: "up", polled: 12, detected_driver: "mikrotik", firmware: "7.25.1" },
   { id: 8, name: "OPNsense", host: "192.168.1.135", kind: "gateway", vendor: "OPNsense", model: "OPNsense 26.7", status: "up", polled: 12, detected_driver: "opnsense", firmware: "26.7.9" },
-  { id: 7, name: "NAS", host: "192.168.1.20", kind: "other", vendor: "Synology", model: "DiskStation", status: "up", polled: 12, detected_driver: "generic", firmware: null },
+  { id: 7, name: "NAS", host: "192.168.1.20", kind: "other", vendor: "QNAP", model: "TS-464", status: "up", polled: 12, detected_driver: "generic", firmware: null },
   { id: 4, name: "Garaż (testowy)", host: "192.168.1.9", kind: "other", vendor: null, model: null, status: "down", polled: 95, error: "192.168.1.9: No SNMP response received before timeout" },
 ].map((d) => ({
   port: 161, enabled: true, driver: "auto", detected_driver: "unifi", snmp_version: "2c", firmware: null, sys_name: d.name,
@@ -79,11 +79,11 @@ const EN = [
   ["Garaż (test) nie odpowiada", "Garage (test) is not responding"],
   ["Dysk /mnt/data zajęty w 91 %", "Disk /mnt/data 91% full"],
   ["Ping 8.8.8.8 – utrata 20 %", "Ping 8.8.8.8 – 20% packet loss"],
-  ["Kopia vzdump LXC 101 gotowa", "vzdump backup of LXC 101 finished"],
+  ["Restart urządzenia hEX S", "hEX S device restart"],
   ["Port 7 przeszedł w stan down", "Port 7 went down"],
   ["Urządzenie nie odpowiada", "Device is not responding"],
   ["Internet – Google DNS", "Internet – Google DNS"],
-  ["Proxmox – panel", "Proxmox – web UI"],
+  ["Home Assistant – panel", "Home Assistant – web UI"],
   ["Światłowód", "Fiber"],
   ["Aktualizacja zakończona", "Update finished"],
 ];
@@ -211,7 +211,7 @@ createServer(async (req, res) => {
         f("192.168.1.1", "UCG-Ultra", "Ubiquiti", "UCG-Ultra", "6.0.17", "gateway", "unifi"),
         f("192.168.1.2", "USW-Switch", "Ubiquiti", "UniFi Switch", null, "switch", "unifi"),
         f("192.168.1.3", "APU6-Plus", "Ubiquiti", "U6+", "6.7.54.15663", "ap", "unifi"),
-        f("192.168.1.20", "nas", "Synology", "DiskStation", null, "other", "generic"),
+        f("192.168.1.20", "nas", "QNAP", "TS-464", null, "other", "generic"),
         f("192.168.1.40", "drukarka", "HP", "Printer", null, "other", "generic"),
         f("192.168.1.62", "MikroTik", "MikroTik", "CHR", "7.18.2", "gateway", "mikrotik"),
       ],
@@ -365,7 +365,7 @@ createServer(async (req, res) => {
     });
   }
   if (route === "GET /api/clients") return send(res, 200, []);
-  if (route === "GET /api/modules") return send(res, 200, { proxmox: false, unifi: true, opnsense: true, agents: false, backups: false });
+  if (route === "GET /api/modules") return send(res, 200, { unifi: true, opnsense: true, agents: false, backups: false });
   // OPNsense API (od 0.81.0) – dane jak z OPNsense 26.7.9 w VirtualBox
   if (route === "GET /api/opnsense/apis") {
     return send(res, 200, [{ id: 1, device_id: 8, device_name: "OPNsense", host: "192.168.1.135", port: 443, key_hint: "…a1b2", verify_tls: false, enabled: true, status: "up",
@@ -392,7 +392,7 @@ createServer(async (req, res) => {
       hosts: [
         { mac: "02:00:00:00:00:04", ip: "192.168.1.1", hostname: null, interface: "WAN", manufacturer: null, source: "arp", expires: null },
         { mac: "02:00:00:00:00:02", ip: "192.168.10.126", hostname: "laptop", interface: "LAN", manufacturer: "PCS Systemtechnik GmbH", source: "dhcp", expires: 1794699248, down_bps: 23_400_000, up_bps: 1_250_000 },
-        { mac: "02:00:00:00:00:07", ip: "192.168.10.140", hostname: "nas", interface: "LAN", manufacturer: "Synology Incorporated", source: "dhcp", expires: 1794699248, down_bps: 0, up_bps: 0 },
+        { mac: "02:00:00:00:00:07", ip: "192.168.10.140", hostname: "nas", interface: "LAN", manufacturer: "QNAP Systems, Inc.", source: "dhcp", expires: 1794699248, down_bps: 0, up_bps: 0 },
       ],
     });
   }
@@ -441,7 +441,7 @@ createServer(async (req, res) => {
   }
   // Źródła z tabeli `metrics` na bramie: klienci VPN (0.57.0) – klient połączony w ostatnich 14 minutach
   if (req.method === "GET" && /^\/api\/devices\/\d+\/agent-keys$/.test(url.pathname)) {
-    return send(res, 200, { agent_net: [], agent_disk: [], agent_temp: [], agent_container: [], pve_guest: [], snmp_sensor: [], snmp_poe: [], snmp_sfp: [], wan_latency: [], wan_ping: [], speedtest: ["eth4"], vpn: ["iPhone", "Laptop"] });
+    return send(res, 200, { agent_net: [], agent_disk: [], agent_temp: [], agent_container: [], snmp_sensor: [], snmp_poe: [], snmp_sfp: [], wan_latency: [], wan_ping: [], speedtest: ["eth4"], vpn: ["iPhone", "Laptop"] });
   }
   if (req.method === "GET" && /^\/api\/devices\/\d+\/agent-metrics$/.test(url.pathname) && url.searchParams.get("source") === "vpn") {
     const minutes = Number(url.searchParams.get("minutes") ?? 60);
@@ -490,7 +490,7 @@ createServer(async (req, res) => {
       { ...base, id: 1, name: "Internet – Google DNS", kind: "ping", target: "8.8.8.8", interval_s: 30, status: "up", last_ok_at: ago(5), last_error: null, last_latency_ms: 15.2, availability_24h: 99.8, loss_percent: 0, jitter_ms: 0.6, status_code: null, cert_days: null },
       { ...base, id: 2, name: "Brama UCG", kind: "ping", target: "192.168.1.1", interval_s: 30, status: "up", last_ok_at: ago(5), last_error: null, last_latency_ms: 0.9, availability_24h: 100, loss_percent: 0, jitter_ms: 0.1, status_code: null, cert_days: null },
       { ...base, id: 3, name: "Pi-hole", kind: "http", target: "https://pihole.lan/admin", interval_s: 60, timeout_s: 10, verify_tls: false, status: "down", last_ok_at: ago(900), last_error: "Kod HTTP 502 (oczekiwany 200-399)", last_latency_ms: 41, availability_24h: 96.4, loss_percent: null, jitter_ms: null, status_code: 502, cert_days: 61 },
-      { ...base, id: 4, name: "Proxmox – panel", kind: "tcp", target: "192.168.1.86", port: 8006, interval_s: 60, status: "up", last_ok_at: ago(20), last_error: null, last_latency_ms: 2.4, availability_24h: 100, loss_percent: null, jitter_ms: null, status_code: null, cert_days: null },
+      { ...base, id: 4, name: "Home Assistant – panel", kind: "tcp", target: "192.168.1.86", port: 8123, interval_s: 60, status: "up", last_ok_at: ago(20), last_error: null, last_latency_ms: 2.4, availability_24h: 100, loss_percent: null, jitter_ms: null, status_code: null, cert_days: null },
       { ...base, id: 5, name: "DNS – NAS", kind: "dns", target: "nas.lan", dns_type: "A", dns_server: "192.168.1.1", keyword: "192.168.1.34", interval_s: 60, status: "up", last_ok_at: ago(20), last_error: null, last_latency_ms: 3.1, last_answer: "192.168.1.34", availability_24h: 100, loss_percent: null, jitter_ms: null, status_code: null, cert_days: null },
     ]);
   }
@@ -527,7 +527,6 @@ createServer(async (req, res) => {
     return send(res, 200, [
       { id: "snmp_ifmib", label: "SNMP: porty, ruch, błędy (IF-MIB), CPU i RAM (UCD-SNMP-MIB)", level: "verified", note: "UniFi UCG Ultra, USW Lite 8 PoE, U6+ i MikroTik RouterOS 7.18 (CHR)", drivers: ["generic", "unifi", "mikrotik", "omada", "linux"] },
       { id: "mikrotik_hw", label: "MikroTik: czujniki, PoE, SFP, kilka rdzeni", level: "test", note: "zrzut syntetyczny według oficjalnego MIKROTIK-MIB 7.25.1", drivers: ["mikrotik"] },
-      { id: "proxmox", label: "Proxmox VE: węzły, maszyny VM i LXC, magazyny, kopie vzdump", level: "partial", note: "PVE 9.1 / 9.2 z jednym węzłem", drivers: ["proxmox"] },
     ]);
   }
   if (route === "POST /api/checks/test") return send(res, 200, { up: true, latency_ms: 14.8, loss_percent: 0, jitter_ms: 0.5, status_code: null, cert_days: null, error: null });
@@ -557,7 +556,7 @@ createServer(async (req, res) => {
       a(4, "firing", "warning", "Dysk /mnt/data zajęty w 91 %", 720, null),
       a(3, "resolved", "critical", "Garaż (test) nie odpowiada", 11000, 10800),
       a(2, "resolved", "warning", "Ping 8.8.8.8 – utrata 20 %", 30000, 29800),
-      a(1, "resolved", "info", "Kopia vzdump LXC 101 gotowa", 50000, 49990),
+      a(1, "resolved", "info", "Restart urządzenia hEX S", 50000, 49990),
     ];
     const state = url.searchParams.get("state") ?? "firing";
     return send(res, 200, all.filter((x) => state === "all" || x.state === state).slice(0, Number(url.searchParams.get("limit") ?? 100)));

@@ -69,7 +69,6 @@ więc zapisane pulpity działają bez zmian, a po pierwszym zapisie są już w n
 | `disks` | wymagane (serwer) | `used_percent`, `used_bytes`, `free_bytes`, `total_bytes` |
 | `wifi` | opcjonalne | `clients`, `rx_bps`, `tx_bps` |
 | `containers` | wymagane (agent) | `up`, `cpu_percent`, `mem_bytes` |
-| `guests` | opcjonalne (węzeł Proxmox) | `up`, `cpu_percent`, `mem_bytes`, `mem_percent`, `rx_bps`, `tx_bps`, `uptime_s`, `backup_age_h` (od 0.31.0; bez szablonów, tagów i adresów; nowe VM/LXC pojawiają się same) |
 | `services` | wymagane (agent) | `up`, `mem_bytes`, `uptime_s` (od 0.29.0; `up` puste, gdy usługa zmienia stan) |
 | `clients` | – | `signal_dbm`, `rx_rate_kbps`, `tx_rate_kbps`, `connected_s` (bez MAC-ów: kluczem jest kolejność) |
 
@@ -122,7 +121,7 @@ dokładnie tego zestawu pozycji, liczba – ścieżka jej źródła (`public.py`
   na pozostałych. Synchronizacja po czasie (`convertToPixel`), nie po pikselach jak `echarts.connect` – wykresy mają
   różne szerokości i osie.
 - **Linki**: nazwa wiersza tabeli i paska prowadzi do strony szczegółów (`rowLink` w `lib/panels.ts`: urządzenie,
-  port, serwer dla dysków/kontenerów/usług, listy klientów, sprawdzeń i Proxmoxa – w wierszu nie ma MAC-a ani węzła),
+  port, serwer dla dysków/kontenerów/usług, listy klientów i sprawdzeń – w wierszu nie ma MAC-a),
   nazwa węzła mapy sieci – do strony urządzenia. Na pulpicie publicznym bez linków (`useDetailLinks`).
 - **Atrapa API** (`frontend/dev/mock-api.mjs`) uwzględnia `offset` w danych ruchu i metryk, jak prawdziwe API.
 
@@ -204,7 +203,6 @@ w zapisanych pulpitach (schemat je przyjmuje), ale nic nie znaczy.
     (AP dodatkowo klienci według sieci WiFi, serwer SNMP – zajętość dysku i miejsce według dysków);
     „ruch według portów” (wszystkie porty na jednym kole) z 0.39.0 zostaje tylko w zapisanych pulpitach,
   - agent: CPU, RAM, zajętość dysku (wybór dysku), miejsce według dysków, kontenery według RAM / CPU, usługi działa / nie,
-  - Proxmox: CPU, RAM, maszyny według RAM-u, maszyny działające / zatrzymane,
   - cała sieć: urządzenia działa / nie, sprawdzenia dostępności działa / nie, klienci według sieci WiFi.
 - Trzy tryby: **zajętość** (zajęte / wolne, kolor od 70% i 90%), **udział** (kawałek na wiersz od największego,
   najwyżej `limit` kawałków, reszta jako „Pozostałe”), **stan** (działa / nie działa / brak danych, w środku „3 z 4”).

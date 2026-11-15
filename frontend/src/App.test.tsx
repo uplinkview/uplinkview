@@ -100,13 +100,13 @@ describe("panel po zalogowaniu", () => {
     expect(within(nav).getByText("Zdarzenia")).toBeInTheDocument();
     expect(within(nav).getByText("System")).toBeInTheDocument();
     expect(within(nav).getByRole("link", { name: /^Alerty/ })).toBeInTheDocument();
-    // Grupy według przeznaczenia, nie źródła danych: Klienci (z UniFi) to monitoring, Proxmox – integracja
+    // Grupy według przeznaczenia, nie źródła danych: Klienci (z UniFi) to monitoring; pusta grupa (Integracje) się nie pokazuje
     const linksIn = (group: string) =>
       within(within(nav).getByText(group).parentElement as HTMLElement)
         .getAllByRole("link")
         .map((a) => a.textContent);
     expect(linksIn("Monitoring")).toEqual(["Dashboard", "Klienci", "Mapa sieci"]);
-    expect(linksIn("Integracje")).toEqual(["Proxmox"]);
+    expect(within(nav).queryByText("Integracje")).not.toBeInTheDocument();
   });
 
   it("pokazuje karty urządzeń i podsumowanie", async () => {

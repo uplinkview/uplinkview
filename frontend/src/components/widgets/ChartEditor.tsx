@@ -83,7 +83,6 @@ export const SOURCE_LABEL: Record<SourceKind, TextKey> = {
   agent_disk: "ce.source.agent_disk",
   agent_temp: "ce.source.agent_temp",
   agent_container: "ce.source.agent_container",
-  pve_guest: "ce.source.pve_guest",
   snmp_sensor: "ce.source.snmp_sensor",
   snmp_poe: "ce.source.snmp_poe",
   snmp_sfp: "ce.source.snmp_sfp",
@@ -100,7 +99,6 @@ const AGENT_KEY_LABEL: Record<keyof AgentKeys, TextKey> = {
   agent_disk: "ce.agent.key.disk",
   agent_temp: "ce.agent.key.temp",
   agent_container: "ce.agent.key.container",
-  pve_guest: "ce.agent.key.guest",
   snmp_sensor: "ce.agent.key.sensor",
   snmp_poe: "ce.agent.key.port",
   snmp_sfp: "ce.agent.key.port",
@@ -183,7 +181,7 @@ export function SourcePicker({ prefix, source, error, onChange }: { prefix: stri
     queryFn: () => get<AgentKeys>(`/api/devices/${deviceId}/agent-keys`),
     enabled: agentKind != null && agentKind !== "agent_cpu" && deviceId != null,
   });
-  // Dla źródeł z agenta tylko serwery z agentem, dla maszyn Proxmox – węzły Proxmox, dla czujników – urządzenia SNMP
+  // Dla źródeł z agenta tylko serwery z agentem, dla czujników – urządzenia SNMP
   const snmpSensor = agentKind != null && isSnmpSensorSource(agentKind);
   // Pingi łączy WAN mierzy brama (od 0.55.0) – do wyboru tylko bramy, klucze opisane nazwami łączy
   // Klienci VPN (od 0.57.0) też są na bramie
@@ -191,9 +189,9 @@ export function SourcePicker({ prefix, source, error, onChange }: { prefix: stri
   // Urządzenia w sieci za OPNsense (od 0.83.0) też są na bramie, klucz = MAC (opis z DHCP/ARP)
   const lanClient = agentKind === "lan_client";
   const wanPing = agentKind != null && (isWanPingSource(agentKind) || isSpeedtestSource(agentKind) || agentKind === "vpn" || lanClient);
-  const wantedDriver = agentKind === "pve_guest" ? "proxmox" : agentKind && !snmpSensor && !wanPing ? "agent" : null;
+  const wantedDriver = agentKind && !snmpSensor && !wanPing ? "agent" : null;
   const deviceOptions = (devices.data ?? []).filter((d: Device) =>
-    wanPing ? d.kind === "gateway" : snmpSensor ? d.driver !== "agent" && d.driver !== "proxmox" : !wantedDriver || d.driver === wantedDriver,
+    wanPing ? d.kind === "gateway" : snmpSensor ? d.driver !== "agent" : !wantedDriver || d.driver === wantedDriver,
   );
   const wanLinks = useQuery({ queryKey: WAN_LINKS_KEY, queryFn: () => get<WanLink[]>("/api/wan/links"), enabled: wanPing });
   const opnHosts = useOpnsenseDevice(lanClient && deviceId ? deviceId : null);
@@ -258,7 +256,7 @@ export function SourcePicker({ prefix, source, error, onChange }: { prefix: stri
       )}
       {needsDevice && devices.data?.length === 0 && <p className="text-xs text-text-2">{t("ce.noDevices")}</p>}
       {agentKind && devices.data && deviceOptions.length === 0 && (
-        <p className="text-xs text-text-2">{t(agentKind === "pve_guest" ? "ce.pve.none" : agentKind === "vpn" ? "ce.vpn.none" : wanPing ? "ce.wan.none" : "ce.agent.none")}</p>
+        <p className="text-xs text-text-2">{t(agentKind === "vpn" ? "ce.vpn.none" : wanPing ? "ce.wan.none" : "ce.agent.none")}</p>
       )}
       {agentKind && agentKind !== "agent_cpu" && deviceId != null && (
         <Select

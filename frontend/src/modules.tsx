@@ -7,7 +7,6 @@ import {
   IconBell,
   IconActivity,
   IconBellRinging,
-  IconServerCog,
   IconFlame,
   IconDatabase,
   IconDevicesPc,
@@ -57,8 +56,6 @@ const ReportsPage = page(() => import("./pages/ReportsPage"), "ReportsPage");
 const AccountPage = page(() => import("./pages/settings/AccountPage"), "AccountPage");
 const ClientPage = page(() => import("./pages/ClientPage"), "ClientPage");
 const ClientsPage = page(() => import("./pages/ClientsPage"), "ClientsPage");
-const ProxmoxPage = page(() => import("./pages/ProxmoxPage"), "ProxmoxPage");
-const ProxmoxSettingsPage = page(() => import("./pages/settings/ProxmoxSettingsPage"), "ProxmoxSettingsPage");
 const OpnsenseSettingsPage = page(() => import("./pages/settings/OpnsenseSettingsPage"), "OpnsenseSettingsPage");
 const TopologyPage = page(() => import("./pages/TopologyPage"), "TopologyPage");
 const ControllersPage = page(() => import("./pages/settings/ControllersPage"), "ControllersPage");
@@ -178,15 +175,6 @@ export const modules: NavModule[] = [
     hidden: true,
   },
   {
-    id: "proxmox",
-    path: "/proxmox",
-    label: "nav.proxmox",
-    icon: IconServerCog,
-    element: <ProxmoxPage />,
-    module: "proxmox",
-    group: "integrations",
-  },
-  {
     id: "topology",
     path: "/topology",
     label: "nav.topology",
@@ -277,13 +265,6 @@ export const modules: NavModule[] = [
         icon: IconKey,
         element: <ControllersPage />,
         module: "unifi",
-      },
-      {
-        path: "proxmox",
-        label: "nav.settings.proxmox",
-        icon: IconServerCog,
-        element: <ProxmoxSettingsPage />,
-        module: "proxmox",
       },
       {
         path: "opnsense",

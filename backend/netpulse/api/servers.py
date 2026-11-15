@@ -17,9 +17,6 @@ from ..db.models import (
     Device,
     DeviceMetric,
     DiskMetric,
-    ProxmoxGuest,
-    ProxmoxNode,
-    ProxmoxServer,
     ServerMetric,
 )
 from .agents import agent_outdated
@@ -56,17 +53,6 @@ class AgentInfo(BaseModel):
     server_version: str = __version__
 
 
-class ProxmoxInfo(BaseModel):
-    """Węzeł Proxmox: maszyny na nim i wynik ostatniej kopii zapasowej (vzdump)."""
-
-    version: str | None = None
-    cluster: str | None = None
-    guests_running: int = 0
-    guests_total: int = 0
-    backup_status: str | None = None  # "OK" albo opis błędu; None = nie było kopii
-    backup_at: datetime | None = None
-
-
 class ServerOut(BaseModel):
     sampled_at: datetime
     cpu_percent: float | None
@@ -77,7 +63,6 @@ class ServerOut(BaseModel):
     processes: int | None
     disks: list[DiskOut]
     agent: AgentInfo | None = None
-    proxmox: ProxmoxInfo | None = None
 
 
 @router.get("/devices/{device_id}/server", response_model=ServerOut | None)
@@ -110,22 +95,6 @@ async def device_server(device_id: int):
         agent = None
         if device.driver == "agent":
             agent = await session.scalar(select(Agent).where(Agent.device_id == device_id))
-        pve = None
-        if device.driver == "proxmox" and (node := await session.scalar(select(ProxmoxNode).where(ProxmoxNode.device_id == device_id))):
-            server = await session.get(ProxmoxServer, node.server_id)
-            guests = (
-                await session.scalars(
-                    select(ProxmoxGuest).where(ProxmoxGuest.server_id == node.server_id, ProxmoxGuest.node == node.node, ProxmoxGuest.template.is_(False))
-                )
-            ).all()
-            pve = ProxmoxInfo(
-                version=server.version if server else None,
-                cluster=server.cluster_name if server else None,
-                guests_running=sum(1 for g in guests if g.status == "running"),
-                guests_total=len(guests),
-                backup_status=node.backup_status,
-                backup_at=node.backup_at,
-            )
     return ServerOut(
         sampled_at=health.time,
         cpu_percent=health.cpu_percent,
@@ -148,5 +117,4 @@ async def device_server(device_id: int):
             if agent and agent.inventory
             else None
         ),
-        proxmox=pve,
     )

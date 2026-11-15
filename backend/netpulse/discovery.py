@@ -93,7 +93,7 @@ def suggest_network(addresses: Iterable[str | None]) -> str | None:
 ENTERPRISES = {
     "2": "IBM", "9": "Cisco", "11": "HP", "171": "D-Link", "236": "Samsung", "311": "Microsoft", "367": "Ricoh",
     "674": "Dell", "1248": "Epson", "1602": "Canon", "1916": "Extreme Networks", "2011": "Huawei", "2435": "Brother",
-    "2636": "Juniper", "3375": "F5", "4413": "Broadcom", "4526": "Netgear", "6574": "Synology", "6876": "VMware",
+    "2636": "Juniper", "3375": "F5", "4413": "Broadcom", "4526": "Netgear", "6876": "VMware",
     "8072": None, "10002": "Ubiquiti (AirOS)", "11863": "TP-Link", "12356": "Fortinet", "12325": "FreeBSD (pfSense/OPNsense)",
     "14823": "Aruba", "14988": "MikroTik", "18334": "Konica Minolta", "24681": "QNAP", "25053": "Ruckus", "25506": "H3C",
     "30065": "Arista", "41112": "Ubiquiti", "44641": "Ubiquiti",

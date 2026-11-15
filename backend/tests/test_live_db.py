@@ -49,8 +49,8 @@ def test_targets_are_visible_ports_of_watched_snmp_devices(db):
             gw = Device(name="UCG", host="10.0.0.1", community="public", kind="gateway", detected_driver="unifi")
             ap = Device(name="AP", host="10.0.0.3", community="public", kind="ap", detected_driver="nie-ma-takiego")
             sw = Device(name="USW", host="10.0.0.2", community="public", kind="switch")
-            pve = Device(name="PVE", host="10.0.0.9", community="public", kind="server", driver="proxmox")
-            s.add_all([gw, sw, pve, ap])
+            nas = Device(name="NAS", host="10.0.0.9", community="public", kind="server", driver="agent")
+            s.add_all([gw, sw, nas, ap])
             await s.flush()
             s.add_all(
                 [
@@ -59,16 +59,16 @@ def test_targets_are_visible_ports_of_watched_snmp_devices(db):
                     Interface(device_id=gw.id, if_index=9, name="lo", hidden=True),
                     Interface(device_id=sw.id, if_index=1, name="0/1"),
                     Interface(device_id=sw.id, if_index=2, name="0/2", hidden=True),
-                    Interface(device_id=pve.id, if_index=1, name="vmbr0"),
+                    Interface(device_id=nas.id, if_index=1, name="eth0"),
                 ]
             )
-            return gw.id, sw.id, pve.id, ap.id
+            return gw.id, sw.id, nas.id, ap.id
 
-    gw_id, sw_id, pve_id, ap_id = run(seed)
+    gw_id, sw_id, nas_id, ap_id = run(seed)
     hub = LiveHub()
     assert run(lambda: hub._load_targets(frozenset())) == []
-    targets = run(lambda: hub._load_targets(frozenset({gw_id, pve_id, ap_id})))
-    # Tylko oglądane urządzenia, bez ukrytych portów i bez Proxmoksa (nie ma SNMP); urządzenie bez portów też (CPU, RAM)
+    targets = run(lambda: hub._load_targets(frozenset({gw_id, nas_id, ap_id})))
+    # Tylko oglądane urządzenia, bez ukrytych portów i bez serwera z agentem (nie ma SNMP); urządzenie bez portów też (CPU, RAM)
     assert [(t.device.id, t.driver, [(p.if_index, p.speed_mbps) for p in t.ports]) for t in targets] == [
         (gw_id, "unifi", [(1, None), (5, 1000)]),
         (ap_id, "generic", []),  # nieznany driver – ogólny

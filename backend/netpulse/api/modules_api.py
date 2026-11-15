@@ -12,7 +12,6 @@ router = APIRouter(prefix="/api/modules", tags=["moduły"], dependencies=[Depend
 
 
 class ModulesOut(BaseModel):
-    proxmox: bool
     unifi: bool
     opnsense: bool
     agents: bool
@@ -22,7 +21,6 @@ class ModulesOut(BaseModel):
 class ModulesUpdate(BaseModel):
     """Pominięte moduły zostają bez zmian."""
 
-    proxmox: bool | None = None
     unifi: bool | None = None
     opnsense: bool | None = None
     agents: bool | None = None

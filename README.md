@@ -1,7 +1,7 @@
 # UplinkView
 
 **Self-hosted network monitoring for your homelab.** One dashboard for the traffic and port status of your router,
-switches and access points – plus WiFi clients, a network map, dual WAN, Linux servers, Proxmox VE and alerts.
+switches and access points – plus WiFi clients, a network map, dual WAN, Linux servers and alerts.
 
 [Polski](README.pl.md) · [Contributing](CONTRIBUTING.md)
 
@@ -39,7 +39,7 @@ backup first.
 - **Network map** – topology from LLDP with cable load and speed.
 - **Dual WAN** – link state, failover, SLA, latency to each link, gateway speed tests, daily and monthly data usage (with an optional data plan).
 - **Servers** – Linux over SNMP or with the lightweight UplinkView agent (Docker containers, systemd services, SMART,
-  temperatures) and Proxmox VE (VMs, LXC containers, storage, vzdump backups).
+  temperatures).
 - **Availability checks** – ping (latency, loss, jitter), HTTP(S) with certificate expiry, TCP port, DNS.
 - **Alerts** – device offline, port down, overload, CPU / RAM, disk, port errors, agent data; notifications by
   webhook (e.g. Telegram), ntfy and e-mail, quiet hours with a summary, maintenance windows, grouping by topology.
@@ -57,7 +57,6 @@ backup first.
 |-------------------|--------|--------------|
 | Ubiquiti UniFi    | ✅ tested on hardware (UCG Ultra, USW Lite 8 PoE, U6+) | SNMP (IF-MIB, UBNT-UniFi-MIB) + UniFi Network API |
 | Linux servers     | ✅ | SNMP (`snmpd`) or the UplinkView agent |
-| Proxmox VE        | ✅ tested on PVE 9.1 / 9.2 (single node) | Proxmox API (token, PVEAuditor role) |
 | MikroTik          | ✅ tested on RouterOS 7.18 (CHR); sensors, PoE and SFP from the official MIB | SNMP (IF-MIB, MIKROTIK-MIB, HOST-RESOURCES-MIB) |
 | OPNsense          | ✅ tested on OPNsense 26.7 (VirtualBox): router, WAN from the default route; gateways (latency, loss), services, DHCP/ARP hosts with their traffic, version | SNMP (`os-net-snmp` plugin) + OPNsense API (key) |
 | TP-Link Omada     | SNMP driver from the official MIBs, waiting for real hardware | SNMP |
@@ -70,7 +69,7 @@ an anonymized SNMP dump you can attach to a [new device request](https://github.
 
 ```
  [Router] [Switch] [AP] ──SNMP/API──►  Collector (async, every 30 s)  ◄── agent reports (push)
- [Proxmox] [UniFi controller]                 │
+ [UniFi controller] [OPNsense]                │
                                               ▼
                                PostgreSQL + TimescaleDB  ◄──  API (FastAPI)
                                                                  │  REST + WebSocket
@@ -105,7 +104,7 @@ docs/           # documentation (in Polish for now)
 ## Roadmap
 
 - Optional paid cloud: access from outside your network and push notifications, with your history staying on your server.
-- RouterOS and Omada controller APIs, Synology NAS – once there is real hardware to test on.
+- RouterOS and Omada controller APIs – once there is real hardware to test on.
 
 ## Contributing
 

@@ -33,8 +33,6 @@ const KIND_LABEL: Record<RuleKind, TextKey> = {
   container_stopped: "rules.kind.container_stopped",
   service_failed: "rules.kind.service_failed",
   smart_failed: "rules.kind.smart_failed",
-  guest_stopped: "rules.kind.guest_stopped",
-  backup_failed: "rules.kind.backup_failed",
   gateway_down: "rules.kind.gateway_down",
   opnsense_service_failed: "rules.kind.opnsense_service_failed",
   check_down: "rules.kind.check_down",
@@ -47,8 +45,6 @@ const MATCH_HINT: Partial<Record<RuleKind, TextKey>> = {
   container_stopped: "rules.match.hint.container",
   service_failed: "rules.match.hint.service",
   smart_failed: "rules.match.hint.smart",
-  guest_stopped: "rules.match.hint.guest",
-  backup_failed: "rules.match.hint.backup",
   gateway_down: "rules.match.hint.gateway",
   opnsense_service_failed: "rules.match.hint.opnsense_service",
   check_down: "rules.match.hint.check",
@@ -185,13 +181,7 @@ function RuleForm({ rule, metrics: allMetrics, onClose }: { rule?: AlertRule; me
         {checkKind && <p className="text-xs text-text-2">{t("rules.check.hint")}</p>}
         {agentKind && (
           <p className="text-xs text-text-2">
-            {t(
-              values.kind === "guest_stopped" || values.kind === "backup_failed"
-                ? "rules.proxmox.hint"
-                : values.kind === "gateway_down" || values.kind === "opnsense_service_failed"
-                  ? "rules.opnsense.hint"
-                  : "rules.agent.hint",
-            )}
+            {t(values.kind === "gateway_down" || values.kind === "opnsense_service_failed" ? "rules.opnsense.hint" : "rules.agent.hint")}
           </p>
         )}
         {matchable && (

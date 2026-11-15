@@ -145,7 +145,7 @@ function KeyForm({ item, taken, onClose }: { item?: OpnsenseApiKey; taken: Set<n
           autoComplete="off"
           value={values.api_secret}
           error={errors.api_secret}
-          hint={editing ? t("pve.secret.keep") : t("opn.secret.hint")}
+          hint={editing ? t("opn.secret.keep") : t("opn.secret.hint")}
           onChange={(e) => set("api_secret", e.target.value)}
         />
         <label htmlFor="opn-tls" className="flex items-start gap-2 text-sm">

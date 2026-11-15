@@ -62,7 +62,7 @@ class ServerSource(Strict):
 
 
 class AgentSource(Strict):
-    """Dane z tabeli `metrics`: agent serwera (CPU na rdzeniach, sieć, dysk, czujnik, kontener), maszyna Proxmox
+    """Dane z tabeli `metrics`: agent serwera (CPU na rdzeniach, sieć, dysk, czujnik, kontener)
     i czujniki urządzeń SNMP (`snmp_*`, od 0.50.0: czujnik, PoE i SFP portu MikroTika)."""
 
     kind: Literal[
@@ -71,7 +71,6 @@ class AgentSource(Strict):
         "agent_disk",
         "agent_temp",
         "agent_container",
-        "pve_guest",
         "snmp_sensor",
         "snmp_poe",
         "snmp_sfp",
@@ -81,7 +80,7 @@ class AgentSource(Strict):
         "vpn",
         "lan_client",
     ]
-    id: int = Field(ge=1)  # urządzenie (serwer z agentem, węzeł Proxmox, urządzenie SNMP albo brama – `wan_*`)
+    id: int = Field(ge=1)  # urządzenie (serwer z agentem, urządzenie SNMP albo brama – `wan_*`)
     key: str = Field("", max_length=255)  # interfejs, dysk, czujnik, kontener, port albo łącze WAN; dla agent_cpu puste
 
     @model_validator(mode="after")
@@ -145,7 +144,6 @@ ALLOWED_METRICS: dict[str, tuple[str, ...]] = {
     "agent_disk": ("read_bps", "write_bps"),
     "agent_temp": ("temp_c",),
     "agent_container": ("container_cpu_percent", "container_mem_bytes"),
-    "pve_guest": ("guest_cpu_percent", "guest_mem_bytes", "rx_bps", "tx_bps", "read_bps", "write_bps"),
     "snmp_sensor": ("temp_c", "fan_rpm", "voltage_v", "current_a", "power_w", "channel_util_percent"),
     "snmp_poe": ("poe_power_w", "poe_voltage_v"),
     "snmp_sfp": ("sfp_rx_dbm", "sfp_tx_dbm", "sfp_temp_c", "sfp_voltage_v"),
@@ -297,14 +295,13 @@ COLLECTION_METRICS: dict[str, tuple[str, ...]] = {
     "containers": ("up", "cpu_percent", "mem_bytes"),
     "services": ("up", "mem_bytes", "uptime_s"),
     "checks": ("up", "latency_ms", "loss_percent", "availability_percent", "cert_days"),
-    "guests": ("up", "cpu_percent", "mem_bytes", "mem_percent", "rx_bps", "tx_bps", "uptime_s", "backup_age_h"),
     "clients": ("signal_dbm", "rx_rate_kbps", "tx_rate_kbps", "connected_s"),
 }
-COLLECTIONS_WITH_DEVICE = ("ports", "disks", "containers", "services")  # wymagają urządzenia; wifi, guests – opcjonalnie
+COLLECTIONS_WITH_DEVICE = ("ports", "disks", "containers", "services")  # wymagają urządzenia; wifi – opcjonalnie
 
 
 class Collection(Strict):
-    kind: Literal["devices", "ports", "disks", "wifi", "containers", "services", "clients", "checks", "guests"]
+    kind: Literal["devices", "ports", "disks", "wifi", "containers", "services", "clients", "checks"]
     device_id: int | None = Field(None, ge=1)
 
     @model_validator(mode="after")
@@ -743,7 +740,6 @@ PieMetric = Literal[
     "ports_in", "ports_out", "ports_state",
     "wifi_clients",
     "containers_mem", "containers_cpu", "services_state",
-    "guests_mem", "guests_state",
     "devices_state", "checks_state",
 ]
 # Co monitoruje wykres kołowy → kolekcja z danymi (pulpit publiczny przepuszcza tylko ją)
@@ -754,17 +750,16 @@ PIE_COLLECTION: dict[str, str] = {
     "ports_in": "ports", "ports_out": "ports", "ports_state": "ports",
     "wifi_clients": "wifi",
     "containers_mem": "containers", "containers_cpu": "containers", "services_state": "services",
-    "guests_mem": "guests", "guests_state": "guests",
     "checks_state": "checks",
 }
 PIE_GLOBAL = {"devices_state", "checks_state"}  # cała sieć, bez urządzenia
-PIE_DEVICE_OPTIONAL = {"wifi_clients", "guests_mem", "guests_state"}  # puste urządzenie = wszystkie
+PIE_DEVICE_OPTIONAL = {"wifi_clients"}  # puste urządzenie = wszystkie
 PIE_ITEM = {"disk", "port_load", "port_dir"}  # wybrany dysk albo port (`item`)
 
 
 class PieConfig(Strict):
     """Wykres kołowy (0.39.0): urządzenie i to, co na nim monitorować – zajętość (CPU, RAM, dysk), udział
-    (klienci sieci WiFi, kontenery, maszyny) albo stan (działa / nie działa). Od 0.40.0 jeden wybrany port:
+    (klienci sieci WiFi, kontenery) albo stan (działa / nie działa). Od 0.40.0 jeden wybrany port:
     obciążenie (`port_load`) albo odbierane / wysyłane (`port_dir`); `ports_in` / `ports_out` (wszystkie porty
     na jednym wykresie) zostają tylko dla zapisanych pulpitów."""
 
@@ -855,9 +850,51 @@ Widget = Annotated[
 ]
 
 
+# Dane usuniętych integracji (0.86.0: Proxmox VE): źródła wykresów, kolekcje i wykresy kołowe, których już nie ma.
+# Zapisane pulpity z nimi dalej się wczytują – takie zapytania i widgety wypadają przy odczycie.
+REMOVED_SOURCES = frozenset({"pve_guest"})
+REMOVED_COLLECTIONS = frozenset({"guests"})
+REMOVED_PIE_METRICS = frozenset({"guests_mem", "guests_state"})
+
+
+def _removed_source(source) -> bool:
+    return isinstance(source, dict) and source.get("kind") in REMOVED_SOURCES
+
+
+def _without_removed(widget):
+    """Widget bez danych usuniętych integracji; None – widget wypada w całości."""
+    if not isinstance(widget, dict) or not isinstance(widget.get("config"), dict):
+        return widget
+    config, kind = widget["config"], widget.get("type")
+    if kind == "chart":
+        if _removed_source(config.get("source")):
+            return None
+        queries = config.get("queries")
+        if isinstance(queries, list) and any(isinstance(q, dict) and _removed_source(q.get("source")) for q in queries):
+            kept = [q for q in queries if not (isinstance(q, dict) and _removed_source(q.get("source")))]
+            return {**widget, "config": {**config, "queries": kept}} if kept else None
+    elif kind in ("stat", "heatmap"):
+        if _removed_source(config.get("source")):
+            return None
+    elif kind in ("bargauge", "table"):
+        collection = config.get("collection")
+        if isinstance(collection, dict) and collection.get("kind") in REMOVED_COLLECTIONS:
+            return None
+    elif kind == "pie" and config.get("metric") in REMOVED_PIE_METRICS:
+        return None
+    return widget
+
+
 class DashboardLayout(Strict):
     version: Literal[1] = SCHEMA_VERSION
     widgets: list[Widget] = Field(max_length=MAX_WIDGETS)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_removed(cls, data):
+        if isinstance(data, dict) and isinstance(data.get("widgets"), list):
+            data = {**data, "widgets": [w for w in map(_without_removed, data["widgets"]) if w is not None]}
+        return data
 
     @field_validator("widgets")
     @classmethod

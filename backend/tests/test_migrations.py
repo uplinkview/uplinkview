@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import UTC, datetime
 
 import pytest
+from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -17,7 +19,7 @@ from sqlalchemy import func, inspect, select, text
 from netpulse import aggregates
 from netpulse.db import SchemaMismatchError, Session, engine, init_db
 from netpulse.db.migrate import alembic_config, current_revision, head_revision, include_object
-from netpulse.db.models import Base, Device
+from netpulse.db.models import Alert, AlertRule, AppSetting, Base, Device, Metric
 
 needs_db = pytest.mark.skipif(os.environ.get("NETPULSE_TEST_DB") != "1", reason="brak testowej bazy (NETPULSE_TEST_DB=1)")
 
@@ -41,7 +43,7 @@ async def drop_everything() -> None:
 
 
 # Tabele i kolumny dodane migracjami po 0001 – baza z 0.9.0 ich nie miała
-AFTER_BASELINE = {"agents", "metrics", "proxmox_servers", "proxmox_nodes", "proxmox_guests", "proxmox_storages", "wan_links", "wan_link_metrics", "known_clients", "client_metrics", "checks", "check_metrics", "unifi_api_devices", "maintenance_windows", "audit_log", "opnsense_apis", "wan_rate_metrics"}
+AFTER_BASELINE = {"agents", "metrics", "wan_links", "wan_link_metrics", "known_clients", "client_metrics", "checks", "check_metrics", "unifi_api_devices", "maintenance_windows", "audit_log", "opnsense_apis", "wan_rate_metrics"}
 COLUMNS_AFTER_BASELINE = {
     "alert_rules": ["match"],
     "dashboards": ["public_token_hash", "public_token", "public_expires_at", "public_pin_hash", "public_options"],
@@ -170,3 +172,66 @@ def test_init_is_idempotent(clean_db):
             return rows.scalar()
 
     assert run(scenario) == 1
+
+
+@needs_db
+def test_proxmox_removal_keeps_other_data(clean_db):
+    """0023 (0.86.0): tabele Proxmoxa, jego węzły (urządzenia), reguły i alerty znikają; reszta zostaje, downgrade działa."""
+
+    async def scenario():
+        await drop_everything()
+        await init_db()
+        async with engine.begin() as conn:
+            await conn.run_sync(lambda c: command.downgrade(alembic_config(c), "0022"))
+        now = datetime.now(UTC)
+        async with Session() as s, s.begin():
+            router = Device(name="Router", host="10.9.9.1")
+            node = Device(name="pve1", host="10.9.9.11", driver="proxmox", kind="server", community=None)
+            s.add_all([router, node])
+            await s.flush()
+            await s.execute(
+                text(
+                    "INSERT INTO proxmox_servers (id, name, host, port, token_id, token_secret, verify_tls, enabled, status) "
+                    "VALUES (1, 'Lab', '10.9.9.10', 8006, 'id', 'sekret', false, true, 'up')"
+                )
+            )
+            await s.execute(
+                text("INSERT INTO proxmox_nodes (server_id, node, device_id, online, updated_at) VALUES (1, 'pve1', :d, true, now())"),
+                {"d": node.id},
+            )
+            kept = AlertRule(name="CPU", kind="metric", metric="cpu_percent", op=">", threshold=90.0, duration_s=0, severity="warning")
+            gone = AlertRule(name="Kopia", kind="backup_failed", duration_s=0, severity="critical")
+            age = AlertRule(name="Wiek", kind="metric", metric="backup_age_h", op=">", threshold=36.0, duration_s=0, severity="warning")
+            s.add_all([kept, gone, age])
+            await s.flush()
+            s.add_all(
+                [
+                    Alert(rule_id=gone.id, subject="d1:b", severity="critical", title="kopia", started_at=now),
+                    Alert(rule_id=kept.id, subject=f"d{node.id}", severity="warning", title="CPU węzła", device_id=node.id, started_at=now),
+                    Alert(rule_id=kept.id, subject=f"d{router.id}", severity="warning", title="CPU routera", device_id=router.id, started_at=now),
+                    Metric(time=now, device_id=node.id, name="guest_up", key="vm (100)", value=1.0),
+                    Metric(time=now, device_id=router.id, name="temp_c", key="cpu", value=50.0),
+                    AppSetting(key="modules", value={"proxmox": True, "unifi": True}, updated_at=now),
+                ]
+            )
+        await init_db()
+        rev, diff = await state()
+        async with Session() as s:
+            devices = (await s.scalars(select(Device.name))).all()
+            rules = (await s.scalars(select(AlertRule.name))).all()
+            alerts = (await s.scalars(select(Alert.title))).all()
+            metrics = (await s.scalars(select(Metric.name))).all()
+            modules = (await s.get(AppSetting, "modules")).value
+        async with engine.connect() as conn:
+            tables = await conn.run_sync(lambda c: inspect(c).get_table_names())
+        return rev, diff, devices, rules, alerts, metrics, modules, tables
+
+    rev, diff, devices, rules, alerts, metrics, modules, tables = run(scenario)
+    assert rev == head_revision()
+    assert diff == [], diff
+    assert devices == ["Router"]
+    assert rules == ["CPU"]
+    assert alerts == ["CPU routera"]
+    assert metrics == ["temp_c"]
+    assert modules == {"unifi": True}
+    assert not [t for t in tables if t.startswith("proxmox_")]

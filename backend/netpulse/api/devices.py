@@ -125,7 +125,7 @@ async def _host_taken(session, host: str, except_id: int | None = None, *, conve
 
 @router.get("/devices", response_model=list[DeviceOut])
 async def list_devices():
-    """Urządzenia bez tych, które należą do wyłączonych modułów (węzły Proxmox, serwery z agentem)."""
+    """Urządzenia bez tych, które należą do wyłączonych modułów (serwery z agentem, urządzenia UniFi bez SNMP)."""
     async with Session() as session:
         hidden = hidden_drivers(await read_modules(session))
         devices = (await session.scalars(select(Device).where(Device.driver.not_in(hidden or ("",))).order_by(Device.id))).all()
@@ -211,7 +211,7 @@ async def update_device(device_id: int, body: DeviceUpdate):
     async with Session() as session, session.begin():
         device = await _get_device(session, device_id)
         if device.driver in NON_SNMP_DRIVERS and set(changes) - {"name", "enabled"}:
-            raise HTTPException(409, "To urządzenie nie używa SNMP (agent, Proxmox albo kontroler UniFi) – zmienić można tylko nazwę i włączenie")
+            raise HTTPException(409, "To urządzenie nie używa SNMP (agent albo kontroler UniFi) – zmienić można tylko nazwę i włączenie")
         if "host" in changes and await _host_taken(session, changes["host"], except_id=device_id):
             raise HTTPException(409, f"Urządzenie {changes['host']} już jest dodane")
         for field, value in changes.items():
@@ -242,7 +242,7 @@ async def probe_device(device_id: int):
     async with Session() as session:
         device = await _get_device(session, device_id)
     if device.driver in NON_SNMP_DRIVERS:
-        raise HTTPException(409, "To urządzenie nie używa SNMP – stan widać w Ustawienia → Agenci, Proxmox albo Kontrolery UniFi")
+        raise HTTPException(409, "To urządzenie nie używa SNMP – stan widać w Ustawienia → Agenci albo Kontrolery UniFi")
     return _probe_out(await _probe_or_422(device.host, device.port, credentials_for(device), device.driver))
 
 
@@ -356,7 +356,7 @@ async def device_sensors(device_id: int):
     names = (*SENSOR_METRICS, *POE_METRICS, *SFP_METRICS)
     async with Session() as session:
         device = await _get_device(session, device_id)
-        if device.driver in ("agent", "proxmox"):  # temperatury serwera z agentem pokazuje karta serwera
+        if device.driver == "agent":  # temperatury serwera z agentem pokazuje karta serwera
             return SensorsOut(sensors=[], poe=[], sfp=[])
         rows = (
             await session.execute(

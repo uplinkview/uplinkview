@@ -19,9 +19,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Usługa systemd nie działa", "systemd service failed"),
     ("SMART: dysk zgłasza błąd", "SMART: disk reports an error"),
     ("Wysoka temperatura", "High temperature"),
-    ("Proxmox: maszyna zatrzymana", "Proxmox: VM stopped"),
-    ("Proxmox: kopia zapasowa nie powiodła się", "Proxmox: backup failed"),
-    ("Proxmox: brak świeżej kopii VM", "Proxmox: no recent VM backup"),
     ("Sprawdzenie dostępności nie przechodzi", "Availability check failing"),
     ("Certyfikat HTTPS wkrótce wygaśnie", "HTTPS certificate expires soon"),
     ("Fabryczne community SNMP", "Default SNMP community"),
@@ -56,7 +53,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Temperatura (każdy czujnik: serwer z agentem, MikroTik)", "Temperature (each sensor: server with agent, MikroTik)"),
     ("SFP: moc odbierana (każdy moduł SFP: MikroTik, switche TP-Link)", "SFP: received power (each SFP module: MikroTik, TP-Link switches)"),
     ("SMART: realokowane sektory (każdy dysk serwera z agentem)", "SMART: reallocated sectors (each disk of a server with agent)"),
-    ("Proxmox: godziny od ostatniej kopii (każda VM i LXC)", "Proxmox: hours since last backup (each VM and LXC)"),
     ("Sprawdzenie dostępności: opóźnienie", "Availability check: latency"),
     ("Sprawdzenie dostępności: utrata pakietów (ping)", "Availability check: packet loss (ping)"),
     ("Sprawdzenie dostępności: dni do wygaśnięcia certyfikatu", "Availability check: days until certificate expiry"),
@@ -225,9 +221,8 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Nieoczekiwany format odpowiedzi kontrolera", "Unexpected controller response format"),
     ("Oficjalne API nie zna site „{site}”", "The official API does not know the site “{site}”"),
     ("Kontroler UniFi: urządzenie {state}", "UniFi controller: device {state}"),
-    # przedrostek źródła przed błędem (unifi_collector.py, proxmox_collector.py, checks.py) – błąd tłumaczony osobno
+    # przedrostek źródła przed błędem (unifi_collector.py, checks.py) – błąd tłumaczony osobno
     ("Kontroler UniFi: {error}", "UniFi controller: {error}"),
-    ("Proxmox: {error}", "Proxmox: {error}"),
     ("DNS: {error}", "DNS: {error}"),
     ("niedostępne", "unavailable"),
     # --- pulpity i pulpit publiczny (api/dashboards.py, api/public.py, db/models.py) ---
@@ -250,12 +245,12 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     # --- urządzenia, wykrywanie, raport (api/devices.py, api/schemas.py, discovery.py, devreport.py, snmp) ---
     ("Urządzenie {host} już jest dodane", "Device {host} is already added"),
     (
-        "To urządzenie nie używa SNMP (agent, Proxmox albo kontroler UniFi) – zmienić można tylko nazwę i włączenie",
-        "This device does not use SNMP (agent, Proxmox or UniFi controller) – only the name and enabled state can be changed",
+        "To urządzenie nie używa SNMP (agent albo kontroler UniFi) – zmienić można tylko nazwę i włączenie",
+        "This device does not use SNMP (agent or UniFi controller) – only the name and enabled state can be changed",
     ),
     (
-        "To urządzenie nie używa SNMP – stan widać w Ustawienia → Agenci, Proxmox albo Kontrolery UniFi",
-        "This device does not use SNMP – see its state in Settings → Server agents, Proxmox or UniFi controllers",
+        "To urządzenie nie używa SNMP – stan widać w Ustawienia → Agenci albo Kontrolery UniFi",
+        "This device does not use SNMP – see its state in Settings → Server agents or UniFi controllers",
     ),
     ("Nie ma takiego portu", "No such port"),
     ("Nie ma portu o id {port_id}", "No port with id {port_id}"),
@@ -339,7 +334,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Nie ma takiego obiektu: {what}", "No such object: {what}"),
     ("urządzenie", "device"),
     ("sieć WiFi", "WiFi network"),
-    ("Moduł Proxmox jest wyłączony", "The Proxmox module is disabled"),
     ("Moduł agentów jest wyłączony", "The agents module is disabled"),
     ("Moduł UniFi jest wyłączony", "The UniFi module is disabled"),
     ("Lista identyfikatorów: liczby po przecinku", "Identifier list: comma-separated numbers"),
@@ -359,17 +353,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Serwer SMTP ustawia się tylko w kanale e-mail", "The SMTP server is set only in an e-mail channel"),
     ("Kanał e-mail nie ma adresu URL", "An e-mail channel has no URL"),
     ("Webhook nie ma osobnego tokenu – sekret jest w adresie", "A webhook has no separate token – the secret is in the address"),
-    # --- Proxmox (api/proxmox.py, proxmox.py, proxmox_collector.py) ---
-    ("Nie ma takiego serwera Proxmox", "No such Proxmox server"),
-    ("Serwer Proxmox {host} już jest dodany", "Proxmox server {host} is already added"),
-    ("Brak połączenia z Proxmox: {error}", "No connection to Proxmox: {error}"),
-    ("Proxmox odrzucił token API (sprawdź identyfikator tokenu i sekret)", "Proxmox rejected the API token (check the token ID and secret)"),
-    (
-        "Token nie ma uprawnień – nadaj mu rolę PVEAuditor na ścieżce / (Datacenter → Permissions)",
-        "The token has no permissions – give it the PVEAuditor role on path / (Datacenter → Permissions)",
-    ),
-    ("Proxmox odpowiedział kodem {code} dla {path}", "Proxmox responded with code {code} for {path}"),
-    ("Proxmox zwrócił odpowiedź, która nie jest JSON-em", "Proxmox returned a response that is not JSON"),
     # --- OPNsense API (opnsense.py, api/opnsense.py, od 0.81.0) ---
     ("Nie ma takiego klucza API OPNsense", "No such OPNsense API key"),
     ("Urządzenie {name} ma już klucz API OPNsense", "Device {name} already has an OPNsense API key"),
@@ -379,8 +362,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Użytkownik klucza API nie ma uprawnień do {path}", "The API key user has no permission for {path}"),
     ("OPNsense odpowiedział kodem {code} dla {path}", "OPNsense responded with code {code} for {path}"),
     ("OPNsense zwrócił odpowiedź, która nie jest JSON-em", "OPNsense returned a response that is not JSON"),
-    ("Nieoczekiwany format odpowiedzi Proxmox", "Unexpected Proxmox response format"),
-    ("Węzeł offline w klastrze Proxmox", "Node offline in the Proxmox cluster"),
     # --- HTTPS, szyfrowanie, baza (api/tls.py, tls.py, crypto.py, db) ---
     ("Brak certyfikatu CA (kontener proxy jeszcze go nie utworzył)", "No CA certificate (the proxy container has not created it yet)"),
     ("Nie można zapisać adresów – czy kontener proxy działa?", "Cannot save the addresses – is the proxy container running?"),
@@ -446,8 +427,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("zrzut syntetyczny odwzorowujący snmpd – czeka na zrzut z prawdziwego serwera", "synthetic dump modelled on snmpd – waiting for a dump from a real server"),
     ("Agent UplinkView (Linux): CPU, RAM, dyski, Docker, usługi, SMART", "UplinkView agent (Linux): CPU, RAM, disks, Docker, services, SMART"),
     ("instalowany i sprawdzany na Ubuntu w teście CI każdej wersji", "installed and checked on Ubuntu in the CI test of every version"),
-    ("Proxmox VE: węzły, maszyny VM i LXC, magazyny, kopie vzdump", "Proxmox VE: nodes, VMs and LXC, storage, vzdump backups"),
-    ("PVE 9.1 / 9.2 z jednym węzłem; klaster kilku węzłów tylko na atrapie API", "PVE 9.1 / 9.2 with one node; a multi-node cluster only on a fake API"),
     ("Dual WAN: drugie łącze i przełączanie", "Dual WAN: second link and failover"),
     (
         "UCG Ultra (UniFi OS 6.0.17) z internetem mobilnym jako WAN 2: awaria WAN 1, praca na GSM i powrót "

@@ -31,7 +31,6 @@ def test_device_levels():
     assert verification.device_level("generic") == "verified"
     assert verification.device_level("mikrotik") == "partial"  # system tak, czujniki/PoE/SFP nie
     assert verification.device_level("omada") == "partial"  # IF-MIB tak, MIB TP-Link tylko na zrzutach
-    assert verification.device_level("proxmox") == "partial"
     assert verification.device_level("nowy-driver") == "verified"
     assert Device(name="x", host="h", driver="omada").verification == "partial"
 

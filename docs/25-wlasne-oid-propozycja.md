@@ -125,6 +125,6 @@ Wersja: minor na każdy przenoszony driver. Najmniej pilne.
 
 ## Pytania otwarte
 
-- Czy własne metryki mają być też dostępne dla urządzeń bez SNMP (agent, Proxmox) – na razie tylko SNMP.
+- Czy własne metryki mają być też dostępne dla urządzeń bez SNMP (agent, UniFi API) – na razie tylko SNMP.
 - Limity (liczba OID-ów, wierszy) – stałe czy ustawiane w panelu.
 - Czy paczkować MIB-y producentów, czy tylko wgrywać – zależy od ich licencji.

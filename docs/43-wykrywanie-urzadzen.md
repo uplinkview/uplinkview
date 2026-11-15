@@ -20,7 +20,7 @@ ręcznie”) i Ustawienia → Urządzenia → **Wykryj w sieci** (bez urządzeń
 4. **SNMPv3** – klienci pysnmp, po 8 naraz (`discovery.scan`), limit czasu 2 s; wolniej, ale v3 w domu to rzadkość.
 5. Rozpoznanie (`discovery.describe`): ten sam wybór drivera co w kolektorze (`detect_driver` po `sysObjectID`/`sysDescr`)
    i `enrich_system` drivera bez odczytu portów – model, firmware, rodzaj (router / switch / AP / serwer / inne).
-   Na driverze ogólnym producent z numeru w `sysObjectID` (`ENTERPRISES`: Synology, HP, Cisco, QNAP…), net-snmp (8072)
+   Na driverze ogólnym producent z numeru w `sysObjectID` (`ENTERPRISES`: HP, Cisco, QNAP…), net-snmp (8072)
    nic nie mówi. Oznaczenia: „już w UplinkView” (adres jest w bazie), „podstawowa obsługa” (driver `generic`).
 6. Panel zaznacza od razu nowy sprzęt sieciowy (driver UniFi / MikroTik / Omada / OPNsense albo rodzaj router/switch/AP), resztę
    (drukarki, NAS-y, telewizory) – tylko na życzenie. Nazwa = `sysName` (do zmiany w wierszu). „Dodaj zaznaczone” wysyła

@@ -42,7 +42,6 @@ from . import (
     opnsense,
     panels,
     preferences,
-    proxmox,
     public,
     reports,
     servers,
@@ -140,7 +139,6 @@ app.include_router(notifications.router)
 app.include_router(opnsense.router)
 app.include_router(panels.router)
 app.include_router(preferences.router)
-app.include_router(proxmox.router)
 app.include_router(public.router)
 app.include_router(reports.router)
 app.include_router(servers.router)

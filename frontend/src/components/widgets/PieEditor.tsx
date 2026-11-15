@@ -10,13 +10,11 @@ import { Field, Select } from "../ui";
 import { EditorDialog } from "./PanelEditors";
 import { PieWidget } from "./PieWidget";
 
-/** Metryki z modułów (agenci, Proxmox) znikają, gdy moduł jest wyłączony. */
-const METRIC_MODULE: Partial<Record<PieMetric, "agents" | "proxmox">> = {
+/** Metryki z modułu agentów znikają, gdy moduł jest wyłączony. */
+const METRIC_MODULE: Partial<Record<PieMetric, "agents">> = {
   containers_mem: "agents",
   containers_cpu: "agents",
   services_state: "agents",
-  guests_mem: "proxmox",
-  guests_state: "proxmox",
 };
 
 export function PieForm({ initial, isNew, onSave, onClose }: { initial: PieConfig; isNew: boolean; onSave: (c: PieConfig) => void; onClose: () => void }) {

@@ -62,7 +62,7 @@ describe("Ustawienia → OPNsense", () => {
   });
 
   it("wyłączony moduł: brak pozycji w Ustawieniach", async () => {
-    mockApi({ modules: { proxmox: true, unifi: true, opnsense: false, agents: true, backups: true } });
+    mockApi({ modules: { unifi: true, opnsense: false, agents: true, backups: true } });
     renderApp("/settings/modules");
     const nav = await screen.findByRole("navigation", { name: "Menu główne" });
     expect(await screen.findByRole("switch", { name: "OPNsense API" })).not.toBeChecked();

@@ -301,7 +301,7 @@ def test_port_down_during_switch_restart(client):
     before = NOW - timedelta(minutes=10)  # ostatni odczyt przed restartem
     # port: (stan przed przerwą, odczyty po przerwie od najstarszego)
     plan = {
-        "Proxmox": (True, [False, False]),
+        "Serwer": (True, [False, False]),
         "NAS": (True, [False, True]),
         "pusty": (False, [False, False]),
         "TV": (True, [False]),
@@ -321,7 +321,7 @@ def test_port_down_during_switch_restart(client):
     run(seed)
     add_rule(name="port", kind="port_down")
     evaluate()
-    assert [(a["title"], a["state"]) for a in alerts(client)] == [("Port Proxmox (SW) jest wyłączony", "firing")]
+    assert [(a["title"], a["state"]) for a in alerts(client)] == [("Port Serwer (SW) jest wyłączony", "firing")]
 
 
 def test_default_community_alert_until_changed(client):
@@ -439,13 +439,13 @@ def test_default_rules_created_once(client):
     kinds = [r["kind"] for r in client.get("/api/alert-rules").json()]
     assert kinds == [
         "device_offline", "port_down", "container_stopped", "service_failed", "smart_failed", "metric",
-        "guest_stopped", "backup_failed", "metric", "check_down", "metric", "default_community",
+        "check_down", "metric", "default_community",
         "wan_switch", "device_restart", "vpn_connect", "gateway_down", "opnsense_service_failed", "metric",
     ]  # fmt: skip
 
 
 def test_default_rules_for_existing_install_and_deleted_rules_stay_deleted(client):
-    """Instalacja z 0.11 (ma reguły, brak znacznika) dostaje tylko nowsze zestawy (agent, Proxmox), raz."""
+    """Instalacja z 0.11 (ma reguły, brak znacznika) dostaje tylko nowsze zestawy (agent, sprawdzenia…), raz."""
     add_rule(name="moja", kind="device_offline", duration_s=60)
 
     async def go():
@@ -453,7 +453,7 @@ def test_default_rules_for_existing_install_and_deleted_rules_stay_deleted(clien
 
     run(go)
     rules = client.get("/api/alert-rules").json()
-    assert [r["name"] for r in rules][:2] == ["moja", "Kontener zatrzymany"] and len(rules) == 17
+    assert [r["name"] for r in rules][:2] == ["moja", "Kontener zatrzymany"] and len(rules) == 14
     temp = next(r for r in rules if r["metric"] == "temp_c")
     assert temp["threshold"] == 85 and temp["op"] == ">"
     assert client.delete(f"/api/alert-rules/{rules[1]['id']}").status_code == 204

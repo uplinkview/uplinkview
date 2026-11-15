@@ -53,7 +53,6 @@ describe("wykres kołowy – dane", () => {
     expect(pieMetricsFor({ driver: "auto", kind: "switch" })).toEqual(["cpu", "mem", "port_load", "port_dir", "ports_state"]);
     expect(pieMetricsFor({ driver: "auto", kind: "ap" })).toContain("wifi_clients");
     expect(pieMetricsFor({ driver: "agent", kind: "server" })).toEqual(["cpu", "mem", "disk", "disks_share", "containers_mem", "containers_cpu", "services_state"]);
-    expect(pieMetricsFor({ driver: "proxmox", kind: "server" })).toEqual(["cpu", "mem", "guests_mem", "guests_state"]);
   });
 
   it("kolekcja: CPU z listy urządzeń, porty – wybranego urządzenia", () => {

@@ -31,7 +31,7 @@ i wykończenie. Wszystko przez tokeny w `frontend/src/index.css`, więc kolejną
 - **Font:** Geist i Geist Mono w paczce (`@fontsource-variable/geist`, `…/geist-mono`; z polskimi znakami, bez internetu).
 - **Menu:** w kolorze tła, aktywna pozycja to kafelek w kolorze karty z niebieską ikoną, wersja w niebieskiej plakietce.
   Od 0.58.1 grupy **Monitoring** (pulpit, mapa sieci; Dostępność od 0.58.3 w Ustawieniach), **Zdarzenia** (alerty z plakietką liczby
-  niepotwierdzonych – po zwinięciu menu kropka), **Integracje** (od 0.58.4 sam Proxmox – pusta grupa znika) i **System**.
+  niepotwierdzonych – po zwinięciu menu kropka), **Integracje** (na przyszłe integracje – pusta grupa znika) i **System**.
   Grupa to pole `group` w rejestrze `frontend/src/modules.tsx` (`NAV_GROUPS`; bez pola – Monitoring); nowa integracja
   = `group: "integrations"`. Grupa według przeznaczenia strony, nie źródła danych: Klienci (dane z UniFi) od 0.58.4
   w Monitoringu (Dashboard, Klienci, Mapa sieci); Integracje = strony osobnych systemów podglądanych przez UplinkView.
@@ -161,8 +161,7 @@ kołowe**; przełączniki przy wykresach, w tabeli portów i na stronie portu zo
 - **Które wykresy (urządzenia SNMP):** jeden port („Obciążenie portu”, „Port: odbierane i wysyłane”), porty podłączone /
   odłączone, od 0.41.0 także **CPU, RAM i dyski** (serwer Linux przez SNMP); zapisane wykresy wszystkich portów sprzed
   0.40.0. Co ~1,5 s, w nagłówku znacznik „Na żywo” (tylko gdy próbka faktycznie coś podała).
-- **Bez danych na żywo:** serwery z agentem (agent wysyła co 30 s, najczęściej co 10 s), Proxmox (sam liczy statystyki
-  co ~10 s), stany urządzeń i sprawdzeń całej sieci (wynik cyklu kolektora i sprawdzeń) – odczyty z bazy.
+- **Bez danych na żywo:** serwery z agentem (agent wysyła co 30 s, najczęściej co 10 s), stany urządzeń i sprawdzeń całej sieci (wynik cyklu kolektora i sprawdzeń) – odczyty z bazy.
 - **API:** `/api/live/device?device=<id>` (WebSocket, ta sama sesja co reszta API; od 0.41.0, wcześniej
   `/api/live/ports`) – prędkość i stan (`ifOperStatus`) widocznych portów, CPU i RAM tym samym driverem co kolektor
   (`read_health`), dyski (`read_disks`, driver `linux`); `api/live.py`. Wspólne odpytywanie co ~1,5 s, niezależnie od

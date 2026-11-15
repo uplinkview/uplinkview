@@ -5,7 +5,7 @@ import { renderApp } from "../test/renderApp";
 
 describe("kreator pierwszej konfiguracji", () => {
   it("z pustego pulpitu: urządzenie z testem SNMP, integracje i podsumowanie", async () => {
-    const { state, calls } = mockApi({ devices: [], modules: { proxmox: false, unifi: false, opnsense: false, agents: false, backups: true } });
+    const { state, calls } = mockApi({ devices: [], modules: { unifi: false, opnsense: false, agents: false, backups: true } });
     renderApp();
     const user = userEvent.setup();
     await user.click(await screen.findByRole("link", { name: "Uruchom kreator konfiguracji" }));
@@ -35,7 +35,7 @@ describe("kreator pierwszej konfiguracji", () => {
 
     expect(await screen.findByText("Gotowe!")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Dodaj kontroler UniFi/ })).toHaveAttribute("href", "/settings/controllers");
-    expect(screen.queryByRole("link", { name: /Proxmox/ })).not.toBeInTheDocument(); // moduł wyłączony
+    expect(screen.queryByRole("link", { name: /agenta/ })).not.toBeInTheDocument(); // moduł wyłączony
     await user.click(screen.getByRole("button", { name: "Przejdź do pulpitu" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Dashboard" })).toBeInTheDocument();
   });

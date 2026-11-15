@@ -13,7 +13,7 @@ body:
     id: model
     attributes:
       label: Model i wersja firmware
-      placeholder: np. Synology DS920+, DSM 7.2.2
+      placeholder: np. MikroTik hAP ax³, RouterOS 7.18
     validations:
       required: true
   - type: input

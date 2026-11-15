@@ -126,7 +126,7 @@ class Collector:
 
     async def load_targets(self) -> list[DeviceTarget]:
         async with Session() as session:
-            # Serwery z agentem same wysyłają dane (api/agents.py), węzły Proxmox czyta proxmox_collector – SNMP ich nie dotyczy
+            # Serwery z agentem same wysyłają dane (api/agents.py), urządzenia UniFi bez SNMP czyta unifi_collector
             devices = (await session.scalars(select(Device).where(Device.enabled, Device.driver.not_in(NON_SNMP_DRIVERS)))).all()
             return [
                 DeviceTarget(d.id, d.name, d.host, d.port, d.driver, credentials_for(d))
@@ -487,7 +487,6 @@ async def run() -> None:
     from .db import init_db
     from .notifications import Notifier
     from .opnsense_collector import OpnsenseCollector
-    from .proxmox_collector import ProxmoxCollector
     from .sysinfo import SystemCollector
     from .unifi_collector import UnifiCollector
     from .wanrate import WanSampler
@@ -496,5 +495,5 @@ async def run() -> None:
     await ensure_modules()
     engine = AlertEngine(notifier=Notifier())
     await engine.ensure_default_rules()
-    await asyncio.gather(Collector(alert_engine=engine).run_forever(), WanSampler().run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(), ProxmoxCollector().run_forever(),
+    await asyncio.gather(Collector(alert_engine=engine).run_forever(), WanSampler().run_forever(), UnifiCollector().run_forever(), SystemCollector().run_forever(),
                          OpnsenseCollector().run_forever(), ChecksCollector().run_forever())

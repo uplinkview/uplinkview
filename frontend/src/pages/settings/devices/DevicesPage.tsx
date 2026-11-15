@@ -52,8 +52,8 @@ function DeviceRow({
   const Icon = KIND_ICON[device.kind as keyof typeof KIND_ICON] ?? IconDeviceDesktop;
   const status = deviceState(device);
   const polled = staleHint(device) ?? relativeTime(device.last_polled_at);
-  // Serwer z agentem i węzeł Proxmox nie mają ustawień SNMP: test i edycja nie mają sensu
-  const agent = device.driver === "agent" || device.driver === "proxmox" || device.driver === "unifi_api";
+  // Serwer z agentem i urządzenie UniFi z oficjalnego API nie mają ustawień SNMP: test i edycja nie mają sensu
+  const agent = device.driver === "agent" || device.driver === "unifi_api";
   const iconButton = "flex size-9 items-center justify-center rounded-lg text-text-2 hover:bg-surface-2 hover:text-text disabled:opacity-50";
 
   return (
@@ -65,7 +65,7 @@ function DeviceRow({
             <p className="truncate text-sm font-medium">{device.name}</p>
             <p className="truncate text-xs text-text-2">
               {agent ? device.host : `${device.host}:${device.port}`} · {t(KIND_LABEL[device.kind] ?? "dash.kind.other")} ·{" "}
-              {device.driver === "proxmox" ? t("devices.proxmoxRow") : device.driver === "unifi_api" ? t("devices.unifiApiRow") : agent ? t("devices.agentRow") : snmpLabel(device)}
+              {device.driver === "unifi_api" ? t("devices.unifiApiRow") : agent ? t("devices.agentRow") : snmpLabel(device)}
             </p>
           </div>
         </div>

@@ -40,7 +40,7 @@ Specyfikacja wymaga, żeby system pokazywał, które dane zostały rzeczywiście
 | Poziom | Znaczenie |
 |--------|-----------|
 | `verified` – potwierdzone | sprawdzone na prawdziwym sprzęcie (zanonimizowany zrzut w `tests/fixtures`) albo mierzone przez sam UplinkView |
-| `partial` – częściowo | część przypadków sprawdzona, reszta tylko na atrapie (np. Proxmox: jeden węzeł tak, klaster nie) |
+| `partial` – częściowo | część przypadków sprawdzona, reszta tylko na atrapie (np. MikroTik: system tak, czujniki, PoE i SFP nie) |
 | `test` – dane testowe | tylko zrzuty syntetyczne według oficjalnych MIB albo atrapy API |
 
 Gdzie to widać:
