@@ -34,11 +34,6 @@ function AlertRow({ alert, tab }: { alert: Alert; tab: Tab }) {
             {t(SEVERITY_LABEL[alert.severity])}
           </span>
           <h3 className="min-w-0 text-sm font-medium">{alert.title}</h3>
-          {alert.maintenance && (
-            <span className="rounded-md bg-warning-soft px-2 py-0.5 text-xs text-warning" title={t("alerts.maintenance.hint")}>
-              {t("alerts.maintenance")}
-            </span>
-          )}
         </div>
         {alert.message && <p className="mt-1 text-xs text-text-2">{alert.message}</p>}
         <p className="mt-1 text-xs text-muted">

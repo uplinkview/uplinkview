@@ -24,7 +24,6 @@ from ..drivers import PollResult
 from ..modules import hidden_drivers, read_modules
 from ..probe import probe as snmp_probe
 from ..snmp import SnmpCredentials, SnmpError
-from .maintenance import active_device_ids
 from .schemas import (
     DeviceCreate,
     DeviceOut,
@@ -128,16 +127,7 @@ async def list_devices():
     """Urządzenia bez tych, które należą do wyłączonych modułów (serwery z agentem, urządzenia UniFi bez SNMP)."""
     async with Session() as session:
         hidden = hidden_drivers(await read_modules(session))
-        devices = (await session.scalars(select(Device).where(Device.driver.not_in(hidden or ("",))).order_by(Device.id))).all()
-        return await _mark_maintenance(session, devices)
-
-
-async def _mark_maintenance(session, devices: list[Device]) -> list[Device]:
-    """Znacznik „prace serwisowe” (zwykły atrybut obiektu, nie kolumna) – DeviceOut.maintenance."""
-    everything, ids = await active_device_ids(session)
-    for d in devices:
-        d.maintenance = everything or d.id in ids
-    return devices
+        return (await session.scalars(select(Device).where(Device.driver.not_in(hidden or ("",))).order_by(Device.id))).all()
 
 
 @router.post("/probe", response_model=ProbeOut)
@@ -197,8 +187,7 @@ async def create_device(body: DeviceCreate, probe: bool = Query(True, descriptio
 @router.get("/devices/{device_id}", response_model=DeviceOut)
 async def get_device(device_id: int):
     async with Session() as session:
-        (device,) = await _mark_maintenance(session, [await _get_device(session, device_id)])
-        return device
+        return await _get_device(session, device_id)
 
 
 @router.patch("/devices/{device_id}", response_model=DeviceOut)

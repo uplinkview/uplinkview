@@ -318,18 +318,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Podaj nazwę sekcji", "Enter a section name"),
     ("Identyfikatory widgetów muszą być unikalne", "Widget identifiers must be unique"),
     ("Widget {widget} wychodzi poza siatkę ({count} kolumn)", "Widget {widget} goes beyond the grid ({count} columns)"),
-    # --- okna serwisowe (api/maintenance.py) ---
-    ("Nie ma takiego okna serwisowego", "No such maintenance window"),
-    ("Podaj nazwę okna", "Enter a window name"),
-    ("Podaj początek i koniec okna", "Enter the start and end of the window"),
-    ("Czas musi mieć strefę czasową", "The time must have a time zone"),
-    ("Koniec okna musi być po początku", "The window end must be after its start"),
-    ("Okno jednorazowe może trwać najwyżej 31 dni", "A one-time window can last at most 31 days"),
-    ("Wybierz dni tygodnia", "Select days of the week"),
-    ("Godzina początku w formacie GG:MM", "Start time in HH:MM format"),
-    ("Podaj czas trwania okna", "Enter the window duration"),
-    ("Nie ma urządzeń: {ids}", "No such devices: {ids}"),
-    ("Można mieć najwyżej {count} okien serwisowych", "You can have at most {count} maintenance windows"),
     # --- metryki, panele, moduły (api/metrics.py, api/panels.py, modules.py) ---
     ("Nie ma takiego obiektu: {what}", "No such object: {what}"),
     ("urządzenie", "device"),
@@ -469,8 +457,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("serwer", "server"),
     ("trwa", "ongoing"),
     ("(trwa)", "(ongoing)"),
-    ("tak", "yes"),
-    ("serwis", "maintenance"),
     ("Raport UplinkView", "UplinkView report"),
     ("UplinkView – raport {month}", "UplinkView – report {month}"),
     ("Raport miesięczny UplinkView", "UplinkView monthly report"),
@@ -493,9 +479,6 @@ MESSAGES: tuple[tuple[str, str], ...] = (
     ("Dostępność %", "Availability %"),
     ("Niedostępność", "Downtime"),
     ("Niedostępność (min)", "Downtime (min)"),
-    ("Okna serwisowe", "Maintenance windows"),
-    ("Okna serwisowe (min)", "Maintenance windows (min)"),
-    ("Okno serwisowe", "Maintenance window"),
     ("Próbki", "Samples"),
     ("Nieudane", "Failed"),
     ("Śr. opóźnienie", "Avg. latency"),
@@ -529,10 +512,8 @@ MESSAGES: tuple[tuple[str, str], ...] = (
         "Device availability and WAN traffic cover the whole month.",
     ),
     (
-        "Dostępność urządzeń nie obejmuje czasu okien serwisowych. Niedostępność to przybliżenie: próbki bez odpowiedzi "
-        "× interwał odpytywania.",
-        "Device availability excludes maintenance windows. Downtime is an approximation: samples without a response "
-        "× polling interval.",
+        "Niedostępność to przybliżenie: próbki bez odpowiedzi × interwał odpytywania.",
+        "Downtime is an approximation: samples without a response × polling interval.",
     ),
     ("Najdłuższe {count} z {total} – pełna lista w pliku CSV.", "Longest {count} of {total} – full list in the CSV file."),
     # --- powiadomienia (notifications.py; język: ustawienie serwera, od 0.76.0) ---

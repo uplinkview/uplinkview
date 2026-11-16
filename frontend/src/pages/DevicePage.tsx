@@ -7,7 +7,7 @@ import { DefaultCommunityBadge } from "../components/SnmpWarning";
 import { RangePicker } from "../components/RangePicker";
 import { Card, ErrorNote, PageHeader } from "../components/ui";
 import { ChartWidget } from "../components/widgets/ChartWidget";
-import { KIND_LABEL, MaintenanceBadge, STATUS_LABEL, STATUS_STYLE, deviceIcon, deviceState, staleHint } from "../components/widgets/DevicesWidget";
+import { KIND_LABEL, STATUS_LABEL, STATUS_STYLE, deviceIcon, deviceState, staleHint } from "../components/widgets/DevicesWidget";
 import { ServerDetails } from "../components/widgets/ServerDetails";
 import { VerificationBadge } from "../components/Verification";
 import { t, type TextKey } from "../i18n";
@@ -333,7 +333,6 @@ export function DevicePage() {
           <span className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLE[status]}`} title={staleHint(d)}>
             {t(STATUS_LABEL[status])}
           </span>
-          <MaintenanceBadge device={d} />
           <VerificationBadge device={d} />
           <DefaultCommunityBadge device={d} />
           <Link

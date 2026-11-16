@@ -143,8 +143,6 @@ class DeviceOut(BaseModel):
     # Status do pokazania: `unknown`, gdy kolektor dawno nie wydał werdyktu (freshness.py); zapisany – w `last_status`
     status: str = Field(validation_alias=AliasChoices("live_status", "status"))
     stale: bool = False
-    # Trwa okno serwisowe obejmujące urządzenie (od 0.60.0, api/maintenance.py) – bez powiadomień
-    maintenance: bool = False
     # Dane drivera potwierdzone na prawdziwym sprzęcie: verified | partial | test (od 0.64.0, verification.py)
     verification: str = "verified"
     last_status: str | None = Field(None, validation_alias=AliasChoices("last_status", "status"))

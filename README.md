@@ -42,7 +42,7 @@ backup first.
   temperatures).
 - **Availability checks** – ping (latency, loss, jitter), HTTP(S) with certificate expiry, TCP port, DNS.
 - **Alerts** – device offline, port down, overload, CPU / RAM, disk, port errors, agent data; notifications by
-  webhook (e.g. Telegram), ntfy and e-mail, quiet hours with a summary, maintenance windows, grouping by topology.
+  webhook (e.g. Telegram), ntfy and e-mail, quiet hours with a summary, grouping by topology.
 - **Administration** – user roles (admin / operator / viewer), two-factor login (TOTP), audit log, HTTPS with a local CA,
   encrypted secrets, backups from the panel, monthly PDF / CSV report, modules you can turn off.
 - **Android app** – WAN traffic and a home-screen widget ([releases](https://github.com/uplinkview/uplinkview/releases)).

@@ -123,8 +123,6 @@ export interface Device {
   status: "up" | "down" | "unknown" | string;
   /** Dane nieaktualne – kolektor nie odświeża urządzenia (od 0.59.0; brak w starszym API) */
   stale?: boolean;
-  /** Trwa okno serwisowe obejmujące urządzenie – bez powiadomień (od 0.60.0) */
-  maintenance?: boolean;
   /** Dane drivera sprawdzone na prawdziwym sprzęcie: verified | partial | test (od 0.64.0; brak w starszym API) */
   verification?: "verified" | "partial" | "test" | string;
   /** Ostatni zapisany werdykt kolektora, także gdy jest nieaktualny (od 0.59.0) */

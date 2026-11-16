@@ -159,7 +159,7 @@ class WifiNetwork(Base):
 # --- konta ------------------------------------------------------------------
 
 
-# Role kont (od 0.61.0): administrator – wszystko; operator – podgląd, potwierdzanie alertów, okna serwisowe;
+# Role kont (od 0.61.0): administrator – wszystko; operator – podgląd i potwierdzanie alertów;
 # podgląd – tylko odczyt (plus własne hasło, odświeżanie i własne pulpity). Uprawnienia: api/security.py (ROLE_RULES).
 ROLES = ("admin", "operator", "viewer")
 
@@ -476,8 +476,6 @@ class Alert(Base):
     acked_by: Mapped[str | None] = mapped_column(String(64))
     # Bez powiadomienia, bo urządzenie wyżej w topologii też nie odpowiada (jedna wiadomość o przyczynie)
     muted: Mapped[bool] = mapped_column(Boolean, default=False)
-    # Zaczął się w oknie serwisowym (od 0.60.0): bez powiadomienia; jeśli trwa po oknie – powiadomienie wtedy
-    maintenance: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class DiskMetric(Base):
@@ -723,28 +721,6 @@ class CheckMetric(Base):
 
 
 HYPERTABLES = ("interface_metrics", "device_metrics", "wifi_metrics", "poe_port_metrics", "poe_budget_metrics", "system_metrics", "disk_metrics", "server_metrics", "metrics", "wan_link_metrics", "client_metrics", "check_metrics", "wan_rate_metrics")
-
-
-class MaintenanceWindow(Base):
-    """Okno serwisowe (od 0.60.0): planowane prace bez powiadomień, czas okna nie liczy się do dostępności.
-    Jednorazowe (`once`: `starts_at`–`ends_at`) albo co tydzień (`weekly`: dni `days` 0 = pon. … 6 = niedz.,
-    od `time_from` przez `duration_min`, strefa TZ serwera). `device_ids` puste = wszystkie urządzenia i sprawdzenia.
-    Logika: maintenance.py."""
-
-    __tablename__ = "maintenance_windows"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(80))
-    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    device_ids: Mapped[list | None] = mapped_column(JSONB)
-    kind: Mapped[str] = mapped_column(String(8))  # once | weekly
-    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    days: Mapped[list | None] = mapped_column(JSONB)
-    time_from: Mapped[str | None] = mapped_column(String(5))
-    duration_min: Mapped[int | None] = mapped_column(Integer)
-    note: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class AuditEntry(Base):

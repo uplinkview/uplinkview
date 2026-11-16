@@ -20,10 +20,10 @@ export interface MonthlyReport {
   raw_from: string | null;
   devices_percent: number | null;
   checks_percent: number | null;
-  devices: { id: number; name: string; host: string; kind: string; percent: number | null; down_s: number; maintenance_s: number; samples: number }[];
+  devices: { id: number; name: string; host: string; kind: string; percent: number | null; down_s: number; samples: number }[];
   checks: { id: number; name: string; kind: string; target: string; percent: number | null; samples: number; failed: number; avg_latency_ms: number | null; max_latency_ms: number | null }[];
   wan: { name: string; device: string; rx_bytes: number; tx_bytes: number; percent: number | null; down_s: number | null; outages: number | null; longest_outage_s: number | null }[];
-  alerts: { id: number; title: string; severity: string; device: string | null; started_at: string; resolved_at: string | null; duration_s: number; maintenance: boolean }[];
+  alerts: { id: number; title: string; severity: string; device: string | null; started_at: string; resolved_at: string | null; duration_s: number }[];
   alerts_total: number;
   alerts_by_severity: Record<string, number>;
 }
@@ -171,9 +171,9 @@ export function ReportsPage() {
           <Section id="report-devices" title={t("report.devices")}>
             <Table
               label={t("report.devices")}
-              head={[t("report.col.device"), t("report.col.host"), t("report.col.availability"), t("report.col.down"), t("report.col.maintenance")]}
-              right={[2, 3, 4]}
-              rows={data.devices.map((d) => [d.name, d.host, fmtPercent(d.percent), d.samples ? fmtDuration(d.down_s) : "–", d.maintenance_s ? fmtDuration(d.maintenance_s) : ""])}
+              head={[t("report.col.device"), t("report.col.host"), t("report.col.availability"), t("report.col.down")]}
+              right={[2, 3]}
+              rows={data.devices.map((d) => [d.name, d.host, fmtPercent(d.percent), d.samples ? fmtDuration(d.down_s) : "–"])}
             />
           </Section>
           <Section id="report-checks" title={t("report.checks")}>

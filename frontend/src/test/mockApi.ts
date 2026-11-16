@@ -1,5 +1,4 @@
 import type { Check, CheckPayload, CheckTestResult } from "../lib/checks";
-import type { MaintenanceWindow, MaintenanceWindowIn } from "../lib/maintenance";
 import type { AuditEntry } from "../lib/audit";
 import type { TlsStatus } from "../components/HttpsCard";
 import { vi } from "vitest";
@@ -54,14 +53,14 @@ export const REPORT = {
   devices_percent: 99.9975,
   checks_percent: 99.5,
   devices: [
-    { id: 1, name: "UCG Ultra", host: "192.168.1.1", kind: "gateway", percent: 99.995, down_s: 120, maintenance_s: 0, samples: 89000 },
-    { id: 2, name: "USW Lite 8 PoE", host: "192.168.1.2", kind: "switch", percent: 100, down_s: 0, maintenance_s: 3600, samples: 89000 },
+    { id: 1, name: "UCG Ultra", host: "192.168.1.1", kind: "gateway", percent: 99.995, down_s: 120, samples: 89000 },
+    { id: 2, name: "USW Lite 8 PoE", host: "192.168.1.2", kind: "switch", percent: 100, down_s: 0, samples: 89000 },
   ],
   checks: [{ id: 1, name: "Internet – Google DNS", kind: "ping", target: "8.8.8.8", percent: 99.5, samples: 2000, failed: 10, avg_latency_ms: 15.24, max_latency_ms: 80 }],
   wan: [{ name: "WAN 1", device: "UCG Ultra", rx_bytes: 512.3e9, tx_bytes: 40.1e9, percent: 99.9, down_s: 2580, outages: 2, longest_outage_s: 1800 }],
   alerts: [
-    { id: 1, title: "Port 7 przeszedł w stan down", severity: "warning", device: "USW Lite 8 PoE", started_at: "2026-10-03T10:00:00Z", resolved_at: "2026-10-03T10:30:00Z", duration_s: 1800, maintenance: false },
-    { id: 2, title: "Urządzenie nie odpowiada", severity: "critical", device: "UCG Ultra", started_at: "2026-10-20T02:00:00Z", resolved_at: null, duration_s: 3600, maintenance: true },
+    { id: 1, title: "Port 7 przeszedł w stan down", severity: "warning", device: "USW Lite 8 PoE", started_at: "2026-10-03T10:00:00Z", resolved_at: "2026-10-03T10:30:00Z", duration_s: 1800 },
+    { id: 2, title: "Urządzenie nie odpowiada", severity: "critical", device: "UCG Ultra", started_at: "2026-10-20T02:00:00Z", resolved_at: null, duration_s: 3600 },
   ],
   alerts_total: 2,
   alerts_by_severity: { warning: 1, critical: 1 },
@@ -326,8 +325,6 @@ interface MockState {
   /** Zapisany układ pulpitu (null = domyślny) */
   layout: DashboardLayout | null;
   controllers: Controller[];
-  /** Okna serwisowe (od 0.60.0) */
-  maintenance: MaintenanceWindow[];
   agents: Agent[];
   backups: BackupsResponse;
   modules: Modules;
@@ -396,7 +393,6 @@ export function mockApi(initial: Partial<MockState> = {}) {
     // Zapisany pulpit sprzed 0.42.0; `layout: null` = nic nie zapisano (układ domyślny z panelu)
     layout: CLASSIC_LAYOUT,
     controllers: [],
-    maintenance: [],
     users: [USER],
     tls: TLS,
     totp: { enabled: false, pending: false, recovery_left: 0 },
@@ -772,30 +768,6 @@ export function mockApi(initial: Partial<MockState> = {}) {
             (!q || [e.username, e.action, e.target, e.ip].some((v) => v?.toLowerCase().includes(q))),
         );
         return json(200, { items: items.slice(offset, offset + limit), total: items.length });
-      }
-      if (key === "GET /api/maintenance") return json(200, state.maintenance);
-      if (key === "POST /api/maintenance") {
-        const created: MaintenanceWindow = {
-          ...(body as MaintenanceWindowIn),
-          id: state.maintenance.length + 1,
-          created_at: "2026-11-06T10:00:00Z",
-          active: false,
-          active_until: null,
-          next_start: (body as MaintenanceWindowIn).starts_at,
-        };
-        state.maintenance.push(created);
-        return json(201, created);
-      }
-      const mw = /^(PUT|DELETE) \/api\/maintenance\/(\d+)$/.exec(key);
-      if (mw) {
-        const w = state.maintenance.find((x) => x.id === Number(mw[2]));
-        if (!w) return json(404, { detail: "Nie ma takiego okna serwisowego" });
-        if (mw[1] === "DELETE") {
-          state.maintenance = state.maintenance.filter((x) => x !== w);
-          return json(204);
-        }
-        Object.assign(w, body);
-        return json(200, w);
       }
       if (key === "GET /api/controllers") return json(200, state.controllers);
       if (key === "POST /api/controllers/probe") {

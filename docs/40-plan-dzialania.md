@@ -148,7 +148,7 @@ Kolejność do korekty według próśb użytkowników:
 ## Etap 8 – dla małych firm (1.5–1.9)
 
 - Logowanie SSO (OIDC – Authentik, Authelia).
-- Raporty wysyłane e-mailem według harmonogramu; okna serwisowe w SLA WAN i sprawdzeniach.
+- Raporty wysyłane e-mailem według harmonogramu.
 - Analiza ruchu NetFlow/sFlow – „kto zużywa łącze”.
 - Wiele lokalizacji w jednym panelu.
 - Dłuższy audyt, eksport dziennika.

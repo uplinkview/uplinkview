@@ -8,10 +8,10 @@ także „podgląd” – raport tylko czyta dane.
 
 | Sekcja | Źródło | Zakres |
 |--------|--------|--------|
-| Urządzenia: dostępność %, czas niedostępności, okna serwisowe | `device_metrics_1h` (agregat godzinowy), bez czasu okien serwisowych | cały miesiąc, do 2 lat wstecz |
+| Urządzenia: dostępność %, czas niedostępności | `device_metrics_1h` (agregat godzinowy) | cały miesiąc, do 2 lat wstecz |
 | Sprawdzenia: dostępność %, nieudane, śr./maks. opóźnienie | `check_metrics` (surowe) | ostatnie `RETENTION_DAYS` (30 dni) |
 | Łącza WAN: pobrane / wysłane, dostępność (SLA), przerwy, najdłuższa | ruch: `interface_metrics_1h` portów z rolą `wan`; SLA: `wan_link_metrics` (surowe) | ruch – cały miesiąc, SLA – 30 dni |
-| Alerty rozpoczęte w miesiącu: waga, czas trwania, urządzenie, okno serwisowe | `alerts` | cały miesiąc |
+| Alerty rozpoczęte w miesiącu: waga, czas trwania, urządzenie | `alerts` | cały miesiąc |
 
 Gdy surowe dane nie obejmują całego miesiąca, raport podaje, od kiedy liczy sprawdzenia i SLA WAN (`raw_from`).
 Podsumowanie u góry: średnia dostępność urządzeń i sprawdzeń (ważona liczbą próbek), dostępność pierwszego łącza WAN
@@ -46,4 +46,3 @@ Bez `month` – poprzedni pełny miesiąc; miesiąc z przyszłości – 422.
 
 - Wysyłka raportu e-mailem pierwszego dnia miesiąca (kanał e-mail z powiadomień).
 - Zapis raportów miesięcznych w bazie – wtedy sprawdzenia i SLA WAN nie tracą danych po 30 dniach.
-- SLA WAN i dostępność sprawdzeń z odjęciem okien serwisowych.

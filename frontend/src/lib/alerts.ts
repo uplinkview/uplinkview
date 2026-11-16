@@ -48,8 +48,6 @@ export interface Alert {
   resolved_at: string | null;
   acked_at: string | null;
   acked_by: string | null;
-  /** Zaczął się w oknie serwisowym – bez powiadomienia (od 0.60.0) */
-  maintenance?: boolean;
 }
 
 export interface AlertSummary {

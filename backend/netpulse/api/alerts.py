@@ -87,8 +87,6 @@ class AlertOut(BaseModel):
     resolved_at: datetime | None
     acked_at: datetime | None
     acked_by: str | None
-    # W oknie serwisowym – bez powiadomienia i bez plakietki dzwonka (od 0.60.0)
-    maintenance: bool = False
 
 
 class AlertSummary(BaseModel):
@@ -180,11 +178,11 @@ async def list_alerts(
 
 @router.get("/alerts/summary", response_model=AlertSummary)
 async def alerts_summary():
-    """Liczniki aktywnych alertów (dzwonek w pasku górnym). Alerty z okna serwisowego nie zapalają dzwonka."""
+    """Liczniki aktywnych alertów (dzwonek w pasku górnym)."""
     async with Session() as session:
         rows = (
             await session.execute(
-                select(Alert.severity, func.count(), func.count(Alert.id).filter(Alert.acked_at.is_(None), Alert.maintenance.is_(False)))
+                select(Alert.severity, func.count(), func.count(Alert.id).filter(Alert.acked_at.is_(None)))
                 .where(Alert.state == "firing")
                 .group_by(Alert.severity)
             )

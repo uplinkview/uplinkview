@@ -41,7 +41,7 @@ const AUTH_ACTIONS = ["setup", "login", "login_failed", "logout", "password", "t
 
 /** Zasoby z pierwszego członu ścieżki API (szablon trasy, np. /api/devices/{device_id}) – nazwy w `audit.res.*`. */
 const RESOURCES = [
-  "devices", "interfaces", "alert-rules", "alerts", "maintenance", "users", "dashboards", "dashboard", "checks", "controllers",
+  "devices", "interfaces", "alert-rules", "alerts", "users", "dashboards", "dashboard", "checks", "controllers",
   "notification-channels", "backups", "modules", "updates", "wan", "agents", "opnsense", "preferences", "system", "probe",
 ];
 

@@ -46,16 +46,6 @@ export function staleHint(d: Pick<Device, "stale" | "last_polled_at" | "last_sta
   return t("dash.status.staleHint", { time: relativeTime(d.last_polled_at) ?? t("dash.never"), last });
 }
 
-/** Plakietka „prace serwisowe”, gdy trwa okno serwisowe obejmujące urządzenie (od 0.60.0). */
-export function MaintenanceBadge({ device }: { device: Pick<Device, "maintenance"> }) {
-  if (!device.maintenance) return null;
-  return (
-    <span className="shrink-0 rounded-md bg-warning-soft px-2 py-0.5 text-xs text-warning" title={t("dash.maintenance.hint")}>
-      {t("dash.maintenance")}
-    </span>
-  );
-}
-
 export function deviceIcon(kind: string) {
   return KIND_ICON[kind as keyof typeof KIND_ICON] ?? IconDeviceDesktop;
 }
@@ -86,7 +76,6 @@ function DeviceCard({ device, availability }: { device: Device; availability: nu
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-1">
-          <MaintenanceBadge device={device} />
           <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs ${STATUS_STYLE[status]}`} title={staleHint(device)}>
             {t(STATUS_LABEL[status])}
           </span>
@@ -217,11 +206,6 @@ function DevicesTable({ list }: { list: Device[] }) {
                       <span className={`size-2 rounded-full ${STATUS_DOT[status]}`} aria-hidden="true" />
                       {t(STATUS_LABEL[status])}
                     </span>
-                    {d.maintenance && (
-                      <span className="ml-2 text-xs text-warning" title={t("dash.maintenance.hint")}>
-                        {t("dash.maintenance")}
-                      </span>
-                    )}
                   </td>
                 </tr>
               );

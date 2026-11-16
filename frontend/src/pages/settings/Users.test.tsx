@@ -55,16 +55,16 @@ describe("role i konta", () => {
     expect(screen.getAllByText("Podgląd").length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Urządzenia" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Konta" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Okna serwisowe" })).toBeNull();
     expect(screen.getByRole("link", { name: "Dashboardy" })).toBeInTheDocument();
   });
 
-  it("operator widzi okna serwisowe, ale nie konta", async () => {
+  it("operator nie widzi kont ani ustawień administratora", async () => {
     mockApi({ admin: false, role: "operator" });
     renderApp("/settings/account");
     await screen.findByRole("heading", { name: "Konto" });
-    expect(screen.getByRole("link", { name: "Okna serwisowe" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dashboardy" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Konta" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Urządzenia" })).toBeNull();
   });
 });
 

@@ -19,7 +19,7 @@ from sqlalchemy import func, inspect, select, text
 from netpulse import aggregates
 from netpulse.db import SchemaMismatchError, Session, engine, init_db
 from netpulse.db.migrate import alembic_config, current_revision, head_revision, include_object
-from netpulse.db.models import Alert, AlertRule, AppSetting, Base, Device, Metric
+from netpulse.db.models import Alert, AlertRule, AppSetting, AuditEntry, Base, Device, Metric
 
 needs_db = pytest.mark.skipif(os.environ.get("NETPULSE_TEST_DB") != "1", reason="brak testowej bazy (NETPULSE_TEST_DB=1)")
 
@@ -43,12 +43,12 @@ async def drop_everything() -> None:
 
 
 # Tabele i kolumny dodane migracjami po 0001 – baza z 0.9.0 ich nie miała
-AFTER_BASELINE = {"agents", "metrics", "wan_links", "wan_link_metrics", "known_clients", "client_metrics", "checks", "check_metrics", "unifi_api_devices", "maintenance_windows", "audit_log", "opnsense_apis", "wan_rate_metrics"}
+AFTER_BASELINE = {"agents", "metrics", "wan_links", "wan_link_metrics", "known_clients", "client_metrics", "checks", "check_metrics", "unifi_api_devices", "audit_log", "opnsense_apis", "wan_rate_metrics"}
 COLUMNS_AFTER_BASELINE = {
     "alert_rules": ["match"],
     "dashboards": ["public_token_hash", "public_token", "public_expires_at", "public_pin_hash", "public_options"],
     "notification_channels": ["secret", "config", "quiet_from", "quiet_to", "quiet_critical", "quiet_backlog"],
-    "alerts": ["muted", "maintenance"],
+    "alerts": ["muted"],
     "users": ["role", "totp_secret", "totp_enabled", "totp_last_step", "totp_recovery"],
 }
 
@@ -235,3 +235,41 @@ def test_proxmox_removal_keeps_other_data(clean_db):
     assert metrics == ["temp_c"]
     assert modules == {"unifi": True}
     assert not [t for t in tables if t.startswith("proxmox_")]
+
+
+@needs_db
+def test_maintenance_windows_removal(clean_db):
+    """0024 (0.87.0): tabela okien, kolumna `alerts.maintenance` i wpisy dziennika o oknach znikają; reszta zostaje."""
+
+    async def scenario():
+        await drop_everything()
+        await init_db()
+        async with engine.begin() as conn:
+            await conn.run_sync(lambda c: command.downgrade(alembic_config(c), "0023"))
+        now = datetime.now(UTC)
+        async with engine.begin() as conn:
+            await conn.execute(
+                text("INSERT INTO maintenance_windows (name, enabled, kind, days, time_from, duration_min) VALUES ('x', true, 'weekly', '[5]', '02:00', 60)")
+            )
+            await conn.execute(
+                text("INSERT INTO alerts (subject, state, severity, title, started_at, muted, maintenance) VALUES ('d1', 'firing', 'warning', 'A', :t, true, true)"),
+                {"t": now},
+            )
+            for action in ("POST /api/maintenance", "DELETE /api/maintenance/{window_id}", "POST /api/devices"):
+                await conn.execute(text("INSERT INTO audit_log (time, action) VALUES (:t, :a)"), {"t": now, "a": action})
+        await init_db()
+        rev, diff = await state()
+        async with Session() as s:
+            alerts = (await s.scalars(select(Alert.title))).all()
+            audit = (await s.scalars(select(AuditEntry.action))).all()
+        async with engine.connect() as conn:
+            tables = await conn.run_sync(lambda c: inspect(c).get_table_names())
+            columns = await conn.run_sync(lambda c: [col["name"] for col in inspect(c).get_columns("alerts")])
+        return rev, diff, alerts, audit, tables, columns
+
+    rev, diff, alerts, audit, tables, columns = run(scenario)
+    assert rev == head_revision()
+    assert diff == [], diff
+    assert alerts == ["A"]
+    assert audit == ["POST /api/devices"]
+    assert "maintenance_windows" not in tables and "maintenance" not in columns

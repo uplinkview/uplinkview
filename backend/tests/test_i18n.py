@@ -22,7 +22,7 @@ SKIP_FILES = {"cli.py", "agent/netpulse_agent.py", "__main__.py", "messages.py",
 SKIP_CALLS = {"info", "warning", "debug", "error", "exception", "critical", "print", "echo", "APIRouter", "Query", "Field", "Path", "Body"}
 POLISH = re.compile(
     r"[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]|(?i:\b(?:nie|brak|podaj|wybierz|najpierw|wymagane|tych|ten|ta|to|niedozwolony|oczekiwany"
-    r"|albo|lub|godzina|niepoprawny|jest|dla|portu|nieznany|nieznana|zbyt|wymaga|kopii|okna|kopia"
+    r"|albo|lub|godzina|niepoprawny|jest|dla|portu|nieznany|nieznana|zbyt|wymaga|kopii|kopia"
     r"|w|i|z|na|do|od|po|przez|oraz|ze|za|bez|kontener|zatrzymany|zatrzymana|maszyna|wysoka|temperatura|fabryczne"
     r"|pobieranie|serwer|porty|pomiar|zanonimizowane|odpowiedzi|kontroler|kontrolera|bramy|dysk|certyfikat|wygasa)\b)"
 )
@@ -128,7 +128,7 @@ def test_translate_titles_errors_and_details():
         "Ta operacja wymaga uprawnień podglądu": "This operation requires viewer permissions",
         "Kontroler UniFi: urządzenie niedostępne": "UniFi controller: device unavailable",
         "NXDOMAIN: nazwa nie istnieje": "NXDOMAIN: name does not exist",
-        "Value error, Podaj nazwę okna": "Value error, Enter a window name",
+        "Value error, Podaj nazwę sekcji": "Value error, Enter a section name",
         "UCG nie odpowiada\nZa nim nie odpowiada też: AP, Switch": "UCG is not responding\nAlso not responding behind it: AP, Switch",
         "Brak połączenia z OPNsense: ConnectError: refused": "No connection to OPNsense: ConnectError: refused",
         "Mój pulpit": "My dashboard",
@@ -159,7 +159,7 @@ class _Body(BaseModel):
     @classmethod
     def _name(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError("Podaj nazwę okna")
+            raise ValueError("Podaj nazwę sekcji")
         return v
 
 
@@ -175,8 +175,8 @@ def _app() -> FastAPI:
     async def alerts():
         return [{"title": "Garaż nie odpowiada", "message": None, "name": "Garaż", "value": 1.5, "lang": i18n.current_language()}]
 
-    @app.post("/api/windows")
-    async def windows(body: _Body):
+    @app.post("/api/sections")
+    async def sections(body: _Body):
         return body
 
     @app.get("/api/devices/{device_id}/metrics")
@@ -197,7 +197,7 @@ def test_middleware_translates_json_for_english_only():
         {"title": "Garaż is not responding", "message": None, "name": "Garaż", "value": 1.5, "lang": "en"}
     ]
     assert client.get("/api/alerts", headers={"Accept-Language": "pl-PL"}).json()[0]["title"] == "Garaż nie odpowiada"
-    r = client.post("/api/windows", json={"name": " "}, headers=en)
-    assert r.status_code == 422 and r.json()["detail"][0]["msg"] == "Value error, Enter a window name"
+    r = client.post("/api/sections", json={"name": " "}, headers=en)
+    assert r.status_code == 422 and r.json()["detail"][0]["msg"] == "Value error, Enter a section name"
     # serie liczb nie przechodzą przez tłumaczenie
     assert client.get("/api/devices/1/metrics", headers=en).json() == [{"name": "Mój pulpit"}]

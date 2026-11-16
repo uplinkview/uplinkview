@@ -270,18 +270,9 @@ urządzenia w API = `live_status` / `status_sql`, nie surowe `Device.status`.** 
 Testy alertów z bazą: helper `polled(now)` (świeży werdykt przed oceną). Panel: plakietka „brak aktualnych danych”
 (`deviceState`, `staleHint` w `DevicesWidget.tsx`). Opis: `docs/31-swiezosc-danych.md`.
 
-## Okna serwisowe (0.60.0)
-
-Ustawienia → Okna serwisowe: jednorazowe (`starts_at`–`ends_at`) albo co tydzień (`days` 0 = pon., `time_from`, `duration_min`,
-czas serwera TZ), na wybrane urządzenia albo na wszystko (`device_ids` puste – też alerty bez urządzenia). W oknie alert powstaje
-z `muted = maintenance = true` (bez powiadomienia, bez dzwonka), po oknie – powiadomienie, gdy problem trwa; koniec w oknie
-bez „zakończony”. Dostępność odejmuje próbki z okien (z surowych tabel, `maintenance_s`). Kod: `netpulse/maintenance.py`
-(czysta logika), `api/maintenance.py`, migracja 0013 (`maintenance_windows`, `alerts.maintenance`), panel
-`pages/settings/MaintenancePage.tsx`, `MaintenanceBadge`. SLA WAN i dostępność sprawdzeń jeszcze bez okien. Opis: `docs/32-okna-serwisowe.md`.
-
 ## Role i dziennik zdarzeń (0.61.0)
 
-Role kont: `admin` / `operator` (potwierdza alerty, okna serwisowe) / `viewer` (tylko odczyt + własne hasło, odświeżanie,
+Role kont: `admin` / `operator` (potwierdza alerty) / `viewer` (tylko odczyt + własne hasło, odświeżanie,
 własne pulpity); `users.role` (migracja 0014, `is_admin` zostaje i ustawia je `User.set_role`). API: domyślnie każda zmiana
 wymaga administratora – **nowa trasa dla niższej roli = wpis w `ROLE_RULES` (`api/security.py`)**, `test_roles.py` pilnuje,
 że wpisy wskazują istniejące trasy. Ustawienia → Konta (`api/users.py`, ostatni administrator chroniony) i Dziennik zdarzeń

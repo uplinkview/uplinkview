@@ -1,5 +1,5 @@
 /** Role kont (od 0.61.0, backend: api/security.py ROLE_RULES): administrator – wszystko; operator – podgląd,
- *  potwierdzanie alertów i okna serwisowe; podgląd – tylko odczyt (plus własne hasło, odświeżanie i pulpity). */
+ *  potwierdzanie alertów; podgląd – tylko odczyt (plus własne hasło, odświeżanie i pulpity). */
 import { useAuth } from "../auth/AuthProvider";
 import type { TextKey } from "../i18n";
 

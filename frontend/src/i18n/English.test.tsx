@@ -54,7 +54,6 @@ describe("tłumaczenie angielskie (0.74.0)", () => {
     "/settings/devices",
     "/settings/alert-rules",
     "/settings/notifications",
-    "/settings/maintenance",
     "/settings/refresh",
     "/settings/modules",
     "/settings/dashboards",

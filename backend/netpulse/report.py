@@ -1,8 +1,7 @@
 """Raport miesięczny (od 0.65.0): dostępność urządzeń, sprawdzeń i łączy WAN, ruch WAN i alerty z jednego miesiąca.
 
 Dane:
-- urządzenia – jak strona dostępności (`api/availability.py`): agregaty godzinowe TimescaleDB (rok wstecz), bez czasu
-  okien serwisowych;
+- urządzenia – jak strona dostępności (`api/availability.py`): agregaty godzinowe TimescaleDB (rok wstecz);
 - sprawdzenia i SLA łączy WAN – surowe próbki (`check_metrics`, `wan_link_metrics`), więc tylko z ostatnich
   `retention_days` (domyślnie 30 dni) – raport mówi wtedy, od kiedy są dane;
 - ruch WAN – porty z rolą `wan`: średnia godzinowa × czas (agregat `interface_metrics_1h`);
@@ -26,7 +25,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import select, text
 
-from . import __version__, maintenance, wan_links
+from . import __version__, wan_links
 from .config import settings
 from .db import Session, timescale_available
 from .db.models import Alert, Check, Device, Interface, WanLink, WanLinkMetric
@@ -49,7 +48,6 @@ class DeviceRow:
     kind: str
     percent: float | None
     down_s: int
-    maintenance_s: int
     samples: int
 
 
@@ -87,7 +85,6 @@ class AlertRow:
     started_at: datetime
     resolved_at: datetime | None
     duration_s: float
-    maintenance: bool
 
 
 @dataclass
@@ -174,23 +171,11 @@ async def _devices(session, start: datetime, end: datetime, timescale: bool, hid
         )
     counts = {r.device_id: (int(r.total), int(r.up)) for r in (await session.execute(text(sql), {"s": start, "e": end})).all()}
     devices = (await session.scalars(select(Device).where(Device.driver.not_in(hidden or ("",))).order_by(Device.name))).all()
-    windows = await maintenance.load(session)
     rows = []
     for d in devices:
         total, up = counts.get(d.id, (0, 0))
         if not total and not d.enabled:
             continue  # wyłączone i bez danych w miesiącu – nie ma o czym pisać
-        skip_total = skip_up = 0
-        spans = maintenance.spans_for(windows, d.id, start, end) if windows and total else []
-        if spans:
-            q = (
-                "SELECT count(*) AS total, count(*) FILTER (WHERE reachable) AS up FROM device_metrics m "
-                "JOIN unnest(CAST(:starts AS timestamptz[]), CAST(:ends AS timestamptz[])) AS w(s, e) "
-                "ON m.time >= w.s AND m.time < w.e WHERE m.device_id = :id"
-            )
-            r = (await session.execute(text(q), {"id": d.id, "starts": [s for s, _ in spans], "ends": [e for _, e in spans]})).one()
-            skip_total, skip_up = int(r.total), int(r.up)
-        total, up = max(0, total - skip_total), max(0, up - skip_up)
         rows.append(
             DeviceRow(
                 id=d.id,
@@ -199,7 +184,6 @@ async def _devices(session, start: datetime, end: datetime, timescale: bool, hid
                 kind=d.kind,
                 percent=up * 100.0 / total if total else None,
                 down_s=(total - up) * settings.poll_interval,
-                maintenance_s=skip_total * settings.poll_interval,
                 samples=total,
             )
         )
@@ -310,7 +294,6 @@ async def _alerts(session, start: datetime, end: datetime) -> tuple[list[AlertRo
                 started_at=a.started_at,
                 resolved_at=a.resolved_at,
                 duration_s=max(0.0, (min(finish, end) - a.started_at).total_seconds()),
-                maintenance=bool(a.maintenance),
             )
         )
     by_severity = dict(Counter(a.severity for a in out))
@@ -431,9 +414,9 @@ def to_csv(report: Report, lang: str = "pl") -> bytes:
         w.writerow([t("Sprawdzenia i SLA WAN od"), when(report.raw_from)])
     w.writerow([])
     w.writerow([t("Urządzenia")])
-    w.writerow([t(h) for h in ("Nazwa", "Adres", "Rodzaj", "Dostępność %", "Niedostępność (min)", "Okna serwisowe (min)", "Próbki")])
+    w.writerow([t(h) for h in ("Nazwa", "Adres", "Rodzaj", "Dostępność %", "Niedostępność (min)", "Próbki")])
     for d in report.devices:
-        w.writerow([d.name, d.host, t(KIND_LABEL.get(d.kind, d.kind)), num(d.percent, 3), num(d.down_s / 60, 1), num(d.maintenance_s / 60, 1), d.samples])
+        w.writerow([d.name, d.host, t(KIND_LABEL.get(d.kind, d.kind)), num(d.percent, 3), num(d.down_s / 60, 1), d.samples])
     w.writerow([])
     w.writerow([t("Sprawdzenia dostępności")])
     w.writerow([t(h) for h in ("Nazwa", "Rodzaj", "Cel", "Dostępność %", "Nieudane", "Próbki", "Śr. opóźnienie (ms)", "Maks. opóźnienie (ms)")])
@@ -451,11 +434,11 @@ def to_csv(report: Report, lang: str = "pl") -> bytes:
         ])  # fmt: skip
     w.writerow([])
     w.writerow([t("Alerty"), report.alerts_total])
-    w.writerow([t(h) for h in ("Początek", "Koniec", "Czas (min)", "Waga", "Alert", "Urządzenie", "Okno serwisowe")])
+    w.writerow([t(h) for h in ("Początek", "Koniec", "Czas (min)", "Waga", "Alert", "Urządzenie")])
     for a in report.alerts:
         w.writerow([
             when(a.started_at), when(a.resolved_at) if a.resolved_at else t("trwa"), num(a.duration_s / 60, 1),
-            t(SEVERITY_LABEL.get(a.severity, a.severity)), t(a.title), a.device or "", t("tak") if a.maintenance else "",
+            t(SEVERITY_LABEL.get(a.severity, a.severity)), t(a.title), a.device or "",
         ])  # fmt: skip
     return ("\ufeff" + buf.getvalue()).encode("utf-8")
 
@@ -608,14 +591,14 @@ def to_pdf(report: Report, font: tuple[str, str] | None | bool = True, lang: str
             f"Sprawdzenia i SLA łączy WAN liczone od {when(report.raw_from)} – szczegółowe próbki są trzymane "
             f"{settings.retention_days} dni. Dostępność urządzeń i ruch WAN obejmują cały miesiąc."
         )
-    note("Dostępność urządzeń nie obejmuje czasu okien serwisowych. Niedostępność to przybliżenie: próbki bez odpowiedzi × interwał odpytywania.")
+    note("Niedostępność to przybliżenie: próbki bez odpowiedzi × interwał odpytywania.")
 
     heading("Urządzenia")
     table(
-        ["Urządzenie", "Adres", "Rodzaj", "Dostępność", "Niedostępność", "Okna serwisowe"],
-        [[d.name, d.host, t(KIND_LABEL.get(d.kind, d.kind)), pct(d.percent), fmt_duration(d.down_s) if d.samples else "–", fmt_duration(d.maintenance_s) if d.maintenance_s else ""] for d in report.devices],
-        (52, 30, 24, 24, 24, 26),
-        "lllrrr",
+        ["Urządzenie", "Adres", "Rodzaj", "Dostępność", "Niedostępność"],
+        [[d.name, d.host, t(KIND_LABEL.get(d.kind, d.kind)), pct(d.percent), fmt_duration(d.down_s) if d.samples else "–"] for d in report.devices],
+        (60, 36, 28, 28, 28),
+        "lllrr",
     )  # fmt: skip
 
     heading("Sprawdzenia dostępności")
@@ -640,7 +623,7 @@ def to_pdf(report: Report, font: tuple[str, str] | None | bool = True, lang: str
         note(f"Najdłuższe {len(longest)} z {report.alerts_total} – pełna lista w pliku CSV.")
     table(
         ["Początek", "Czas", "Waga", "Alert", "Urządzenie"],
-        [[when(a.started_at), fmt_duration(a.duration_s) + ("" if a.resolved_at else " " + t("(trwa)")), t(SEVERITY_LABEL.get(a.severity, a.severity)) + (" · " + t("serwis") if a.maintenance else ""), t(a.title), a.device or ""] for a in longest],
+        [[when(a.started_at), fmt_duration(a.duration_s) + ("" if a.resolved_at else " " + t("(trwa)")), t(SEVERITY_LABEL.get(a.severity, a.severity)), t(a.title), a.device or ""] for a in longest],
         (28, 24, 28, 68, 32),
         "lllll",
     )  # fmt: skip

@@ -170,9 +170,6 @@ ROLE_RULES: dict[tuple[str, str], str] = {
     ("POST", "/api/dashboards/{dashboard_id}/default"): "viewer",
     # operator: obsługa bieżąca
     ("POST", "/api/alerts/{alert_id}/ack"): "operator",
-    ("POST", "/api/maintenance"): "operator",
-    ("PUT", "/api/maintenance/{window_id}"): "operator",
-    ("DELETE", "/api/maintenance/{window_id}"): "operator",
 }
 ROLE_NAMES = {"admin": "administratora", "operator": "operatora", "viewer": "podglądu"}
 

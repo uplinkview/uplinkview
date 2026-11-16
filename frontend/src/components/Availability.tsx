@@ -17,7 +17,6 @@ function PeriodTile({ kind, id, days }: { kind: AvailabilityKind; id: number; da
       <dt className="text-xs text-text-2">{t(`avail.period.${days}` as const)}</dt>
       <dd className={`text-lg font-medium ${TONE_TEXT[availabilityTone(pct)]}`}>{isLoading ? "…" : formatAvailability(pct)}</dd>
       {data && data.down_s > 0 && <dd className="text-xs text-muted">{t(kind === "devices" ? "avail.down" : "avail.disconnected", { time: formatDuration(data.down_s) })}</dd>}
-      {data && (data.maintenance_s ?? 0) > 0 && <dd className="text-xs text-muted">{t("avail.maintenance", { time: formatDuration(data.maintenance_s ?? 0) })}</dd>}
     </div>
   );
 }

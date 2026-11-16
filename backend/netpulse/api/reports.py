@@ -30,7 +30,6 @@ class DeviceRowOut(BaseModel):
     kind: str
     percent: float | None
     down_s: int
-    maintenance_s: int
     samples: int
 
 
@@ -65,7 +64,6 @@ class AlertRowOut(BaseModel):
     started_at: datetime
     resolved_at: datetime | None
     duration_s: float
-    maintenance: bool
 
 
 class ReportOut(BaseModel):

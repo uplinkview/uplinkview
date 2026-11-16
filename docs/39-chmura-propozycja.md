@@ -179,7 +179,7 @@ przez tunel (wykresy, „Na żywo”). Ile instalacji udźwignie jeden serwer �
 
 1. Silnik alertów w instalacji otwiera alert (jak dziś).
 2. Nowy rodzaj kanału w `notifications.py`: **„Aplikacja mobilna (chmura)”** – obok webhooka, Telegrama, ntfy
-   i e-maila. Obowiązują go te same reguły: ciche godziny, okna serwisowe, grupowanie po topologii.
+   i e-maila. Obowiązują go te same reguły: ciche godziny, grupowanie po topologii.
 3. Łącznik wysyła ramkę `event`. Chmura zapisuje alert i wysyła push do telefonów członków organizacji, którzy
    mają tę sieć włączoną.
 4. Stuknięcie w powiadomienie otwiera alert w aplikacji (dane przez tunel).

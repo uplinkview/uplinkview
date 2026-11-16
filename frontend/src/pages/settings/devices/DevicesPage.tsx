@@ -8,7 +8,7 @@ import { ApiError, del, patch, post, type Device, type ProbeResult } from "../..
 import { relativeTime } from "../../../lib/format";
 import { useDevices } from "../../../lib/queries";
 import { DefaultCommunityBadge } from "../../../components/SnmpWarning";
-import { MaintenanceBadge, STATUS_LABEL, STATUS_STYLE, deviceState, staleHint } from "../../../components/widgets/DevicesWidget";
+import { STATUS_LABEL, STATUS_STYLE, deviceState, staleHint } from "../../../components/widgets/DevicesWidget";
 import { DeviceForm } from "./DeviceForm";
 import { DiscoveryPanel } from "./DiscoveryPanel";
 import { ProbeSummary } from "./ProbeSummary";
@@ -71,7 +71,6 @@ function DeviceRow({
         </div>
         <div className="flex items-center gap-2">
           <DefaultCommunityBadge device={device} />
-          {device.enabled && <MaintenanceBadge device={device} />}
           {!device.enabled && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-text-2">{t("devices.disabled")}</span>}
           {device.enabled && (
             <span className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLE[status]}`} title={polled ?? undefined}>

@@ -5,7 +5,7 @@
 | Rola | Co może |
 |---|---|
 | **Administrator** | wszystko: urządzenia, reguły alertów, integracje, konta, kopie zapasowe, aktualizacje, pulpity publiczne |
-| **Operator** | ogląda cały panel, potwierdza alerty, planuje okna serwisowe |
+| **Operator** | ogląda cały panel, potwierdza alerty |
 | **Podgląd** | tylko ogląda; może zmienić własne hasło, interwał odświeżania i swoje pulpity |
 
 Konta zakłada administrator w **Ustawienia → Konta** (login, hasło, rola). Pierwsze konto (kreator) jest administratorem.
@@ -31,7 +31,7 @@ rolę „Podgląd” (migracja `0014`).
 
 - `lib/roles.ts`: `roleOf(user)`, `hasRole`, `useCan("operator")`.
 - Podstrony Ustawień mają pole `role` w `modules.tsx` (bez niego – tylko administrator). Podgląd widzi: Konto,
-  Dashboardy, Odświeżanie, System, Moduły i Aktualizacja (dwie ostatnie tylko do odczytu); operator dodatkowo Okna serwisowe.
+  Dashboardy, Odświeżanie, System, Moduły i Aktualizacja (dwie ostatnie tylko do odczytu); operator widzi to samo.
 - Przycisk „Potwierdź” przy alertach widzi operator i administrator.
 
 ## Dziennik zdarzeń

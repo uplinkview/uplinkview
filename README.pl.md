@@ -41,7 +41,7 @@ robi kopię zapasową bazy. Szczegóły: [`docs/04-instalacja-i-aktualizacja.md`
 - **Serwery** – Linux przez SNMP albo lekki agent UplinkView (kontenery Docker, usługi systemd, SMART, temperatury).
 - **Sprawdzanie dostępności** – ping (opóźnienie, utrata, jitter), HTTP(S) z ważnością certyfikatu, port TCP, DNS.
 - **Alerty** – urządzenie offline, port down, przeciążenie, CPU / RAM, dysk, błędy portów, dane z agenta; powiadomienia
-  webhookiem (np. Telegram), przez ntfy i e-mail, ciche godziny z podsumowaniem, okna serwisowe, grupowanie po topologii.
+  webhookiem (np. Telegram), przez ntfy i e-mail, ciche godziny z podsumowaniem, grupowanie po topologii.
 - **Administracja** – role kont (administrator / operator / podgląd), logowanie dwuskładnikowe (TOTP), dziennik zdarzeń,
   HTTPS z lokalnym CA, zaszyfrowane sekrety, kopie zapasowe z panelu, raport miesięczny PDF / CSV, wyłączane moduły.
 - **Aplikacja Android** – ruch WAN i widget na ekran główny ([wydania](https://github.com/uplinkview/uplinkview/releases)).

@@ -19,7 +19,7 @@ from sqlalchemy import delete  # noqa: E402
 from netpulse.api import app  # noqa: E402
 from netpulse.api.security import login_limiter  # noqa: E402
 from netpulse.db import Session, engine, init_db  # noqa: E402
-from netpulse.db.models import Alert, AuditEntry, Device, MaintenanceWindow, User  # noqa: E402
+from netpulse.db.models import Alert, AuditEntry, Device, User  # noqa: E402
 
 ADMIN = {"username": "admin", "password": "haslo-testowe-1"}
 PASSWORD = "haslo-konta-123"
@@ -39,7 +39,6 @@ async def _reset():
     await init_db()
     async with Session() as s, s.begin():
         await s.execute(delete(AuditEntry))
-        await s.execute(delete(MaintenanceWindow))
         await s.execute(delete(Alert))
         await s.execute(delete(Device))
         await s.execute(delete(User))
@@ -99,7 +98,7 @@ def test_viewer_reads_but_cannot_change(admin):
     assert viewer.get("/api/alert-rules").status_code == 200
     denied = viewer.post("/api/devices?probe=false", json={"name": "SW", "host": "10.7.0.9", "community": "public"})
     assert denied.status_code == 403 and "administratora" in denied.json()["detail"]
-    assert viewer.post("/api/maintenance", json={}).status_code == 403  # okna: od operatora
+    assert viewer.post("/api/alerts/1/ack").status_code == 403  # potwierdzanie alertów: od operatora
     assert viewer.get("/api/users").status_code == 403  # konta i dziennik tylko dla administratora
     assert viewer.get("/api/audit").status_code == 403
     assert viewer.get("/api/backups").status_code == 403
@@ -109,7 +108,7 @@ def test_viewer_reads_but_cannot_change(admin):
     assert res.status_code == 204
 
 
-def test_operator_acks_alerts_and_plans_maintenance(admin):
+def test_operator_acks_alerts(admin):
     add_user(admin, "op", "operator")
     operator = login("op")
 
@@ -124,10 +123,6 @@ def test_operator_acks_alerts_and_plans_maintenance(admin):
 
     alert_id = run(alert)
     assert operator.post(f"/api/alerts/{alert_id}/ack").status_code == 200
-    window = {"name": "Prace", "kind": "weekly", "days": [5], "time_from": "02:00", "duration_min": 60}
-    created = operator.post("/api/maintenance", json=window)
-    assert created.status_code == 201, created.text
-    assert operator.delete(f"/api/maintenance/{created.json()['id']}").status_code == 204
     assert operator.post("/api/alert-rules", json={"name": "x", "kind": "device_offline"}).status_code == 403
 
 
