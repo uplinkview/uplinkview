@@ -26,6 +26,16 @@ z SNMP i bajty klienta z kontrolera zgodne co do bajta (3,029 / 1,388 MB), histo
 Od 0.85.5 `vpn.snapshot` liczy prędkość z różnicy `down_bytes`/`up_bytes` od poprzedniego zdjęcia (ta sama sesja – `since`,
 licznik nie spadł, przerwa ≤ 150 s, `RATE_MAX_GAP`); inaczej – wartość z kontrolera.
 
+**Prędkość z licznika interfejsu (0.86.1).** Kontroler przelicza bajty klienta z opóźnieniem ok. minuty i nierówno. Test 60 s
+UCG ↔ VPS 16.11.2026 (343 Mb/s do bramy, 48 Mb/s od bramy): port `wgsrv2` z SNMP i bajty kontrolera zgodne w sumie
+(2994 / 3008 MB, 473 / 471 MB), ale wykres klienta miał szczyt 386 Mb/s minutę po końcu transferu. Gdy klient jest **jedynym
+połączonym na swoim interfejsie** (`interface` z `stat/remoteuservpn`, np. tunel site-to-site do VPS), kolektor UniFi bierze
+próbki SNMP tego interfejsu bramy (`vpn.interface_samples`, `use_interface_rates`) i zapisuje je jako `vpn_down_bps` (out)
+/ `vpn_up_bps` (in) **z czasem próbki** – wykres klienta pokrywa się z wykresem portu. Zdjęcie dostaje `rate_source = "interface"`
+i `rate_until` (ostatnia zapisana próbka, kolejny odczyt bierze tylko nowsze; pierwszy raz – nie sprzed poprzedniego odczytu
+ani sprzed połączenia). Bez próbki z ostatnich 90 s (kolektor SNMP stoi, interfejs nieznany) albo przy kilku klientach na
+jednym serwerze – jak dotąd, bajty kontrolera. Historia sprzed 0.86.1 bez zmian; widget na żywo dalej z `rx_rate`/`tx_rate`.
+
 ## Gdzie zapisuje
 
 - **Stan** (kto jest połączony, od kiedy, skąd, ostatni transfer) – zdjęcie w `app_settings` pod `vpn:<id kontrolera>`

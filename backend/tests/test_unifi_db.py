@@ -242,6 +242,35 @@ def test_vpn_status_and_metrics(client):
     assert iphone["connected"] is False and iphone["last_seen"] and iphone["down_bytes"] == 76148892 and iphone["down_bps"] is None
 
 
+def test_vpn_rate_from_interface_samples(client):
+    """Klient jedyny na swoim interfejsie (0.86.1): `vpn_down_bps`/`vpn_up_bps` z próbek SNMP `wgsrv1` z ich czasem."""
+    sample_at = datetime.now(UTC).replace(microsecond=0)
+
+    async def add_samples():
+        async with Session() as s, s.begin():
+            gw = await s.scalar(select(Device).where(Device.name == "UCG"))
+            wg = Interface(device_id=gw.id, if_index=90497, name="wgsrv1", label="WG-Home", role="vpn", oper_status="up")
+            s.add(wg)
+            await s.flush()
+            s.add(InterfaceMetric(time=sample_at, interface_id=wg.id, in_bps=48e6, out_bps=343e6))
+            return gw.id
+
+    gw = run(add_samples)
+    poll(FakeApi())
+
+    async def rows():
+        async with Session() as s:
+            return {(m.name, m.time): m.value for m in (await s.scalars(select(Metric).where(Metric.device_id == gw, Metric.key == "iPhone"))).all()}
+
+    got = run(rows)
+    assert got[("vpn_down_bps", sample_at)] == 343e6 and got[("vpn_up_bps", sample_at)] == 48e6
+    assert {name for name, _ in got} == {"vpn_connected", "vpn_down_bps", "vpn_up_bps"} and len(got) == 3  # bez prędkości z kontrolera
+    iphone = next(u for u in client.get("/api/vpn").json()["users"] if u["name"] == "iPhone")
+    assert iphone["down_bps"] == 343e6 and iphone["up_bps"] == 48e6
+    poll(FakeApi())  # ta sama próbka nie trafia drugi raz (byłby konflikt klucza)
+    assert len(run(rows)) == 4
+
+
 def test_controller_crud_hides_api_key(client):
     listed = client.get("/api/controllers").json()
     assert len(listed) == 1 and "api_key" not in listed[0]

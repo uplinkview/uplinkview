@@ -20,7 +20,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
-from .db.models import AppSetting, Metric
+from .db.models import AppSetting, Interface, InterfaceMetric, Metric
 from .unifi import VpnServer, VpnSession, VpnUser
 
 KEY_PREFIX = "vpn:"
@@ -83,6 +83,7 @@ def snapshot(
                 "connected": connected,
                 "since": since,
                 "remote_ip": s.remote_ip if s else old.get("remote_ip"),
+                "interface": (s.interface if s else None) or old.get("interface"),
                 "down_bytes": s.tx_bytes if s else old.get("down_bytes"),
                 "up_bytes": s.rx_bytes if s else old.get("up_bytes"),
                 "down_bps": _rate(now, prev_at, old, since, "down_bytes", s.tx_bytes, s.tx_bps) if s else None,
@@ -106,11 +107,84 @@ def metrics(device_id: int, snap: dict, now: datetime) -> list[Metric]:
     for u in snap["users"]:
         key = u["name"][:255]
         rows.append(Metric(time=now, device_id=device_id, name="vpn_connected", key=key, value=1.0 if u["connected"] else 0.0))
-        if u["connected"]:
+        if u["connected"] and u.get("rate_source") != "interface":  # z interfejsu: `use_interface_rates`
             for name, field in (("vpn_down_bps", "down_bps"), ("vpn_up_bps", "up_bps")):
                 if u[field] is not None:
                     rows.append(Metric(time=now, device_id=device_id, name=name, key=key, value=u[field]))
     return rows
+
+
+# Prędkość z licznika interfejsu bramy (od 0.86.1). Kontroler przelicza bajty klienta z opóźnieniem ok. minuty i nierówno
+# (test 60 s UCG ↔ VPS 16.11.2026: sumy zgodne, ale szczyt wykresu klienta minutę po końcu transferu, 386 Mb/s zamiast
+# 343). Gdy klient jest jedynym połączonym na swoim interfejsie (`wgsrv2` = tylko tunel do VPS), ruch interfejsu to jego
+# ruch: próbki SNMP tego interfejsu (co 30 s, czas = środek przedziału) idą do `vpn_down_bps`/`vpn_up_bps` ze swoim czasem.
+# Interfejs: in = od klienta (jego wysyłanie), out = do klienta. Kilku klientów na jednym serwerze – dalej bajty kontrolera.
+IFACE_MAX_AGE = timedelta(seconds=90)  # najnowsza próbka interfejsu starsza = kolektor SNMP nie działa, zostaje kontroler
+IFACE_FIRST = timedelta(seconds=60)  # pierwszy odczyt z interfejsu (bez `rate_until`) – tyle próbek wstecz
+
+
+def single_client_interfaces(snap: dict) -> dict[str, str]:
+    """Interfejs → klient dla interfejsów, na których jest połączony dokładnie jeden klient."""
+    users: dict[str, list[str]] = {}
+    for u in snap["users"]:
+        if u["connected"] and u.get("interface"):
+            users.setdefault(u["interface"], []).append(u["name"])
+    return {iface: names[0] for iface, names in users.items() if len(names) == 1}
+
+
+def use_interface_rates(
+    device_id: int, snap: dict, prev: dict | None, samples: dict[str, list[tuple[datetime, float | None, float | None]]], now: datetime
+) -> list[Metric]:
+    """Przełącza klientów jedynych na swoim interfejsie na prędkość z próbek interfejsu (`samples`: nazwa → (czas, in, out)
+    rosnąco). Zwraca wiersze `vpn_down_bps`/`vpn_up_bps` z próbek nowszych niż zapisane `rate_until` (pierwszy raz: z ostatniej
+    minuty, nie sprzed połączenia) i ustawia w zdjęciu `rate_source`, `rate_until` oraz bieżące `down_bps`/`up_bps`."""
+    previous = {u["name"]: u for u in (prev or {}).get("users", [])}
+    by_name = {u["name"]: u for u in snap["users"]}
+    rows: list[Metric] = []
+    for iface, name in single_client_interfaces(snap).items():
+        series = samples.get(iface) or []
+        if not series or now - series[-1][0] > IFACE_MAX_AGE:
+            continue
+        u, old = by_name[name], previous.get(name, {})
+        after = now - IFACE_FIRST
+        if old.get("rate_until") and old.get("since") == u["since"]:
+            after = datetime.fromisoformat(old["rate_until"])
+        else:
+            # Pierwszy raz: bez próbek sprzed połączenia i bez chwil, które opisał już poprzedni odczyt z kontrolera
+            if u["since"]:
+                after = max(after, datetime.fromisoformat(u["since"]) - timedelta(seconds=30))
+            if old.get("connected") and old.get("since") == u["since"] and (prev or {}).get("at"):
+                after = max(after, datetime.fromisoformat(prev["at"]))
+        new = [s for s in series if s[0] > after]
+        key = name[:255]
+        for t, in_bps, out_bps in new:
+            for metric, v in (("vpn_down_bps", out_bps), ("vpn_up_bps", in_bps)):
+                if v is not None:
+                    rows.append(Metric(time=t, device_id=device_id, name=metric, key=key, value=v))
+        last = series[-1]
+        u.update(rate_source="interface", rate_until=(new[-1][0] if new else after).isoformat(), down_bps=last[2], up_bps=last[1])
+    return rows
+
+
+async def interface_samples(session, device_id: int, names: Iterable[str], now: datetime) -> dict[str, list[tuple[datetime, float | None, float | None]]]:
+    """Próbki interfejsów bramy o podanych nazwach z ostatnich 5 minut (nazwa → (czas, in_bps, out_bps) rosnąco)."""
+    names = list(names)
+    if not names:
+        return {}
+    rows = (
+        await session.execute(
+            select(Interface.name, InterfaceMetric.time, InterfaceMetric.in_bps, InterfaceMetric.out_bps)
+            .join(InterfaceMetric, InterfaceMetric.interface_id == Interface.id)
+            .where(Interface.device_id == device_id, Interface.name.in_(names), InterfaceMetric.time > now - timedelta(minutes=5))
+            .order_by(Interface.name, InterfaceMetric.time)
+        )
+    ).all()
+    out: dict[str, list[tuple[datetime, float | None, float | None]]] = {}
+    for name, t, in_bps, out_bps in rows:
+        series = out.setdefault(name, [])
+        if not series or series[-1][0] != t:  # dwa wiersze o tej nazwie (przesunięty ifIndex) – jedna próbka na chwilę
+            series.append((t, in_bps, out_bps))
+    return out
 
 
 async def previous(session, controller_id: int) -> dict | None:

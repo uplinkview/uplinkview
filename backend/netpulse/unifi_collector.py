@@ -408,11 +408,18 @@ class UnifiCollector:
             # VPN: stan klientów (zdjęcie) i metryki na bramie – brama to urządzenie, które VPN obsługuje
             if vpn is not None:
                 gateway = next((by_mac[d.mac] for d in devices if d.type in GATEWAY_TYPES and d.mac in by_mac), None)
-                snap = vpn_state.snapshot(*vpn, await vpn_state.previous(session, target.id), now, gateway)
+                prev_vpn = await vpn_state.previous(session, target.id)
+                snap = vpn_state.snapshot(*vpn, prev_vpn, now, gateway)
                 if snap["servers"] or snap["users"]:
+                    iface_rows = []
+                    if gateway is not None:
+                        # Klient jedyny na swoim interfejsie (np. tunel do VPS): prędkość z licznika SNMP interfejsu
+                        ifaces = vpn_state.single_client_interfaces(snap)
+                        samples = await vpn_state.interface_samples(session, gateway, ifaces, now)
+                        iface_rows = vpn_state.use_interface_rates(gateway, snap, prev_vpn, samples, now)
                     await vpn_state.save(session, target.id, snap)
                     if gateway is not None:
-                        session.add_all(vpn_state.metrics(gateway, snap, now))
+                        session.add_all(vpn_state.metrics(gateway, snap, now) + iface_rows)
 
             # Topologia: zdjęcie stanu połączeń LLDP urządzeń, które znamy z SNMP
             links = [

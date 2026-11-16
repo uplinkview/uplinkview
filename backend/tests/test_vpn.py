@@ -11,7 +11,7 @@ import httpx
 from conftest import FIXTURES
 
 from netpulse.unifi import UnifiApi, parse_vpn_servers, parse_vpn_sessions, parse_vpn_users
-from netpulse.vpn import detect, metrics, snapshot
+from netpulse.vpn import detect, metrics, single_client_interfaces, snapshot, use_interface_rates
 
 DATA = json.loads((FIXTURES / "unifi_vpn.json").read_text(encoding="utf-8"))
 NOW = datetime(2026, 11, 5, 0, 0, tzinfo=UTC)
@@ -75,6 +75,39 @@ def test_metrics_connected_flag_for_everyone_traffic_only_when_connected():
         ("vpn_up_bps", "iPhone"): 96637,
         ("vpn_connected", "Laptop"): 0.0,
     }
+
+
+def test_rate_from_interface_when_client_is_alone_on_it():
+    """Klient jedyny na swoim interfejsie (tunel do VPS na `wgsrv2`): prędkość z próbek SNMP interfejsu z ich czasem
+    (0.86.1; kontroler przelicza bajty z opóźnieniem ok. minuty). in = wysyłanie klienta, out = jego pobieranie."""
+    servers, users, (s,) = parsed()
+    prev = snapshot(servers, users, [s], None, NOW, 1)
+    later = NOW + timedelta(seconds=30)
+    snap = snapshot(servers, users, [s], prev, later, 1)
+    assert single_client_interfaces(snap) == {"wgsrv1": "iPhone"}
+    t = [NOW - timedelta(seconds=45), NOW + timedelta(seconds=15)]  # pierwsza opisana już przez poprzedni odczyt
+    rows = use_interface_rates(1, snap, prev, {"wgsrv1": [(t[0], 1e6, 2e6), (t[1], 50e6, 340e6)]}, later)
+    assert sorted((m.name, m.time, m.value) for m in rows) == [("vpn_down_bps", t[1], 340e6), ("vpn_up_bps", t[1], 50e6)]
+    phone = snap["users"][0]
+    assert (phone["rate_source"], phone["down_bps"], phone["up_bps"], phone["rate_until"]) == ("interface", 340e6, 50e6, t[1].isoformat())
+    # Wiersze z kontrolera tylko `vpn_connected`, prędkości z interfejsu
+    assert {m.name for m in metrics(1, snap, later)} == {"vpn_connected"}
+
+    # Kolejny odczyt: tylko próbki nowsze niż `rate_until`; brak nowej próbki – bez wierszy, bez przełączenia na kontroler
+    t2 = NOW + timedelta(seconds=45)
+    snap2 = snapshot(servers, users, [s], snap, later + timedelta(seconds=30), 1)
+    rows2 = use_interface_rates(1, snap2, snap, {"wgsrv1": [(t[1], 50e6, 340e6), (t2, 1e6, 1e6)]}, later + timedelta(seconds=30))
+    assert [m.time for m in rows2] == [t2, t2]
+    snap3 = snapshot(servers, users, [s], snap2, later + timedelta(seconds=40), 1)
+    assert use_interface_rates(1, snap3, snap2, {"wgsrv1": [(t2, 1e6, 1e6)]}, later + timedelta(seconds=40)) == []
+    assert snap3["users"][0]["rate_until"] == t2.isoformat()
+
+    # Stara próbka (kolektor SNMP stoi) albo dwóch klientów na interfejsie – zostają bajty kontrolera
+    snap4 = snapshot(servers, users, [s], snap3, NOW + timedelta(minutes=5), 1)
+    assert use_interface_rates(1, snap4, snap3, {"wgsrv1": [(t2, 1e6, 1e6)]}, NOW + timedelta(minutes=5)) == []
+    assert "rate_source" not in snap4["users"][0] and {m.name for m in metrics(1, snap4, NOW)} >= {"vpn_down_bps"}
+    other = dataclasses.replace(s, user="Laptop", tunnel_ip="192.168.3.3")
+    assert single_client_interfaces(snapshot(servers, users, [s, other], snap, later, 1)) == {}
 
 
 def test_detect_new_connection_only_after_disconnected_sample():
