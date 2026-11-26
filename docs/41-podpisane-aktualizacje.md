@@ -58,6 +58,13 @@ sudo uplinkview update
 
 Ten krok wymaga dostępu do serwera – i o to chodzi: sam GitHub nie wystarczy, żeby zmienić zaufany klucz.
 
+Na starszej instalacji katalog to `/opt/netpulse`.
+
+**Historia:** 26.11.2026 (0.87.1) pierwszy klucz `netpulse-release` przepadł razem z systemem (brak kopii `~/.ssh`)
+i został zastąpiony nowym. Instalacje 0.87.0 i starsze odrzucają 0.87.1 i nowsze, dopóki nie wykona się powyższego
+kroku – to samo widać w CI przy commicie 0.87.1 (test „Aktualizacja z panelu” cofa się o jeden commit). **Klucz trzymać
+też w kopii zapasowej poza komputerem.**
+
 ## Własne źródło aktualizacji
 
 Kto ustawia `NETPULSE_UPDATE_REPO` na własny fork, nie ma podpisów UplinkView. Do wyboru:

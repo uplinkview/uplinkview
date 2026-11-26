@@ -34,6 +34,9 @@ pakiet Pythona `netpulse`, `netpulse_updater`, zmienne `NETPULSE_*`, nazwa proje
 - **Każdy commit na `main` musi być podpisany** (od 0.69.0, klucz `~/.ssh/netpulse_signing`, w tym repo `commit.gpgsign true`): updater
   i `uplinkview update` odrzucają aktualizację bez podpisu kluczem z `deploy/update-signers` zainstalowanej wersji. Przed pushem
   `git log --format='%h %G? %s' -3` (ma być `G`). Nie commitować ani nie scalać w przeglądarce na GitHubie. Opis: `docs/41-podpisane-aktualizacje.md`.
+  **Od 0.87.1 (26.11.2026) nowy klucz** – stary przepadł z reinstalacją Windows; serwery wymagają jednorazowej podmiany
+  `deploy/update-signers` (polecenie w `docs/41`, „Gdy klucz przepadnie”). Git: `C:\Program Files\Git\cmd\git.exe`
+  (w powłoce Claude może nie być w PATH), push przez HTTPS z Git Credential Manager.
 - Każdy push przechodzi CI (`.github/workflows/ci.yml`): ruff, pytest (drivery na fixtures,
   pysnmp kontra snmpsim v2c/v3, kolektor + TimescaleDB, API) oraz test end-to-end `install.sh`
   → `device add` → dane w API → `uplinkview update`. Wynik CI sprawdzać przed zgłoszeniem
