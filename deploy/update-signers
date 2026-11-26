@@ -1,3 +1,3 @@
 # Klucze, którymi wolno podpisać aktualizację UplinkView (format allowed_signers programu ssh-keygen).
 # Updater i `uplinkview update` ufają plikowi z ZAINSTALOWANEJ wersji – opis: docs/41-podpisane-aktualizacje.md
-netpulse-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBCbfokXLGtTTf+mG3BxYADeM65HUyhG0X1qD5xT147r
+netpulse-release namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOUMR6iG5LoaI9ACIxjVOjH3ydJTmDL9x6R11RY7pnNL
