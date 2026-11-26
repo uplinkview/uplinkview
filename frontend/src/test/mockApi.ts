@@ -28,6 +28,7 @@ import type { SystemInfo } from "../lib/system";
 import type { Topology } from "../lib/topology";
 import type { Controller, NetworkClient, PoeInfo } from "../lib/unifi";
 import type { WanHistory, WanLink, WanSla, WanStatus, WanSuggestion, WanUsage } from "../lib/wan";
+import type { VpnStatus } from "../lib/vpn";
 import type { Availability, InterfaceDetail, SensorsData } from "../lib/details";
 import type { DashboardFull, PublicDashboard, PublicPayload } from "../lib/dashboards";
 
@@ -363,6 +364,8 @@ interface MockState {
   wanUsage: WanUsage;
   wanLinks: WanLink[];
   wanSuggestions: WanSuggestion[];
+  /** VPN bramy UniFi (GET /api/vpn); null = brak (404, jak bez modułu UniFi) */
+  vpn: VpnStatus | null;
   /** Dostępność (ta sama odpowiedź dla każdego okresu, urządzenia i portu) */
   availability: Availability;
   /** Port z GET /api/interfaces/{id} */
@@ -441,6 +444,7 @@ export function mockApi(initial: Partial<MockState> = {}) {
     },
     wanLinks: [],
     wanSuggestions: [],
+    vpn: null,
     updates: UPDATES,
     availability: AVAILABILITY,
     port: PORT,
@@ -799,6 +803,7 @@ export function mockApi(initial: Partial<MockState> = {}) {
       if (/^GET \/api\/devices\/\d+\/poe$/.test(key)) return json(200, state.poe);
       if (/^GET \/api\/devices\/\d+\/sensors$/.test(key)) return json(200, state.sensors);
       if (key === "GET /api/topology") return json(200, state.topology);
+      if (key === "GET /api/vpn") return state.vpn ? json(200, state.vpn) : json(404, { detail: "Not Found" });
       if (/^GET \/api\/devices\/\d+\/server$/.test(key)) return json(200, state.server);
       if (/^GET \/api\/devices\/\d+\/agent-keys$/.test(key)) {
         return json(200, {

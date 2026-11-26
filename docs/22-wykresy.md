@@ -169,6 +169,26 @@ w zapisanych pulpitach (schemat je przyjmuje), ale nic nie znaczy.
   przeciągnięciem tła. Na starcie mapa dopasowana do szerokości (na telefonie bez przewijania w bok); palec
   przesuwa mapę dopiero po przybliżeniu, wcześniej przewija stronę.
 
+## Pełna mapa sieci (0.88.0)
+
+Mapa pokazuje całą sieć: **łącza WAN → brama → switche i access pointy → klienci** po kablu, Wi-Fi i VPN.
+
+- **Dane**: `/api/topology` (kable LLDP), `/api/clients` (klienci z kontrolera UniFi), `/api/wan/status` (łącza WAN
+  i ich stan), `/api/vpn` (serwery i klienci WireGuard; bez modułu UniFi – brak). Bez zmian w backendzie.
+- **Model** (`frontend/src/lib/netmap.ts`, czyste funkcje): `buildNetMap` – korzeń = brama (`pickRoot`), drzewo urządzeń
+  z kabli LLDP (BFS), klient po kablu pod urządzeniem `uplink_device_id` (z portem), klienci Wi-Fi w grupach
+  sieć + pasmo (`ssid:<AP>:<SSID>:<radio>`, 6 GHz → 5 GHz → 2,4 GHz) pod access pointem, serwery VPN na bramie
+  (`vpn.device_id`), klienci VPN pod swoim serwerem (połączeni najpierw). Łącza WAN bramy przed bramą; bez nich
+  – „Internet (WAN)” z LLDP jak wcześniej.
+- **Układ** `layoutNetMap`: warstwy według odległości od bramy, rodzic na środku dzieci, poziomo (szeroki ekran)
+  albo pionowo (telefon; przełącznik zapamiętany jak wcześniej). Linie łamane pod kątem prostym (`linkPath`).
+- **Linie**: kabel w kolorze obciążenia (jak 0.35.0, opis „1G · 620 Mb/s” z linkiem do portu), Wi-Fi kropkami,
+  VPN kreskami, WAN – stanem (w użyciu akcent, nie działa czerwone kreski, zapas szare), rozłączony szary.
+- **Obsługa**: filtr Wszystko / Kabel / Wi-Fi / VPN (`isVisible`), „Pokaż rozłączonych” (klienci VPN), „Ruch na kablach”,
+  wyszukiwanie po nazwie, IP, MAC i klientach sieci Wi-Fi (`matchesQuery` – reszta przygasa). Klik w węzeł albo
+  klienta Wi-Fi: panel szczegółów (sygnał, pasmo, prędkości łącza, IP, port…) i **droga do Internetu**
+  (`pathToInternet`, podświetlona na mapie). Nad mapą pasek: Internet, urządzenia sieciowe, klienci, ruch WAN (`summarize`).
+- Atrapa `frontend/dev/mock-api.mjs` ma przykładowych klientów (kabel i dwie sieci Wi-Fi) i VPN.
 ## Jeden silnik wykresów (0.36.0)
 
 - Stary `TimeSeriesChart` usunięty. `ChartCard` (wykres „Aktywne łącze WAN”, PoE portu, sygnał i prędkość klienta)

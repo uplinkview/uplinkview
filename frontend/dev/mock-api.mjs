@@ -364,7 +364,21 @@ createServer(async (req, res) => {
       ],
     });
   }
-  if (route === "GET /api/clients") return send(res, 200, []);
+  // Klienci sieci (mapa sieci od 0.88.0): po kablu na bramie i switchu, Wi-Fi na U6+ w dwóch pasmach
+  if (route === "GET /api/clients") {
+    const c = (mac, name, ip, extra) => ({ mac, name, ip, is_wired: false, is_guest: false, essid: null, radio: null, signal_dbm: null, tx_rate_kbps: null,
+      rx_rate_kbps: null, uplink_device_id: 3, uplink_name: "U6+", uplink_port: null, connected_s: 3 * 3600, updated_at: ago(10), ...extra });
+    const wired = (dev, devName, port) => ({ is_wired: true, uplink_device_id: dev, uplink_name: devName, uplink_port: port });
+    const wifi = (essid, radio, signal_dbm, tx) => ({ essid, radio, signal_dbm, tx_rate_kbps: tx, rx_rate_kbps: Math.round(tx / 2) });
+    return send(res, 200, [
+      c("02:00:00:00:10:01", "Komputer PC", "192.168.1.238", wired(1, "UCG Ultra", 3)),
+      c("02:00:00:00:10:02", "Telewizor", "192.168.1.7", wired(2, "USW Lite 8 PoE", 7)),
+      c("02:00:00:00:10:03", "Telefon", "192.168.1.96", wifi("Dom", "na", -56, 960000)),
+      c("02:00:00:00:10:04", "Laptop", "192.168.1.203", wifi("Dom", "na", -61, 720000)),
+      c("02:00:00:00:10:05", "Dekoder", "192.168.1.77", wifi("Dom 2.4", "ng", -52, 450000)),
+      c("02:00:00:00:10:06", "Czujnik", "192.168.1.48", wifi("Dom 2.4", "ng", -78, 72000)),
+    ]);
+  }
   if (route === "GET /api/modules") return send(res, 200, { unifi: true, opnsense: true, agents: false, backups: false });
   // OPNsense API (od 0.81.0) – dane jak z OPNsense 26.7.9 w VirtualBox
   if (route === "GET /api/opnsense/apis") {
