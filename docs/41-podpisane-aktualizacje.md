@@ -49,12 +49,17 @@ klucz warto trzymać w pliku długo.
 
 ### Gdy klucz przepadnie albo wycieknie
 
-Na każdym serwerze jednorazowo, jako root, podmienić zaufaną listę na nową i zaktualizować:
+Na każdym serwerze jednorazowo, jako root: sprawdzić podpis najnowszej wersji nową listą kluczy, przejść na ten commit
+i zbudować usługi:
 
 ```bash
-cd /opt/uplinkview && sudo git fetch origin main && sudo git show origin/main:deploy/update-signers | sudo tee deploy/update-signers
-sudo uplinkview update
+cd /opt/uplinkview && sudo git fetch origin main && sudo git show origin/main:deploy/update-signers > /tmp/signers
+sudo git -c gpg.format=ssh -c gpg.ssh.allowedSignersFile=/tmp/signers verify-commit origin/main && sudo git merge --ff-only origin/main
+sudo uplinkview update --force
 ```
+
+Nie podmieniać samego pliku `deploy/update-signers` przed `uplinkview update`: podpis wtedy przejdzie, ale `git merge`
+odmówi nadpisania lokalnie zmienionego pliku (sprawdzone 26.11.2026 na VPS; nic się nie psuje, tylko aktualizacja staje).
 
 Ten krok wymaga dostępu do serwera – i o to chodzi: sam GitHub nie wystarczy, żeby zmienić zaufany klucz.
 
