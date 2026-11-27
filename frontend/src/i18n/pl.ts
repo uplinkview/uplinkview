@@ -846,7 +846,6 @@ export const pl = {
   "netmap.conn.wifi": "Wi-Fi",
   "netmap.panel": "Szczegóły wybranego elementu",
   "netmap.panel.close": "Zamknij szczegóły",
-  "netmap.panel.hint": "Kliknij urządzenie, sieć Wi-Fi albo klienta na mapie, żeby zobaczyć szczegóły i drogę do Internetu.",
   "netmap.path": "Droga do Internetu",
   "netmap.open.device": "Otwórz stronę urządzenia",
   "netmap.open.client": "Otwórz stronę klienta",

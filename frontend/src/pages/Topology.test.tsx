@@ -262,21 +262,26 @@ describe("strona Mapa sieci", () => {
     expect((await screen.findAllByRole("link", { name: "Mapa sieci" })).length).toBeGreaterThan(0);
   });
 
-  it("klient Wi-Fi: sieć z pasmem, sygnał i droga do Internetu w panelu szczegółów", async () => {
+  it("klient Wi-Fi: sieć z pasmem, sygnał i droga do Internetu w dymku szczegółów; Esc i × zamykają", async () => {
     const user = userEvent.setup();
     mockApi({ topology: TOPO, clients: CLIENTS });
     renderApp("/topology");
     expect(await screen.findByRole("button", { name: "Szczegóły: Dom · 5 GHz" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Szczegóły: Dom · 2,4 GHz" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Szczegóły: Galaxy" }));
-    const panel = screen.getByRole("complementary", { name: "Szczegóły wybranego elementu" });
+    const panel = screen.getByRole("dialog", { name: "Szczegóły wybranego elementu" });
     expect(within(panel).getByRole("heading", { name: "Galaxy" })).toBeInTheDocument();
     expect(within(panel).getByText("-71 dBm")).toBeInTheDocument();
     expect(within(panel).getByText("(sygnał przeciętny)")).toBeInTheDocument();
-    expect(within(panel).getByRole("list").textContent).toBe(["Internet (WAN)", "UCG", "USW", "U6+", "Dom · 5 GHz", "Galaxy"].join(""));
+    expect(within(panel).getByRole("list").textContent).toBe(["Internet (WAN)", "UCG", "USW", "U6+", "Dom · 5 GHz", "Galaxy"].join("›"));
     expect(within(panel).getByRole("link", { name: "Otwórz stronę klienta" })).toHaveAttribute("href", "/clients/02:00:00:00:00:21");
     await user.click(within(panel).getByRole("button", { name: "Zamknij szczegóły" }));
-    expect(screen.queryByRole("complementary", { name: "Szczegóły wybranego elementu" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Szczegóły wybranego elementu" })).not.toBeInTheDocument();
+    // Esc też zamyka dymek
+    await user.click(screen.getByRole("button", { name: "Szczegóły: USW" }));
+    expect(screen.getByRole("dialog", { name: "Szczegóły wybranego elementu" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Szczegóły wybranego elementu" })).not.toBeInTheDocument();
   });
 
   it("filtr Wi-Fi chowa klientów po kablu, wyszukiwanie przygasza resztę", async () => {

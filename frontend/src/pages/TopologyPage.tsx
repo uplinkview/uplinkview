@@ -461,13 +461,27 @@ const MAP_BUTTON = "flex size-8 items-center justify-center rounded-lg border bo
 
 /** Ramka mapy z przybliżaniem (przyciski, Ctrl + kółko) i przesuwaniem (przeciągnięcie tła). Na starcie i po
  * „Dopasuj” cała mapa mieści się w szerokości – na telefonie bez przewijania w bok. */
-function MapViewport({ width, height, toolbar, children }: { width: number; height: number; toolbar?: ReactNode; children: ReactNode }) {
+function MapViewport({
+  width,
+  height,
+  toolbar,
+  overlay,
+  children,
+}: {
+  width: number;
+  height: number;
+  toolbar?: ReactNode;
+  /** Warstwa nad mapą w pikselach ramki (dymek szczegółów) – dostaje bieżące przesunięcie i skalę */
+  overlay?: (view: View, frame: { width: number; height: number }) => ReactNode;
+  children: ReactNode;
+}) {
   const frame = useRef<HTMLDivElement>(null);
   const [frameWidth, setFrameWidth] = useState(0);
   const [view, setView] = useState<View | null>(null);
   const drag = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
   const fit = fitScale(frameWidth, width);
-  const frameHeight = Math.max(240, height * fit);
+  // Co najmniej tyle, żeby zmieścił się dymek szczegółów (POPOVER)
+  const frameHeight = Math.max(POPOVER + 32, height * fit);
   const fitted: View = { scale: fit, x: Math.max(0, (frameWidth - width * fit) / 2), y: 0 };
   const current = view ?? fitted;
   const currentRef = useRef(current);
@@ -496,7 +510,7 @@ function MapViewport({ width, height, toolbar, children }: { width: number; heig
 
   const zoomBy = (factor: number) => setView(zoomAt(current, current.scale * factor, frameWidth / 2, frameHeight / 2));
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest("a, button")) return;
+    if ((e.target as HTMLElement).closest("a, button, [data-popover]")) return;
     drag.current = { x: e.clientX, y: e.clientY, vx: current.x, vy: current.y };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -521,6 +535,7 @@ function MapViewport({ width, height, toolbar, children }: { width: number; heig
       <div className="absolute top-0 left-0 origin-top-left" style={{ width, height, transform: `translate(${current.x}px, ${current.y}px) scale(${current.scale})` }}>
         {children}
       </div>
+      {overlay?.(current, { width: frameWidth, height: frameHeight })}
       <div role="group" aria-label={t("topo.zoom")} className="absolute top-2 right-2 flex gap-1">
         {toolbar}
         <button type="button" aria-label={t("topo.zoom.in")} title={t("topo.zoom.in")} className={MAP_BUTTON} onClick={() => zoomBy(1.25)}>
@@ -562,10 +577,29 @@ interface PanelProps {
   mac: string | null;
   devices: Device[];
   onClose: () => void;
+  /** Położenie kwadratowego dymka w ramce mapy */
+  pos: { left: number; top: number; size: number };
+}
+
+/** Bok kwadratowego dymka szczegółów (px). */
+const POPOVER = 320;
+
+/** Dymek obok elementu (z prawej, gdy brak miejsca – z lewej), w granicach ramki mapy. */
+function popoverPos(anchor: Box, view: View, frame: { width: number; height: number }) {
+  const size = Math.max(200, Math.min(POPOVER, frame.width - 16, frame.height - 16));
+  const ax = view.x + anchor.x * view.scale;
+  const ay = view.y + anchor.y * view.scale;
+  const aw = anchor.w * view.scale;
+  const ah = anchor.h * view.scale;
+  let left = ax + aw + 12;
+  if (left + size > frame.width - 8) left = ax - size - 12;
+  if (left < 8) left = Math.min(Math.max(8, ax), frame.width - size - 8);
+  const top = Math.min(Math.max(8, ay + ah / 2 - size / 2), Math.max(8, frame.height - size - 8));
+  return { left, top, size };
 }
 
 /** Szczegóły wybranego elementu i jego droga do Internetu. */
-function DetailsPanel({ map, node, mac, devices, onClose }: PanelProps) {
+function DetailsPanel({ map, node, mac, devices, onClose, pos }: PanelProps) {
   const byId = new Map(map.nodes.map((n) => [n.id, n]));
   const wifiClient: NetworkClient | undefined = mac ? node.ssid?.clients.find((c) => c.mac === mac) : undefined;
   const client = wifiClient ?? node.client;
@@ -692,33 +726,43 @@ function DetailsPanel({ map, node, mac, devices, onClose }: PanelProps) {
   }
 
   return (
-    <aside aria-label={t("netmap.panel")} className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 xl:w-80 xl:shrink-0">
+    <section
+      role="dialog"
+      aria-label={t("netmap.panel")}
+      data-popover
+      className="absolute z-20 flex cursor-auto flex-col gap-3 overflow-y-auto rounded-2xl border border-border bg-surface p-4 shadow-xl select-text"
+      style={{ left: pos.left, top: pos.top, width: pos.size, height: pos.size }}
+    >
       <div className="flex items-start gap-2">
         <h2 className="min-w-0 flex-1 truncate text-base font-semibold">{title}</h2>
         <button type="button" aria-label={t("netmap.panel.close")} title={t("netmap.panel.close")} onClick={onClose} className="flex size-7 items-center justify-center rounded-lg text-text-2 hover:bg-surface-2 hover:text-text">
           <IconX size={16} aria-hidden="true" />
         </button>
       </div>
-      {fields && <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{fields}</dl>}
+      {fields && <dl className="grid grid-cols-2 gap-x-3 gap-y-2">{fields}</dl>}
       {chain.length > 1 && (
         <div>
-          <h3 className="mb-1.5 text-xs text-text-2">{t("netmap.path")}</h3>
-          <ol className="flex flex-col gap-1 text-sm">
+          <h3 className="mb-1 text-xs text-text-2">{t("netmap.path")}</h3>
+          <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs">
             {chain.map((name, i) => (
-              <li key={`${i}-${name}`} className={`flex items-center gap-2 ${i === chain.length - 1 ? "font-medium" : ""}`}>
-                <span aria-hidden="true" className="inline-block size-2 shrink-0 rounded-full bg-accent" />
-                <span className="truncate">{name}</span>
+              <li key={`${i}-${name}`} className={`flex items-center gap-1 ${i === chain.length - 1 ? "font-semibold text-accent-text" : ""}`}>
+                {i > 0 && (
+                  <span aria-hidden="true" className="text-text-2">
+                    ›
+                  </span>
+                )}
+                {name}
               </li>
             ))}
           </ol>
         </div>
       )}
       {link && (
-        <Link to={link.to} className="rounded-lg bg-accent px-3 py-2 text-center text-sm font-medium text-on-accent hover:bg-accent-hover">
+        <Link to={link.to} className="mt-auto rounded-lg bg-accent px-3 py-2 text-center text-sm font-medium text-on-accent hover:bg-accent-hover">
           {t(link.label)}
         </Link>
       )}
-    </aside>
+    </section>
   );
 }
 
@@ -833,6 +877,19 @@ export function TopologyPage() {
   const shown = map.nodes.filter((n) => layout.boxes[n.id]);
   const upstream = shown.filter((n) => n.kind === "wan" || n.kind === "internet");
   const selNode = selected ? byId.get(selected.id) : undefined;
+  // Dymek wskazuje kartę wybranego elementu, a klienta Wi-Fi – jego wiersz w karcie sieci
+  const selBox = selected ? layout.boxes[selected.id] : undefined;
+  const rowIndex = selected?.mac ? (selNode?.ssid?.clients.findIndex((c) => c.mac === selected.mac) ?? -1) : -1;
+  const anchor: Box | undefined =
+    selBox && rowIndex >= 0 ? { x: selBox.x, y: selBox.y + SSID_HEADER_H + rowIndex * SSID_ROW_H, w: selBox.w, h: SSID_ROW_H } : selBox;
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected]);
   const cables = edges.filter((e) => byId.has(e.a) && byId.has(e.b));
   const name = (id: string) => {
     const n = byId.get(id);
@@ -902,12 +959,24 @@ export function TopologyPage() {
             </label>
           </div>
 
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-            <div className="min-w-0 flex-1">
+          <div>
+            <div className="min-w-0">
               <MapViewport
                 key={`${orientation}-${filter}-${showOffline}`}
                 width={layout.width}
                 height={layout.height}
+                overlay={(view, frame) =>
+                  selNode && anchor ? (
+                    <DetailsPanel
+                      map={map}
+                      node={selNode}
+                      mac={selected?.mac ?? null}
+                      devices={devices.data ?? []}
+                      onClose={() => setSelected(null)}
+                      pos={popoverPos(anchor, view, frame)}
+                    />
+                  ) : null
+                }
                 toolbar={
                   <button
                     type="button"
@@ -975,11 +1044,6 @@ export function TopologyPage() {
               </MapViewport>
               <Legend />
             </div>
-            {selNode ? (
-              <DetailsPanel map={map} node={selNode} mac={selected?.mac ?? null} devices={devices.data ?? []} onClose={() => setSelected(null)} />
-            ) : (
-              <p className="rounded-xl border border-dashed border-border-strong p-4 text-sm text-text-2 xl:w-80 xl:shrink-0">{t("netmap.panel.hint")}</p>
-            )}
           </div>
 
           <section aria-labelledby="topo-links" className="mt-6">

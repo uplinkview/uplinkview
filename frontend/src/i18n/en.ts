@@ -848,7 +848,6 @@ export const en: Record<TextKey, string> = {
   "netmap.conn.wifi": "Wi-Fi",
   "netmap.panel": "Details of the selected element",
   "netmap.panel.close": "Close details",
-  "netmap.panel.hint": "Click a device, a Wi-Fi network or a client on the map to see its details and its path to the Internet.",
   "netmap.path": "Path to the Internet",
   "netmap.open.device": "Open device page",
   "netmap.open.client": "Open client page",

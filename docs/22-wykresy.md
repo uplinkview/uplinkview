@@ -186,7 +186,7 @@ Mapa pokazuje całą sieć: **łącza WAN → brama → switche i access pointy 
   VPN kreskami, WAN – stanem (w użyciu akcent, nie działa czerwone kreski, zapas szare), rozłączony szary.
 - **Obsługa**: filtr Wszystko / Kabel / Wi-Fi / VPN (`isVisible`), „Pokaż rozłączonych” (klienci VPN), „Ruch na kablach”,
   wyszukiwanie po nazwie, IP, MAC i klientach sieci Wi-Fi (`matchesQuery` – reszta przygasa). Klik w węzeł albo
-  klienta Wi-Fi: panel szczegółów (sygnał, pasmo, prędkości łącza, IP, port…) i **droga do Internetu**
+  klienta Wi-Fi: kwadratowy dymek szczegółów przy elemencie (od 0.88.1, mapa na całą szerokość; sygnał, pasmo, prędkości łącza, IP, port…, Esc zamyka) i **droga do Internetu**
   (`pathToInternet`, podświetlona na mapie). Nad mapą pasek: Internet, urządzenia sieciowe, klienci, ruch WAN (`summarize`).
 - Atrapa `frontend/dev/mock-api.mjs` ma przykładowych klientów (kabel i dwie sieci Wi-Fi) i VPN.
 ## Jeden silnik wykresów (0.36.0)
